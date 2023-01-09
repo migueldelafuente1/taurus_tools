@@ -26,7 +26,7 @@ class _DataObjectBase:
     BU_folder       = 'BU_results'
     BU_fold_constr  = 'BU_results_constr'
     export_list_results = 'export_resultTaurus.txt'
-    PROGRAM         = None
+    PROGRAM         = 'taurus_vap.exe'
     
     @classmethod
     def setUpFolderBackUp(cls):
@@ -354,7 +354,71 @@ class EvolTaurus(_DataObjectBase):
             fig.savefig(export_filename)
         
 
-
+class EigenbasisData(_DataObjectBase):
+    
+    FILENAME_DEFAULT = 'canonicalbasis.dat'
+    
+    class Enum:
+        FermiProt = "Proton  fermi energy ="
+        FermiNeut = "Neutron fermi energy ="
+    
+    def __init__(self, filename=None):
+        
+        self.fermi_energ_prot = None
+        self.fermi_energ_neut = None 
+        
+        self.index = []
+        self.avg_neut = []
+        self.avg_prot = []
+        self.avg_n    = []
+        self.avg_l    = []
+        self.avg_p    = []
+        self.avg_j    = []
+        self.avg_jz   = []
+        self.v2   = []
+        self.h    = []
+        
+        self.filename = filename if (filename!=None) else self.FILENAME_DEFAULT
+        
+    def getResults(self):
+        
+        with open(self.filename, 'r') as f:
+            data = f.readlines()
+        
+        _in_values = False
+        for line in data:
+            line = line.strip()
+            if len(line) == 0: 
+                continue
+            if not _in_values:
+                if   line.startswith(self.Enum.FermiProt):
+                    self.fermi_energ_prot = self._getValues(line, self.Enum.FermiProt)
+                elif line.startswith(self.Enum.FermiNeut):
+                    self.fermi_energ_neut = self._getValues(line, self.Enum.FermiNeut)
+                # elif line.startswith('#      Z        N'): 
+                #     pass
+                elif line.startswith('---'):
+                    _in_values = True
+                continue
+            else:
+                
+                vals = self._getValues(line)
+                
+                self.index.append(vals[0])
+                self.avg_prot.append(vals[1])
+                self.avg_neut.append(vals[2])
+                self.avg_n.append( vals[3])
+                self.avg_l.append( vals[4])
+                self.avg_p.append( vals[5])
+                self.avg_j.append( vals[6])
+                self.avg_jz.append(vals[7])
+                if len(vals) == 9: 
+                    ## you are importing an eigenbasis file, v2 is not present 
+                    self.v2.append(vals[8])
+                self.h .append(vals[-1])
+    
+        _=0
+        
 #===============================================================================
 #   RESULTS FROM TAURUS 
 #===============================================================================
@@ -824,13 +888,16 @@ class DataTaurus(_DataObjectBase):
 
 if __name__ == '__main__':
     #
-    res = DataTaurus(10, 10, 'aux_output_Z10N10_00_00')
-    # res = DataTaurus(10, 10, 'aux_output_Z10N6_23')
-    # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
-    with open(res.BU_fold_constr, 'w+') as f:
-        f.write(res.getAttributesDictLike)
+    # res = DataTaurus(10, 10, 'aux_output_Z10N10_00_00')
+    # # res = DataTaurus(10, 10, 'aux_output_Z10N6_23')
+    # # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
+    # with open(res.BU_fold_constr, 'w+') as f:
+    #     f.write(res.getAttributesDictLike)
     
     # res = EvolTaurus('aux_output_Z10N10_00_00')
     # res = EvolTaurus('aux_output_Z10N6_23')
     # res.printEvolutionFigure()
     # res = EvolTaurus('aux_output_Z10N6_broken')
+    
+    res = EigenbasisData()
+    res.getResults()
