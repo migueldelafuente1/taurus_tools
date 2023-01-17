@@ -26,6 +26,7 @@ class _Input(object):
     Abstract class to define inputs for a program
     '''
     _TEMPLATE = """"""
+    DEFAULT_INPUT_FILENAME  = 'aux.txt'
     
     class ArgsEnum:
         pass
@@ -51,7 +52,7 @@ class _Input(object):
 class InputException(BaseException):
     pass
 
-class TaurusInput(_Input):
+class InputTaurus(_Input):
     
     '''
         Class to set the template for the program Taurus
@@ -98,7 +99,7 @@ Tolerance for gradient        {grad_tol:4.3E}
 Constraints
 -----------
 Force constraint N/Z          1
-Constraint beta_lm            1
+Constraint beta_lm            {beta_schm}
 Pair coupling scheme          {pair_schm}
 Tolerance for constraints     1.000E-08
 Constraint multipole Q10      {b10}
@@ -128,6 +129,7 @@ Constraint pair P_T1p1_J00    {P_T1p1_J00}
 Constraint field Delta        0   0.000"""
     
     PROGRAM         = 'taurus_vap.exe'
+    INPUT_DD_FILENAME  = 'input_DD_PARAMS.txt'
     
     class ArgsEnum(Enum):
         interaction    = 'interaction'
@@ -151,6 +153,7 @@ Constraint field Delta        0   0.000"""
         eta_grad   = 'eta_grad'
         mu_grad    = 'mu_grad'
         grad_tol   = 'grad_tol'
+        beta_schm  = 'beta_schm'
         pair_schm  = 'pair_schm'
     
     class ConstrEnum(Enum):
@@ -210,7 +213,8 @@ eval full Val.Space (0,1)   = 1
         r_dim = 'r_dim'
         omega_dim = 'omega_dim'
     
-    _DEFAULT_DD_PARAMS = {
+    ## default parameters
+    _DEFAULT_DD_PARAMS = { 
         InpDDEnum.eval_dd     : 1,
         InpDDEnum.eval_rea    : 1, 
         InpDDEnum.eval_explicit_dd : 0,
@@ -221,11 +225,24 @@ eval full Val.Space (0,1)   = 1
         InpDDEnum.r_dim       : 10,
         InpDDEnum.omega_dim   : 10,
         }
+    ## this is the parameters used to print the input_DD_PARAMS file
+    _DD_PARAMS = {
+        InpDDEnum.eval_dd     : 1,
+        InpDDEnum.eval_rea    : 1, 
+        InpDDEnum.eval_explicit_dd : 0,
+        InpDDEnum.eval_export_h    : 0, 
+        InpDDEnum.x0_param    : 1.0,
+        InpDDEnum.t3_param    : 1390.6,
+        InpDDEnum.alpha_param : 0.333333,
+        InpDDEnum.r_dim       : 10,
+        InpDDEnum.omega_dim   : 10,
+    }
     
-    def __init__(self, z, n, interaction, **params):
+    def __init__(self, z, n, interaction, input_filename=None, **params):
         """
         Construct a input object for taurus, several parameters can be given.
         Arguments z, n, interaction are mandatory 
+        input_filename: to change the default input file to write (used in executeTaurus)
         """
         self.z = z
         self.n = n
@@ -248,6 +265,7 @@ eval full Val.Space (0,1)   = 1
         self.eta_grad   = 0.001
         self.mu_grad    = 0.2
         self.grad_tol   = 0.01
+        self.beta_schm  = 1
         self.pair_schm  = 1
         
         ## default constraints (b1 constraints = 1 lead to w.f to slide by the 
@@ -280,6 +298,10 @@ eval full Val.Space (0,1)   = 1
         self.P_T1m1_J00 = None
         self.P_T1p1_J00 = None
         
+        self.input_filename = self.DEFAULT_INPUT_FILENAME
+        if input_filename:
+            self.input_filename = input_filename
+        
         self.setParameters(**params)
     
     def setParameters(self, **params):
@@ -307,7 +329,7 @@ eval full Val.Space (0,1)   = 1
                 elif arg == self.ArgsEnum.pnt_dens:
                     assert type(value)==int and value >=0 and value < 4, \
                         f"Value must be in range 0-3 [{value}]"
-                elif arg == self.ArgsEnum.grad_type:
+                elif arg in (self.ArgsEnum.grad_type, self.ArgsEnum.beta_schm):
                     assert type(value)==int and value >=0 and value < 3, \
                         f"Value must be in range 0-2 [{value}]"
                 elif arg in (self.ArgsEnum.eta_grad,   self.ArgsEnum.mu_grad,
@@ -454,12 +476,16 @@ eval full Val.Space (0,1)   = 1
     def set_inputDDparamsFile(cls, **params):
         ''' 
         !! Classmethod, modifications using this will remain for every instance
-        of TaurusInput
+        of InputTaurus. The parameters unset will be reset before the method call
         Args:
             :eval_dd, rea, explicit_dd : 0,1
             :x0_param, t3_param, alpha_param : <float>
             :r_dim, omega_dim  :: <int>
         '''
+        ## reset the DD parameters
+        for k, v in cls._DEFAULT_DD_PARAMS.items():
+            cls._DD_PARAMS[k] = v
+        
         for arg, val in params.items():
             if arg not in cls.InpDDEnum.members():
                 print(f"[WARNING] parameter DD unidentified: [{arg}, {val}]")
@@ -475,11 +501,13 @@ eval full Val.Space (0,1)   = 1
                 assert type(val) == int, \
                     f"R/Omega dim must be positive integers. Got[{val}]"
             
-            cls._DEFAULT_DD_PARAMS[arg] = val
+            cls._DD_PARAMS[arg] = val
             
     def get_inputDDparamsFile(self, r_dim=None, omega_dim=None):
-        ''' '''
-        params = copy(self._DEFAULT_DD_PARAMS)
+        ''' 
+        Writes the parameters file. 
+        '''
+        params = copy(self._DD_PARAMS)
         
         if r_dim and isinstance(r_dim, int):
             params[self.InpDDEnum.r_dim] = r_dim
@@ -577,7 +605,7 @@ eval full Val.Space (0,1)   = 1
     
     def copy(self):
         """ return a copy of a previous element """
-        snd_inp = TaurusInput(self.z, self.n, self.interaction)
+        snd_inp = InputTaurus(self.z, self.n, self.interaction)
         for atr in (*self.ArgsEnum.members(), *self.ConstrEnum.members()):
             setattr(snd_inp, atr, getattr(self, atr))
         return snd_inp
@@ -795,11 +823,11 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
 #===============================================================================
 # TESTS
 #===============================================================================
-# t_input = TaurusInput(10, 12, 'hamil')
-# t_input.setParameters(**{TaurusInput.ArgsEnum.seed : 3,
-#                        TaurusInput.ArgsEnum.iterations : 912, 
-#                        TaurusInput.ArgsEnum.com  : 1,
-#                        TaurusInput.ArgsEnum.discr_zp : (33, 0.01)})
+# t_input = InputTaurus(10, 12, 'hamil')
+# t_input.setParameters(**{InputTaurus.ArgsEnum.seed : 3,
+#                        InputTaurus.ArgsEnum.iterations : 912, 
+#                        InputTaurus.ArgsEnum.com  : 1,
+#                        InputTaurus.ArgsEnum.discr_zp : (33, 0.01)})
 # # t_input.setDisctretizationArgs(1, 100, 0, 0, 0.05, 0, 0)
 # t_input.b20 = (1.2, 1.23)
 # print(t_input.getText4file())
@@ -816,9 +844,11 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
 # print(a_inp)
 #
 #
-t_input = TaurusInput(2,4, 'hamil')
-TaurusInput.set_inputDDparamsFile(**{
-    TaurusInput.InpDDEnum.eval_explicit_dd : 1,
-    TaurusInput.InpDDEnum.t3_param         : 100.0,
-    TaurusInput.InpDDEnum.x0_param         : 0.0000000001})
-print(t_input.get_inputDDparamsFile(11, 20))
+# t_input = InputTaurus(2,4, 'hamil')
+# t_input.setParameters(**{InputTaurus.ArgsEnum.beta_schm : 2,})
+# InputTaurus.set_inputDDparamsFile(**{
+#     InputTaurus.InpDDEnum.eval_explicit_dd : 1,
+#     InputTaurus.InpDDEnum.t3_param         : 100.0,
+#     InputTaurus.InpDDEnum.x0_param         : 0.0000000001})
+# # print(t_input.get_inputDDparamsFile(11, 20))
+# print(t_input.getText4file())

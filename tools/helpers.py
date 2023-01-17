@@ -6,8 +6,9 @@ Created on Jan 11, 2023
 import os
 import subprocess
 
-
-
+LINE_1 = "\n================================================================================\n"
+LINE_2 = "\n--------------------------------------------------------------------------------\n"
+ 
 def zipBUresults(folder, z,n,interaction, *args):
     """
     This method export BU_folder results and outputs into a .zip, adding an 
@@ -27,3 +28,16 @@ def zipBUresults(folder, z,n,interaction, *args):
     except BaseException as be:
         print("[ERROR] zipping of the BUresults cannot be done:: $",order)
         print(">>>", be.__class__.__name__, ":", be)
+
+
+def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
+    
+    header = ''.join([delimiter]*level)
+    for k, val in dictionary.items():
+        if isinstance(val, dict):
+            print(header+str(k)+': {')
+            prettyPrintDictionary(val, level + 1, delimiter)
+            print(header+'}')
+        else:
+            print(header+str(k)+':'+str(val))
+

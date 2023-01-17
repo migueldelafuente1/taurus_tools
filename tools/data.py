@@ -14,30 +14,35 @@ TODO:
 '''
 from collections import OrderedDict
 from datetime import datetime
-import numpy as np
 import os
 import shutil
+
+import numpy as np
+
 
 class _DataObjectBase:
     
     """ Abstract class with common methods """
-    output_filename_DEFAULT = 'aux_output'
+    DEFAULT_OUTPUT_FILENAME = 'aux_output.OUT'
     INPUT_FILENAME  = 'aux.INP'
     BU_folder       = 'BU_results'
     BU_fold_constr  = 'BU_results_constr'
-    export_list_results = 'export_resultTaurus.txt'
+    EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
     PROGRAM         = 'taurus_vap.exe'
     
     @classmethod
-    def setUpFolderBackUp(cls):
+    def setUpFolderBackUp(cls, new_export_list_filename=None):
         # Create new BU folder
         if not os.path.exists(cls.BU_folder):
             os.mkdir(cls.BU_folder)
         else:
             shutil.rmtree(cls.BU_folder)
             os.mkdir(cls.BU_folder)
-        if os.path.exists(cls.export_list_results):
-            os.remove(cls.export_list_results)
+        
+        if new_export_list_filename:
+            cls.EXPORT_LIST_RESULTS = new_export_list_filename.replace(' ', '')
+        if os.path.exists(cls.EXPORT_LIST_RESULTS):
+            os.remove(cls.EXPORT_LIST_RESULTS)
         
     def _getValues(self, line, head_rm = ''):
         line = line.replace(head_rm, '').split()
@@ -470,11 +475,6 @@ class DataTaurus(_DataObjectBase):
     __message_not_conv  = 'Maximum number of iterations reached'
     __endIteration_message = 'TIME_END:' # 'Label of the state: '
     
-    # output_filename_DEFAULT = 'aux_output'
-    # INPUT_FILENAME  = 'aux.INP'
-    # BU_folder       = 'BU_results'
-    # BU_fold_constr  = 'BU_results_constr'
-    # export_list_results = 'export_resultTaurus.txt'
     PROGRAM         = 'Taurus'
     
     FMT_DT = '%Y/%m/%d %H_%M_%S.%f'
@@ -883,8 +883,60 @@ class DataTaurus(_DataObjectBase):
         
         return dict_
     
+
+
+class _DataTaurusContainer1D:
     
+    """
+    This object store the results as stack, to be instanced on executor 
+    classmethod to keep dataTaurus results in order
+    """
+    EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
+    
+    def __init__(self):
+        self._results = []
+    
+    def reset(self):
+        print(f" * Reseting _DataTaurusContainer1D, deleted [{len(self._results)}] elements")
+        self._results = []
+    
+    def append(self, result):
+        
+        assert isinstance(result, DataTaurus), f"invalid result type given: {result.__class__}"
+        
+        self._results.append(result)
+    
+    
+    def get(self, index_):
+        """ get the i-th element """
+        if len(self._results) >= index_:
+            return None
+        return self._results[index_]
+    
+    def set(self, index_, result):
+        """ get the i-th element """
+        assert isinstance(result, DataTaurus), f"invalid result type given: {result.__class__}"
+        
+        if len(self._results) >= index_:
+            print(f"[WARNING] index [{index_}] > dimension of list [{len(self._results)}], appending")
+            self.append(result)
+        else:
+            self._results[index_] = result
             
+    
+    def dump(self, output_file=None ):
+        """
+        export results in file
+        """
+        txt_ = '\n'.join([res.getAttributesDictLike for res in self._results]) 
+        
+        if output_file == None:
+            output_file = self.EXPORT_LIST_RESULTS
+        
+        with open(output_file, 'w+') as f:
+            f.write(txt_)
+    
+
 
 if __name__ == '__main__':
     #
