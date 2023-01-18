@@ -5,6 +5,8 @@ Created on Jan 10, 2023
 '''
 from tools.executors import ExeTaurus1D_DeformQ20, ExecutionException
 from tools.inputs import InputTaurus
+from tools.data import DataTaurus
+from datetime import datetime
 
 
 
@@ -27,18 +29,29 @@ def run_q20_surface(nucleus, q_min=-10, q_max=10, N_max=50):
             InputTaurus.ArgsEnum.beta_schm: 0, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
         }
-                
+        
+        input_args_onrun = {
+            InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.seed: 1,
+            InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.grad_type: 1,
+            InputTaurus.ArgsEnum.grad_tol : 0.01,
+        }
+        
+        ExeTaurus1D_DeformQ20.EXPORT_LIST_RESULTS = f"export_TESq20_z{z}n{n}_{interaction}.txt"
+        
         try:
             exe_ = ExeTaurus1D_DeformQ20(z, n, interaction)
             exe_.setInputCalculationArguments(**input_args_start)
             exe_.defineDeformationRange(q_min,  q_max, N_max)
             exe_.setUp()
-            exe_.setUpExecution()
+            exe_.setUpExecution(**input_args_onrun)
             exe_.run()
-            # exe_.tearDown()
+            exe_.gobalTearDown()
         except ExecutionException as e:
             print(e)
-
+        
+    print("End run_q20_surface: ", datetime.now().time())
 
 if __name__ == '__main__':
     
