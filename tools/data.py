@@ -428,7 +428,7 @@ class EigenbasisData(_DataObjectBase):
 #   RESULTS FROM TAURUS 
 #===============================================================================
 class DataTaurus(_DataObjectBase):
-    
+        
     class Enum: ## line header to read the output file
         Number_of_protons  = 'Number of protons '
         Number_of_neutrons = 'Number of neutrons'
@@ -468,7 +468,19 @@ class DataTaurus(_DataObjectBase):
         HO_hbar = 'hbar*omega (MeV)  '
         HO_len  = 'Osc. length b (fm)'
         dd_evol = ' *Top H2'
+    
+    class DatFileExportEnum:
+        """ filename of the possible .dat files from Taurus """
+        canonicalbasis     = 'canonicalbasis'
+        occupation_numbers = 'occupation_numbers'
+        eigenbasis_h       = 'eigenbasis_h'
+        eigenbasis_H11     = 'eigenbasis_H11'
+        spatial_density_R  = 'spatial_density_R'
+        spatial_density_XYZ = 'spatial_density_XYZ'
+        spatial_density_RThetaPhi = 'spatial_density_RThetaPhi'
         
+        
+    
     __message_startiter = '                   ITERATIVE MINIMIZATION'
     __message_enditer   = '               QUASIPARTICLE STATE PROPERTIES'
     __message_converged = 'Calculation converged'
@@ -929,7 +941,7 @@ class _DataTaurusContainer1D:
         print(f" * Reseting _DataTaurusContainer1D, deleted [{len(self._results)}] elements")
         self._results = []
     
-    def append(self, result):
+    def append(self, result : DataTaurus):
         
         assert isinstance(result, DataTaurus), f"invalid result type given: {result.__class__}"
         

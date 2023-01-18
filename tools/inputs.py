@@ -537,7 +537,7 @@ eval full Val.Space (0,1)   = 1
         previous modifications.
         """
         for constr, value in constraints.items(): 
-            assert hasattr(self.ArgsEnum, constr), f"Invalid constraint. Got [{constr}]"
+            assert hasattr(self.ConstrEnum, constr), f"Invalid constraint. Got [{constr}]"
             
             if isinstance(value, tuple) and len(value)==2:
                 assert constr.startswith('b') or (constr==self.ArgsEnum.sqrt_r2),\

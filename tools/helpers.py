@@ -29,7 +29,6 @@ def zipBUresults(folder, z,n,interaction, *args):
         print("[ERROR] zipping of the BUresults cannot be done:: $",order)
         print(">>>", be.__class__.__name__, ":", be)
 
-
 def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
     
     header = ''.join([delimiter]*level)
