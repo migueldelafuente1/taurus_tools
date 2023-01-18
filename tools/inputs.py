@@ -8,6 +8,7 @@ Module to generate input files for programs.
 '''
 import numpy as np
 from copy import deepcopy, copy
+import os
 
 class Enum(object):
     @classmethod
@@ -26,7 +27,7 @@ class _Input(object):
     Abstract class to define inputs for a program
     '''
     _TEMPLATE = """"""
-    DEFAULT_INPUT_FILENAME  = 'aux.txt'
+    DEFAULT_INPUT_FILENAME  = 'aux.INP'
     
     class ArgsEnum:
         pass
@@ -51,6 +52,10 @@ class _Input(object):
 
 class InputException(BaseException):
     pass
+
+if os.getcwd().startswith('C:'):
+    ## change the 
+    _Input.DEFAULT_INPUT_FILENAME = 'aux_input.INP'
 
 class InputTaurus(_Input):
     

@@ -429,7 +429,7 @@ class EigenbasisData(_DataObjectBase):
 #===============================================================================
 class DataTaurus(_DataObjectBase):
     
-    class Enum:
+    class Enum: ## line header to read the output file
         Number_of_protons  = 'Number of protons '
         Number_of_neutrons = 'Number of neutrons'
         One_body = 'One-body'
@@ -479,6 +479,32 @@ class DataTaurus(_DataObjectBase):
     
     FMT_DT = '%Y/%m/%d %H_%M_%S.%f'
     
+    @classmethod
+    def getDataVariable(cls, variable : str, beta_schm : int):
+        """ 
+        Method to get the DataTaurus ATTRIBUTE NAME for a Input variable, 
+            i.e: InputTaurus.b20 -> DataTaurus.b20_isoscalar
+        """
+        if variable.startswith('b'):
+            if   beta_schm == 0:
+                return f'q{variable[1:]}_isoscalar'
+            elif beta_schm == 1:
+                return f'{variable}_isoscalar'
+            elif beta_schm == 2:
+                if variable   == 'b20':
+                    return 'beta_isoscalar'
+                elif variable == 'b22':
+                    return 'gamma_isoscalar'
+                else: 
+                    raise Exception("for beta_schm == 2, only can be set [b20=beta, b22=gamma]")
+            else:
+                raise Exception("beta_schm <= 2, check")
+        elif variable == 'sqrt_r2':
+            return 'r_isoscalar'
+        elif (variable.startswith('P_T') or variable in ('Jx', 'Jy', 'Jz')):
+            return variable
+        
+    
     def __init__(self, z, n, filename, empty_data=False):
         
         self.z = z
@@ -523,6 +549,7 @@ class DataTaurus(_DataObjectBase):
         self.beta_isovector  = None
         self.gamma_p = None
         self.gamma_n = None
+        self.gamma_isoscalar = None
         self.gamma_isovector = None
         
         self.b10_p = None
@@ -586,6 +613,7 @@ class DataTaurus(_DataObjectBase):
         self.r_p  = None
         self.r_n  = None
         self.r_isoscalar = None
+        self.r_isovector = None
         self.r_charge = None
         
         self.Jx     = None
@@ -689,7 +717,8 @@ class DataTaurus(_DataObjectBase):
             elif self.Enum.Rmed in line:
                 vals = self._getValues(line, self.Enum.Rmed)
                 self.r_p, self.r_n = vals[0], vals[1]
-                self.r_isoscalar, self.r_charge = vals[2], vals[4]
+                self.r_isoscalar, self.r_isovector = vals[2], vals[3]
+                self.r_charge = vals[4]
             elif line.startswith('Beta'):
                 self._getBetaDeformations(line)
             elif line.startswith('Q_'):
@@ -697,8 +726,8 @@ class DataTaurus(_DataObjectBase):
             elif self.Enum.Gamma in line:
                 vals = self._getValues(line, self.Enum.Gamma)
                 self._roundGamma0(vals)
-                self.gamma_p, self.gamma_n       = vals[0], vals[1]
-                self.gamma, self.gamma_isovector = vals[2], vals[3]
+                self.gamma_p, self.gamma_n                 = vals[0], vals[1]
+                self.gamma_isoscalar, self.gamma_isovector = vals[2], vals[3]
             if True in (p in line for p in _energies):
                 self._getEnergies(line)
             if True in (d in line for d in 
