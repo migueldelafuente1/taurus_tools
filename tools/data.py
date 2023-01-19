@@ -18,7 +18,11 @@ import os
 import shutil
 
 import numpy as np
+from tools.helpers import Enum, ValenceSpacesDict_l_ge10_byM, readAntoine
+from copy import copy
 
+class DataObjectException(BaseException):
+    pass
 
 class _DataObjectBase:
     
@@ -29,6 +33,10 @@ class _DataObjectBase:
     BU_fold_constr  = 'BU_results_constr'
     EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
     PROGRAM         = 'taurus_vap.exe'
+    
+    class HeaderEnum(Enum):
+        """ Enumerate for the line headers of every argument to process"""
+        pass
     
     @classmethod
     def setUpFolderBackUp(cls, new_export_list_filename=None):
@@ -70,7 +78,7 @@ class EvolTaurus(_DataObjectBase):
             Spatial Density evolution
             H2Top values evolution
     '''
-    class Enum:
+    class HeaderEnum(Enum):
         Grad_Type = 'Type of gradient             '
         Grad_Tol  = 'Tolerance for gradient       '
         Grad_eta  = 'Parameter eta for gradient   '
@@ -232,32 +240,32 @@ class EvolTaurus(_DataObjectBase):
     
     def _read_HO_prop(self, line):
         
-        if   line.startswith(self.Enum.SP_dim):
-            self.sp_dim = int(self._getValues(line, self.Enum.SP_dim)[0])
-        elif line.startswith(self.Enum.MZmax):
-            self.MZmax  = int(self._getValues(line, self.Enum.MZmax )[0])
-        elif line.startswith(self.Enum.HO_hbar):
-            self.ho_hbaromega = self._getValues(line, self.Enum.HO_hbar)[0]
-        elif line.startswith(self.Enum.HO_len):
-            self.ho_b_length  = self._getValues(line, self.Enum.HO_len) [0]
-        elif line.startswith(self.Enum.SH_dim):
-            self.sh_dim = int(self._getValues(line, self.Enum.SH_dim)[0])
+        if   line.startswith(self.HeaderEnum.SP_dim):
+            self.sp_dim = int(self._getValues(line, self.HeaderEnum.SP_dim)[0])
+        elif line.startswith(self.HeaderEnum.MZmax):
+            self.MZmax  = int(self._getValues(line, self.HeaderEnum.MZmax )[0])
+        elif line.startswith(self.HeaderEnum.HO_hbar):
+            self.ho_hbaromega = self._getValues(line, self.HeaderEnum.HO_hbar)[0]
+        elif line.startswith(self.HeaderEnum.HO_len):
+            self.ho_b_length  = self._getValues(line, self.HeaderEnum.HO_len) [0]
+        elif line.startswith(self.HeaderEnum.SH_dim):
+            self.sh_dim = int(self._getValues(line, self.HeaderEnum.SH_dim)[0])
             self._read_inp = False
     
     def _read_gradient_prop(self, line):
         
-        if   line.startswith(self.Enum.Grad_Type):
-            self.grad_type = int(self._getValues(line, self.Enum.Grad_Type)[0])
-        elif line.startswith(self.Enum.Grad_eta):
-            self.eta.append(self._getValues(line, self.Enum.Grad_eta)[0])
-        elif line.startswith(self.Enum.Grad_mu):
-            self.mu.append(self._getValues(line, self.Enum.Grad_mu)  [0])
-        elif line.startswith(self.Enum.Grad_Tol):
-            self.grad_tol = self._getValues(line, self.Enum.Grad_Tol)[0]
-        elif line.startswith(self.Enum.N_protons):
-            self.z = int(self._getValues(line, self.Enum.N_protons) [0])
-        elif line.startswith(self.Enum.N_neutrons):
-            self.n = int(self._getValues(line, self.Enum.N_neutrons)[0])
+        if   line.startswith(self.HeaderEnum.Grad_Type):
+            self.grad_type = int(self._getValues(line, self.HeaderEnum.Grad_Type)[0])
+        elif line.startswith(self.HeaderEnum.Grad_eta):
+            self.eta.append(self._getValues(line, self.HeaderEnum.Grad_eta)[0])
+        elif line.startswith(self.HeaderEnum.Grad_mu):
+            self.mu.append(self._getValues(line, self.HeaderEnum.Grad_mu)  [0])
+        elif line.startswith(self.HeaderEnum.Grad_Tol):
+            self.grad_tol = self._getValues(line, self.HeaderEnum.Grad_Tol)[0]
+        elif line.startswith(self.HeaderEnum.N_protons):
+            self.z = int(self._getValues(line, self.HeaderEnum.N_protons) [0])
+        elif line.startswith(self.HeaderEnum.N_neutrons):
+            self.n = int(self._getValues(line, self.HeaderEnum.N_neutrons)[0])
              
     def _processing_data_and_evolution(self, data_inp, data_evol, read_evol = True):
         
@@ -363,7 +371,7 @@ class EigenbasisData(_DataObjectBase):
     
     FILENAME_DEFAULT = 'canonicalbasis.dat'
     
-    class Enum:
+    class HeaderEnum(Enum):
         FermiProt = "Proton  fermi energy ="
         FermiNeut = "Neutron fermi energy ="
     
@@ -396,10 +404,10 @@ class EigenbasisData(_DataObjectBase):
             if len(line) == 0: 
                 continue
             if not _in_values:
-                if   line.startswith(self.Enum.FermiProt):
-                    self.fermi_energ_prot = self._getValues(line, self.Enum.FermiProt)
-                elif line.startswith(self.Enum.FermiNeut):
-                    self.fermi_energ_neut = self._getValues(line, self.Enum.FermiNeut)
+                if   line.startswith(self.HeaderEnum.FermiProt):
+                    self.fermi_energ_prot = self._getValues(line, self.HeaderEnum.FermiProt)
+                elif line.startswith(self.HeaderEnum.FermiNeut):
+                    self.fermi_energ_neut = self._getValues(line, self.HeaderEnum.FermiNeut)
                 # elif line.startswith('#      Z        N'): 
                 #     pass
                 elif line.startswith('---'):
@@ -429,7 +437,7 @@ class EigenbasisData(_DataObjectBase):
 #===============================================================================
 class DataTaurus(_DataObjectBase):
         
-    class Enum: ## line header to read the output file
+    class HeaderEnum(Enum): ## line header to read the output file
         Number_of_protons  = 'Number of protons '
         Number_of_neutrons = 'Number of neutrons'
         One_body = 'One-body'
@@ -469,7 +477,7 @@ class DataTaurus(_DataObjectBase):
         HO_len  = 'Osc. length b (fm)'
         dd_evol = ' *Top H2'
     
-    class DatFileExportEnum:
+    class DatFileExportEnum(Enum):
         """ filename of the possible .dat files from Taurus """
         canonicalbasis     = 'canonicalbasis'
         occupation_numbers = 'occupation_numbers'
@@ -487,7 +495,7 @@ class DataTaurus(_DataObjectBase):
     __message_not_conv  = 'Maximum number of iterations reached'
     __endIteration_message = 'TIME_END:' # 'Label of the state: '
     
-    PROGRAM         = 'Taurus'
+    PROGRAM         = 'taurus_vap.exe'
     
     FMT_DT = '%Y/%m/%d %H_%M_%S.%f'
     
@@ -535,7 +543,7 @@ class DataTaurus(_DataObjectBase):
         self.var_p = None
         self.var_n = None
         
-        self.kin   = None 
+        self.kin   = None
         self.kin_p = None
         self.kin_n = None
         self.hf    = None
@@ -557,7 +565,7 @@ class DataTaurus(_DataObjectBase):
         
         self.beta_p  = None
         self.beta_n  = None
-        self.beta_isoscalar = None
+        self.beta_isoscalar  = None
         self.beta_isovector  = None
         self.gamma_p = None
         self.gamma_n = None
@@ -645,7 +653,7 @@ class DataTaurus(_DataObjectBase):
         self.P_T1m1_J00 = None
         self.P_T1p1_J00 = None
         
-        self.date_start      = None 
+        self.date_start      = None
         self.date_start_iter = None
         self.date_end_iter   = None
         self.iter_max  = None
@@ -676,16 +684,16 @@ class DataTaurus(_DataObjectBase):
     
     def _read_HO_prop(self, line):
         
-        if   line.startswith(self.Enum.SP_dim):
-            self.sp_dim = int(self._getValues(line, self.Enum.SP_dim)[0])
-        elif line.startswith(self.Enum.MZmax):
-            self.MZmax  = int(self._getValues(line, self.Enum.MZmax )[0])
-        elif line.startswith(self.Enum.HO_hbar):
-            self.ho_hbaromega = self._getValues(line, self.Enum.HO_hbar)[0]
-        elif line.startswith(self.Enum.HO_len):
-            self.ho_b_length  = self._getValues(line, self.Enum.HO_len) [0]
-        elif line.startswith(self.Enum.SH_dim):
-            self.sh_dim = int(self._getValues(line, self.Enum.SH_dim)[0])
+        if   line.startswith(self.HeaderEnum.SP_dim):
+            self.sp_dim = int(self._getValues(line, self.HeaderEnum.SP_dim)[0])
+        elif line.startswith(self.HeaderEnum.MZmax):
+            self.MZmax  = int(self._getValues(line, self.HeaderEnum.MZmax )[0])
+        elif line.startswith(self.HeaderEnum.HO_hbar):
+            self.ho_hbaromega = self._getValues(line, self.HeaderEnum.HO_hbar)[0]
+        elif line.startswith(self.HeaderEnum.HO_len):
+            self.ho_b_length  = self._getValues(line, self.HeaderEnum.HO_len) [0]
+        elif line.startswith(self.HeaderEnum.SH_dim):
+            self.sh_dim = int(self._getValues(line, self.HeaderEnum.SH_dim)[0])
             self._read_inp = False
     
     def _processing_data_and_evolution(self, data_inp, data_evol):
@@ -715,8 +723,9 @@ class DataTaurus(_DataObjectBase):
             data_evol, data = data_evol.split(self.__message_enditer)
             data      = data.split('\n')
                     
-        _energies = (self.Enum.One_body, self.Enum.ph_part, self.Enum.pp_part,
-                     self.Enum.Two_body, self.Enum.Full_H)
+        _energies = (self.HeaderEnum.One_body, self.HeaderEnum.ph_part, 
+                     self.HeaderEnum.pp_part,  self.HeaderEnum.Two_body, 
+                     self.HeaderEnum.Full_H)
         
         self._read_inp   = True
         
@@ -726,8 +735,8 @@ class DataTaurus(_DataObjectBase):
             # print(line)
             if 'Number of' in line:
                 self._getNumberNucleons(line)
-            elif self.Enum.Rmed in line:
-                vals = self._getValues(line, self.Enum.Rmed)
+            elif self.HeaderEnum.Rmed in line:
+                vals = self._getValues(line, self.HeaderEnum.Rmed)
                 self.r_p, self.r_n = vals[0], vals[1]
                 self.r_isoscalar, self.r_isovector = vals[2], vals[3]
                 self.r_charge = vals[4]
@@ -735,85 +744,85 @@ class DataTaurus(_DataObjectBase):
                 self._getBetaDeformations(line)
             elif line.startswith('Q_'):
                 self._getQDeformations(line)
-            elif self.Enum.Gamma in line:
-                vals = self._getValues(line, self.Enum.Gamma)
+            elif self.HeaderEnum.Gamma in line:
+                vals = self._getValues(line, self.HeaderEnum.Gamma)
                 self._roundGamma0(vals)
                 self.gamma_p, self.gamma_n                 = vals[0], vals[1]
                 self.gamma_isoscalar, self.gamma_isovector = vals[2], vals[3]
             if True in (p in line for p in _energies):
                 self._getEnergies(line)
             if True in (d in line for d in 
-                        (self.Enum.Jx, self.Enum.Jy, self.Enum.Jz)):
+                        (self.HeaderEnum.Jx, self.HeaderEnum.Jy, self.HeaderEnum.Jz)):
                 self._getAngularMomentum(line)
-            if self.Enum.PairT0J1 in line or self.Enum.PairT1J0 in line:
+            if self.HeaderEnum.PairT0J1 in line or self.HeaderEnum.PairT1J0 in line:
                 self._getPairCoupling(line)
         
         # return dict([(e, float(val)) for e, val in energies.items()]), prop_fin
     
     def _getBetaDeformations(self, line):
         
-        if   self.Enum.Beta in line:
-            vals = self._getValues(line, self.Enum.Beta)
+        if   self.HeaderEnum.Beta in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta)
             self.beta_p = vals[0] 
             self.beta_n = vals[1]
             self.beta_isoscalar, self.beta_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_10 in line:
-            vals = self._getValues(line, self.Enum.Beta_10)
+        elif self.HeaderEnum.Beta_10 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_10)
             self.b10_p, self.b10_n  = vals[0], vals[1]
             self.b10_isoscalar, self.b10_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_11 in line:
-            vals = self._getValues(line, self.Enum.Beta_11)
+        elif self.HeaderEnum.Beta_11 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_11)
             self.b11_p, self.b11_n  = vals[0], vals[1]
             self.b11_isoscalar, self.b11_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_20 in line:
-            vals = self._getValues(line, self.Enum.Beta_20)
+        elif self.HeaderEnum.Beta_20 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_20)
             self.b20_p, self.b20_n  = vals[0], vals[1]
             self.b20_isoscalar, self.b20_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_22 in line:
-            vals = self._getValues(line, self.Enum.Beta_22)
+        elif self.HeaderEnum.Beta_22 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_22)
             self.b22_p, self.b22_n  = vals[0], vals[1]
             self.b22_isoscalar, self.b22_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_30 in line:
-            vals = self._getValues(line, self.Enum.Beta_30)
+        elif self.HeaderEnum.Beta_30 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_30)
             self.b30_p, self.b30_n  = vals[0], vals[1]
             self.b30_isoscalar, self.b30_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_32 in line:
-            vals = self._getValues(line, self.Enum.Beta_32)
+        elif self.HeaderEnum.Beta_32 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_32)
             self.b32_p, self.b32_n  = vals[0], vals[1]
             self.b32_isoscalar, self.b32_isovector = vals[2], vals[3]
-        elif self.Enum.Beta_40 in line:
-            vals = self._getValues(line, self.Enum.Beta_40)
+        elif self.HeaderEnum.Beta_40 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_40)
             self.b40_p, self.b40_n  = vals[0], vals[1]
             self.b40_isoscalar, self.b40_isovector = vals[2], vals[3]
     
     def _getQDeformations(self, line):
                
-        if self.Enum.Q_10 in line:
-            vals = self._getValues(line, self.Enum.Q_10)
+        if self.HeaderEnum.Q_10 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_10)
             self.q10_p, self.q10_n  = vals[0], vals[1]
             self.q10_isoscalar, self.q10_isovector = vals[2], vals[3]
-        elif self.Enum.Q_11 in line:
-            vals = self._getValues(line, self.Enum.Q_11)
+        elif self.HeaderEnum.Q_11 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_11)
             self.q11_p, self.q11_n  = vals[0], vals[1]
             self.q11_isoscalar, self.q11_isovector = vals[2], vals[3]
-        elif self.Enum.Q_20 in line:
-            vals = self._getValues(line, self.Enum.Q_20)
+        elif self.HeaderEnum.Q_20 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_20)
             self.q20_p, self.q20_n  = vals[0], vals[1]
             self.q20_isoscalar, self.q20_isovector = vals[2], vals[3]
-        elif self.Enum.Q_22 in line:
-            vals = self._getValues(line, self.Enum.Q_22)
+        elif self.HeaderEnum.Q_22 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_22)
             self.q22_p, self.q22_n  = vals[0], vals[1]
             self.q22_isoscalar, self.q22_isovector = vals[2], vals[3]
-        elif self.Enum.Q_30 in line:
-            vals = self._getValues(line, self.Enum.Q_30)
+        elif self.HeaderEnum.Q_30 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_30)
             self.q30_p, self.q30_n  = vals[0], vals[1]
             self.q30_isoscalar, self.q30_isovector = vals[2], vals[3]
-        elif self.Enum.Q_32 in line:
-            vals = self._getValues(line, self.Enum.Q_32)
+        elif self.HeaderEnum.Q_32 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_32)
             self.q32_p, self.q32_n  = vals[0], vals[1]
             self.q32_isoscalar, self.q32_isovector = vals[2], vals[3]
-        elif self.Enum.Q_40 in line:
-            vals = self._getValues(line, self.Enum.Q_40)
+        elif self.HeaderEnum.Q_40 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_40)
             self.q40_p, self.q40_n  = vals[0], vals[1]
             self.q40_isoscalar, self.q40_isovector = vals[2], vals[3]
         #print("deform results :: [{}]".format(vals))
@@ -823,33 +832,33 @@ class DataTaurus(_DataObjectBase):
             vals[2] = 0.0
     
     def _getEnergies(self, line):
-        if self.Enum.One_body in line:
-            vals = self._getValues(line, self.Enum.One_body)
+        if self.HeaderEnum.One_body in line:
+            vals = self._getValues(line, self.HeaderEnum.One_body)
             self.kin_p, self.kin_n, self.kin = vals[0], vals[1], vals[2]
         else:
-            if   self.Enum.ph_part in line:
-                vals = self._getValues(line, self.Enum.ph_part)
+            if   self.HeaderEnum.ph_part in line:
+                vals = self._getValues(line, self.HeaderEnum.ph_part)
                 self.hf_pp, self.hf_nn = vals[0], vals[1]
                 self.hf_pn, self.hf    = vals[2], vals[3]
-            elif self.Enum.pp_part in line:
-                vals = self._getValues(line, self.Enum.pp_part)
+            elif self.HeaderEnum.pp_part in line:
+                vals = self._getValues(line, self.HeaderEnum.pp_part)
                 self.pair_pp, self.pair_nn = vals[0], vals[1]
                 self.pair_pn, self.pair    = vals[2], vals[3]
-            elif self.Enum.Two_body in line:
-                vals = self._getValues(line, self.Enum.Two_body)
+            elif self.HeaderEnum.Two_body in line:
+                vals = self._getValues(line, self.HeaderEnum.Two_body)
                 self.V_2B_pp, self.V_2B_nn = vals[0], vals[1]
                 self.V_2B_pn, self.V_2B    = vals[2], vals[3]
-            elif self.Enum.Full_H in line:
-                vals = self._getValues(line, self.Enum.Full_H)
+            elif self.HeaderEnum.Full_H in line:
+                vals = self._getValues(line, self.HeaderEnum.Full_H)
                 self.E_HFB_pp, self.E_HFB_nn = vals[0], vals[1]
                 self.E_HFB_pn, self.E_HFB    = vals[2], vals[3]
                 
     def _getNumberNucleons(self, line):
-        if self.Enum.Number_of_protons in line:
-            vals = self._getValues(line, self.Enum.Number_of_protons)
+        if self.HeaderEnum.Number_of_protons in line:
+            vals = self._getValues(line, self.HeaderEnum.Number_of_protons)
             self.proton_numb, self.var_p = vals[0], vals[1]
-        elif self.Enum.Number_of_neutrons in line:
-            vals = self._getValues(line, self.Enum.Number_of_neutrons)
+        elif self.HeaderEnum.Number_of_neutrons in line:
+            vals = self._getValues(line, self.HeaderEnum.Number_of_neutrons)
             self.neutron_num, self.var_n = vals[0], vals[1]
     
     def _getAngularMomentum(self, line):
@@ -858,21 +867,21 @@ class DataTaurus(_DataObjectBase):
         J_id = line[:7]
         line = line[6:]
         vals = self._getValues(line) 
-        if self.Enum.Jx in J_id:
+        if self.HeaderEnum.Jx in J_id:
             self.Jx, self.Jx_2, self.Jx_var = vals[0], vals[1], vals[2]
-        elif self.Enum.Jy in J_id:
+        elif self.HeaderEnum.Jy in J_id:
             self.Jy, self.Jy_2, self.Jy_var = vals[0], vals[1], vals[2]
-        elif self.Enum.Jz in J_id:
+        elif self.HeaderEnum.Jz in J_id:
             self.Jz, self.Jz_2, self.Jz_var = vals[0], vals[1], vals[2]
         
     def _getPairCoupling(self, line):
         
-        if self.Enum.PairT0J1 in line:
-            vals = self._getValues(line, self.Enum.PairT0J1)
+        if self.HeaderEnum.PairT0J1 in line:
+            vals = self._getValues(line, self.HeaderEnum.PairT0J1)
             self.P_T00_J10 = vals[1]
             self.P_T00_J1m1, self.P_T00_J1p1 = vals[0], vals[2]
-        elif self.Enum.PairT1J0 in line:
-            vals = self._getValues(line, self.Enum.PairT1J0)
+        elif self.HeaderEnum.PairT1J0 in line:
+            vals = self._getValues(line, self.HeaderEnum.PairT1J0)
             self.P_T10_J00 = vals[1]
             self.P_T1m1_J00, self.P_T1p1_J00 = vals[0], vals[2]            
     
@@ -978,12 +987,279 @@ class _DataTaurusContainer1D:
             f.write(txt_)
     
 
+class DataAxial(DataTaurus):
+    
+    """
+    overwrite methods from DataTaurus by the original class from _legacy 
+    (cannot be used in legacy scripts)
+    """
+    
+    class HeaderEnum(Enum):
+        # Number_of_protons  = 'Number of protons '
+        # Number_of_neutrons = 'Number of neutrons'
+        N        = '      N    '
+        Var_N    = ' <N^2>  '
+        One_body = 'Kinetic'
+        ph_part  = 'HF Ener'
+        pp_part  = 'Pairing'
+        Coul_Dir = 'Coul Dir'
+        Rearrang = 'Rearrang'
+        Full_H   = 'HFB Ener'
+        Q_10     = 'Q10'
+        Q_20     = 'Q20'
+        Q_30     = 'Q30'
+        Q_40     = 'Q40'
+        # Beta_10  = 'Beta 2' # no hay
+        Beta_20  = 'Beta 2'
+        Beta_30  = 'Beta 3'
+        Beta_40  = 'Beta 4'
+        Rmed     = 'MS Rad'
+        DJx2     = 'DJx**2'
+        
+    __message_startiter = ' *                                                       I T E R A T I O N                                                        *'
+    __message_converged = 'P R O P E R L Y     F I N I S H E D'
+    __message_not_conv  = 'M A X I M U M   O F  I T E R A T I O N S   E X C E E D E D'
+    __message_enditer = '                                                  COLLECTIVE MASSES'
+    __endIteration_message = 'PROTON                NEUTRON                TOTAL'
+    __endSummary        = 'EROT'
+    
+    ## update of the class exporting variables
+    DEFAULT_OUTPUT_FILENAME = 'aux_output'
+    INPUT_FILENAME  = 'aux.INP'
+    BU_folder       = 'BU_results_Ax'
+    BU_fold_constr  = 'BU_results_constr_Ax'
+    EXPORT_LIST_RESULTS = 'export_resultAxial.txt'
+    PROGRAM         = 'HFBAxial'
+          
+    def __init__(self, z, n, filename, empty_data=False):
+        
+        DataTaurus.__init__(self, z, n, filename, empty_data=True)
+        """
+        Copy the attributes for completion and then remove or reset the values
+        available in an axial calculation.
+        """
+        for attr_ in filter( lambda x: not x.startswith('_'), copy(self.__dict__)):
+            if attr_.endswith('_pn') or '_isovector' in attr_:
+                delattr(self, attr_)
+            elif attr_.startswith('date_') or attr_.startswith('iter_'):
+                delattr(self, attr_)
+        
+        # Axial Preserves TR, Jz=Jz**2=0 and not Jy.
+        del self.Jx
+        del self.Jy
+        del self.Jx_2
+        del self.Jy_2
+        del self.Jy_var
+        self.Jz = 0.0
+        del self.Jz_2
+        del self.Jz_var
+        
+        self.P_T10_J00  = 0.0
+        self.P_T00_J10  = 0.0
+        self.P_T00_J1m1 = 0.0
+        self.P_T00_J1p1 = 0.0
+        
+        del self.time_per_iter
+        self._filename = filename
+        del self._evol_obj       
+        if not empty_data:
+            try:
+                self.get_results()
+            except Exception as e:
+                print(" (AC)>> EXCEPTION from AxialData Constructor >> self::")
+                print(self)
+                print(" (AC)>> exception:: ", e, "<<(AC)")
+                print(" (AC)<< EXCEPTION from AxialData Constructor <<<<<<<< ")
+    
+    # --------------------------------------------------------------------------
+    ## Ban DataTaurus invalid methods for this class by overwriting 
+    # --------------------------------------------------------------------------
+    
+    def _processing_data_and_evolution(self, data_inp, data_evol):
+        raise DataObjectException("Invalid Method for DataAxial")
+    def _getAngularMomentum(self, line):
+        raise DataObjectException("Invalid Method for DataAxial")
+    def _getNumberNucleons(self, line):
+        raise DataObjectException("Invalid Method for DataAxial")
+    def _getPairCoupling(self, line):
+        raise DataObjectException("Invalid Method for DataAxial")
+    
+    # --------------------------------------------------------------------------
+    def _getSingleSpaceDegenerations(self, MZmax):
+        """ 
+        Auxiliary method to get the valence space for the no-core calculation
+        """
+        sh_dim, sp_dim = 0, 0
+        for MZ in range(MZmax +1):
+            sp_sts = ValenceSpacesDict_l_ge10_byM[MZ]
+            sp_sts = [readAntoine(st) for st in sp_sts ]
+            
+            sh_dim += len(sp_sts)
+            sp_dim += sum(map(lambda x: x[2]+1 , sp_sts)) # deg = 2j + 1
+        
+        self.sp_dim = sh_dim
+        self.sh_dim = sp_dim * 2 # include z and n
+    
+    def _read_HO_prop(self, lines_header):
+        """
+        Get the properties of the HO basis, (not adapted for the axial osc. lengths)
+        """
+        b_values = None
+        MZmax    = None
+        for line in lines_header:
+            if 'MZMAX' in line:
+                line = line.strip().split()
+                MZmax = int(line[1])
+            elif 'OSC LENGTHS FROM DATA FILE' in line:
+                line = line.replace('OSC LENGTHS FROM DATA FILE', '').strip().split()
+                b_values = float(line[0]), float(line[1])
+                if b_values[0] != b_values[1]:
+                    print(f"[WARNING] DataAxial register has b_perp != b_z: {b_values}")
+        
+        
+        self.ho_b_length = b_values[0]
+        self.ho_hbaromega = 41.4246052127 / (self.ho_b_length**2) ## _Suhonen
+        self._getSingleSpaceDegenerations(MZmax)
+        self.MZmax       = MZmax
+    
+    def _getValues(self, line, head_rm = ''):
+        line = line.replace(head_rm, '').split()
+        if 'MeV' in line[-1] or 'fm' in line[-1]:
+            line.pop()
+        vals = [float(l) if not '*' in l else np.NaN for l in line]
+        return vals
+    
+    def get_results(self):    
+        with open(self._filename, 'r') as f:
+            data = f.read()
+            if self.__message_converged in data: 
+                self.properly_finished = True
+            elif not self.__endIteration_message in data:
+                self.broken_execution = True
+                return
+            f.seek(0) # rewind the file reading
+            
+            self._read_HO_prop(data.split(self.__message_startiter)[0].split('\n'))
+            data = f.readlines()
+        
+        _energies = (self.HeaderEnum.One_body, self.HeaderEnum.ph_part, 
+                     self.HeaderEnum.pp_part,  self.HeaderEnum.Full_H,   
+                     self.HeaderEnum.Coul_Dir)
+        
+        skip_evol = True
+        for line in data:
+            
+            if skip_evol and (not self.__endIteration_message in line):
+                continue
+            else: 
+                skip_evol = False
+                if self.__endSummary in line:
+                    break
+            
+            # print(line)
+            if   self.HeaderEnum.N in line:
+                vals = self._getValues(line, self.HeaderEnum.N)
+                self.proton_numb, self.neutron_num = vals[0], vals[1]
+            elif self.HeaderEnum.Var_N in line:
+                vals = self._getValues(line, self.HeaderEnum.Var_N)
+                self.var_p, self.var_n = vals[0], vals[1]
+            elif self.HeaderEnum.Rmed in line:
+                vals = self._getValues(line, self.HeaderEnum.Rmed)
+                self.r_p, self.r_n = vals[0], vals[1]
+                self.r_isoscalar, self.r_charge = vals[2], vals[0]
+            if True in (p in line for p in _energies):
+                self._getEnergies(line)
+            elif True in (d in line for d in ('Beta', 
+                                              self.HeaderEnum.Q_10, self.HeaderEnum.Q_20,
+                                              self.HeaderEnum.Q_30, self.HeaderEnum.Q_40)):
+                self._getBetaDeformations(line)
+            elif self.HeaderEnum.DJx2 in line:
+                self.Jx_var = self._getValues(line, self.HeaderEnum.DJx2)[2]
+        
+        #=======================================================================
+        # Elements conversion for _Taurus output
+        #=======================================================================
+        # add the ph_part = Gamma
+        self.V_2B_pp = self.hf_pp - self.kin_p 
+        self.V_2B_nn = self.hf_nn - self.kin_n
+        self.V_2B    = self.hf    - self.kin
+        
+        ## complete the beta 10 entrance since it is not in the output file
+        c1_ = 4 * np.pi / (3* (self.z + self.n))
+        # self.b10_n = (2*np.sqrt(3*np.pi)/(3*self.r_n)) * self.q10_n (old set up)
+        self.b10_n = self.q10_n * c1_ / self.r_n
+        self.b10_p = self.q10_p * c1_ / self.r_p
+        self.b10_isoscalar = self.q10_isoscalar * c1_ / self.r_isoscalar
+        
+        self.P_T1m1_J00 = self.var_p
+        self.P_T1p1_J00 = self.var_n
+        
+    
+    def _getBetaDeformations(self, line):
+        
+        if self.HeaderEnum.Beta_20 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_20)
+            self.b20_p, self.b20_n, self.b20_isoscalar = vals[0],vals[1],vals[2]
+            
+            self.beta_p, self.beta_n  = abs(vals[0]), abs(vals[1])
+            self.gamma_p = 0.0 if (vals[0] == abs(vals[0])) else 60.0
+            self.gamma_n = 0.0 if (vals[1] == abs(vals[1])) else 60.0
+            self.gamma_isoscalar = 0.0 if (vals[2] == abs(vals[2])) else 60.0            
+        
+        elif self.HeaderEnum.Beta_30 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_30)
+            self.b30_p, self.b30_n, self.b30_isoscalar = vals[0],vals[1],vals[2]
+        elif self.HeaderEnum.Beta_40 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_40)
+            self.b40_p, self.b40_n, self.b40_isoscalar = vals[0],vals[1],vals[2]
+        ## Quadrupole lines
+        elif self.HeaderEnum.Q_10 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_10)
+            self.q10_p, self.q10_n, self.q10_isoscalar = vals[0],vals[1],vals[2]
+            # MS Rad come after Q10, for b10 see in HeaderEnum.Rmed setting
+        elif self.HeaderEnum.Q_20 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_20)
+            self.q20_p, self.q20_n, self.q20_isoscalar = vals[0],vals[1],vals[2]
+        elif self.HeaderEnum.Q_30 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_30)
+            self.q30_p, self.q30_n, self.q30_isoscalar = vals[0],vals[1],vals[2]
+        elif self.HeaderEnum.Q_40 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_40)
+            self.q40_p, self.q40_n, self.q40_isoscalar = vals[0],vals[1],vals[2]
+    
+    def _getEnergies(self, line):
+        if self.HeaderEnum.One_body in line:
+            vals = self._getValues(line, self.HeaderEnum.One_body)
+            self.kin_p, self.kin_n, self.kin = vals[0], vals[1], vals[2]
+        else:
+            if   self.HeaderEnum.ph_part in line:
+                vals = self._getValues(line, self.HeaderEnum.ph_part)
+                self.hf_pp, self.hf_nn = vals[0], vals[1]
+                self.hf    = vals[2]
+            elif self.HeaderEnum.pp_part in line:
+                vals = self._getValues(line, self.HeaderEnum.pp_part)
+                self.pair_pp, self.pair_nn = vals[0], vals[1]
+                self.pair    = vals[2]
+            # elif self.HeaderEnum.Coul_Dir in line:
+            #     vals = self._getValues(line, self.HeaderEnum.Coul_Dir)
+            #     self.V_2B_pp, self.V_2B_nn = vals[0], vals[1]
+            #     self.V_2B    = vals[2]
+            elif self.HeaderEnum.Full_H in line:
+                vals = self._getValues(line, self.HeaderEnum.Full_H)
+                self.E_HFB_pp, self.E_HFB_nn = vals[0], vals[1]
+                self.E_HFB    = vals[2]    
+    
+    @property
+    def getAttributesDictLike(self):
+        return ', '.join([k+' : '+str(v) for k,v in self.__dict__.items()])
+    
+
 
 if __name__ == '__main__':
     #
     # res = DataTaurus(10, 10, 'aux_output_Z10N10_00_00')
-    # # res = DataTaurus(10, 10, 'aux_output_Z10N6_23')
-    # # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
+    # res = DataTaurus(10, 6, 'aux_output_Z10N6_23')
+    # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
     # with open(res.BU_fold_constr, 'w+') as f:
     #     f.write(res.getAttributesDictLike)
     
@@ -992,5 +1268,8 @@ if __name__ == '__main__':
     # res.printEvolutionFigure()
     # res = EvolTaurus('aux_output_Z10N6_broken')
     
-    res = EigenbasisData()
-    res.getResults()
+    # res = EigenbasisData()
+    # res.getResults()
+    res = DataAxial(10, 10, 'out_20Ne.OUT')
+    with open(res.EXPORT_LIST_RESULTS, 'w+') as f:
+        f.write(res.getAttributesDictLike)

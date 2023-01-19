@@ -8,7 +8,9 @@ import subprocess
 
 LINE_1 = "\n================================================================================\n"
 LINE_2 = "\n--------------------------------------------------------------------------------\n"
- 
+
+GITHUB_2BME_HTTP = "https://github.com/migueldelafuente1/2B_MatrixElements.git"
+
 def zipBUresults(folder, z,n,interaction, *args):
     """
     This method export BU_folder results and outputs into a .zip, adding an 
@@ -40,3 +42,61 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
         else:
             print(header+str(k)+':'+str(val))
 
+
+
+class Enum(object):
+    @classmethod
+    def members(cls):
+        import inspect
+        result = []
+        for i in inspect.getmembers(cls):
+            name = i[0]
+            value = i[1]
+            if not (name.startswith('_') or inspect.ismethod(value)):
+                result.append(value)
+        return result
+
+
+ValenceSpacesDict_l_ge10_byM = {
+0 : ('001',) ,
+1 : ('103', '101') ,
+2 : ('205', '203', '10001') ,
+3 : ('307', '305', '10103', '10101') ,
+4 : ('409', '407', '10205', '10203', '20001') ,
+5 : ('511', '509', '10307', '10305', '20103', '20101') ,
+6 : ('613', '611', '10409', '10407', '20205', '20203', '30001') ,
+7 : ('715', '713', '10511', '10509', '20307', '20305', '30103', '30101') ,
+8 : ('817', '815', '10613', '10611', '20409', '20407', '30205', '30203', '40001') ,
+9 : ('919', '917', '10715', '10713', '20511', '20509', '30307', '30305', '40103', '40101') ,
+10 : ('1021', '1019', '10817', '10815', '20613', '20611', '30409', '30407', '40205', '40203', '50001') ,
+11 : ('1123', '1121', '10919', '10917', '20715', '20713', '30511', '30509', '40307', '40305', '50103', '50101') ,
+12 : ('1225', '1223', '11021', '11019', '20817', '20815', '30613', '30611', '40409', '40407', '50205', '50203', '60001') ,
+13 : ('1327', '1325', '11123', '11121', '20919', '20917', '30715', '30713', '40511', '40509', '50307', '50305', '60103', '60101') ,
+14 : ('1429', '1427', '11225', '11223', '21021', '21019', '30817', '30815', '40613', '40611', '50409', '50407', '60205', '60203', '70001') ,
+15 : ('1531', '1529', '11327', '11325', '21123', '21121', '30919', '30917', '40715', '40713', '50511', '50509', '60307', '60305', '70103', '70101') ,
+    }
+
+
+def readAntoine(index, l_ge_10=False):
+    """     
+    returns the Quantum numbers from string Antoine's format:
+        :return: [n, l, j], None if invalid
+        
+    :l_ge_10 <bool> [default=False] format for l>10.
+    """
+    if isinstance(index, str):
+        index = int(index)
+    
+    if(index == 1):
+        return[0, 0, 1]
+    else:
+        if index % 2 == 1:
+            _n_division = 10000 if l_ge_10 else 1000
+            n = int((index)/_n_division)
+            l = int((index - (n*_n_division))/100)
+            j = int(index - (n*_n_division) - (l*100))# is 2j 
+            
+            if (n >= 0) and (l >= 0) and (j > 0):
+                return [n, l, j]
+    
+    raise Exception("Invalid state index for Antoine Format [{}]".format(index))
