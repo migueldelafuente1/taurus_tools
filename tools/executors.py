@@ -15,7 +15,6 @@ from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
 from tools.helpers import Enum, LINE_2, LINE_1, prettyPrintDictionary, \
     zipBUresults
-from future.builtins.misc import isinstance
 
 
 class ExecutionException(BaseException):

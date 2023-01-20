@@ -1256,7 +1256,7 @@ class DataAxial(DataTaurus):
 
 
 if __name__ == '__main__':
-    #
+    pass
     # res = DataTaurus(10, 10, 'aux_output_Z10N10_00_00')
     # res = DataTaurus(10, 6, 'aux_output_Z10N6_23')
     # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
@@ -1273,3 +1273,4 @@ if __name__ == '__main__':
     # res = DataAxial(10, 10, 'out_20Ne.OUT')
     # with open(res.EXPORT_LIST_RESULTS, 'w+') as f:
     #     f.write(res.getAttributesDictLike)
+    

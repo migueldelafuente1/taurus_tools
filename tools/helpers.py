@@ -106,15 +106,19 @@ def importAndCompile_taurus():
     
     try:
         order_ = "git clone {}".format(GITHUB_DENS_TAURUS_HTTP)
-
         e_ = subprocess.call(order_, shell=True)
         
-        order_ = "cd dens_taurus_vap"
-        e_ = subprocess.call(order_, shell=True)
+        os.chdir('dens_taurus_vap')
+        print("CWD:", os.getcwd())
+        ## compile and move executable to main directory
         order_ = "make"
         e_ = subprocess.call(order_, shell=True)
         order_ = "cp exe/taurus_vap.exe ../"
         e_ = subprocess.call(order_, shell=True)
+        
+        ## return to the main directory
+        os.chdir('..')
+        print("CWD:", os.getcwd())
         
     except Exception as e:
         print("Exception:", e.__class__.__name__)
