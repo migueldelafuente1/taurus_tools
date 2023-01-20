@@ -11,9 +11,11 @@ import subprocess
 import shutil
 import numpy as np
 from copy import deepcopy, copy
-from tools.inputs import Enum, InputTaurus
-from tools.data import DataTaurus
-from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, zipBUresults
+from tools.inputs import InputTaurus, InputAxial
+from tools.data import DataTaurus, DataAxial
+from tools.helpers import Enum, LINE_2, LINE_1, prettyPrintDictionary, \
+    zipBUresults
+from future.builtins.misc import isinstance
 
 
 class ExecutionException(BaseException):
@@ -36,6 +38,16 @@ class _Base1DTaurusExecutor(object):
     CONSTRAINT    : str = None # InputTaurus Variable to compute
     CONSTRAINT_DT : str = None # DataTaurus (key) Variable to compute
     
+    DTYPE = DataTaurus  # DataType for the outputs to manage
+    ITYPE = InputTaurus # Input type for the input management
+    
+    # @classmethod
+    # def __new__(cls, *args, **kwargs):
+    #     """
+    #     Reset the class attributes
+    #     """
+    #     pass
+    
     def setUp(self, *args, **kwargs):
         raise ExecutionException("Abstract method, implement parameters for the execution")
     
@@ -46,14 +58,14 @@ class _Base1DTaurusExecutor(object):
         self.n : int = n
         self.interaction : str = interaction
         
-        self.inputObj : InputTaurus  = None
+        self.inputObj  : self.ITYPE  = None
         self._DDparams : dict = None
         self._inputCalculationArgs : dict = None
-        self._1stSeedMinima : DataTaurus  = None
-        self._current_result: DataTaurus  = None ## TODO: might be useless, remove in that case
+        self._1stSeedMinima : self.DTYPE  = None
+        self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
         
         self.activeDDterm = True
-        self._output_filename = DataTaurus.DEFAULT_OUTPUT_FILENAME
+        self._output_filename = self.DTYPE.DEFAULT_OUTPUT_FILENAME
         
         self.deform_oblate   : list = []
         self.deform_prolate  : list = []
@@ -67,7 +79,7 @@ class _Base1DTaurusExecutor(object):
         self._base_wf_filename = None
         
         self.save_final_wf  = False # To set for the final wf to be copied as initial
-        self.force_converg  = False # 
+        self.force_converg  = False # requirement of convergence for wf copy
         
         self._results : list = [[], []] # oblate, prolate
         if kwargs:
@@ -81,9 +93,9 @@ class _Base1DTaurusExecutor(object):
         Tests for the method to verify the calculation.
         """
         if ((self.CONSTRAINT != None) and 
-            (self.CONSTRAINT not in InputTaurus.ConstrEnum.members()) ):
+            (self.CONSTRAINT not in self.ITYPE.ConstrEnum.members()) ):
             raise ExecutionException("Main constraint for the calculation is invalid"
-                f", given [{self.CONSTRAINT}] but must be in InputTaurus.ConstrEnum" )
+                f", given [{self.CONSTRAINT}] but must be in Input***.ConstrEnum" )
         
         if (self.ITERATIVE_METHOD != self.IterativeEnum.SINGLE_EVALUATION):
             if (self.CONSTRAINT == None): 
@@ -119,18 +131,18 @@ class _Base1DTaurusExecutor(object):
         if self.CONSTRAINT in input_kwargs.keys():
             raise ExecutionException("The executor constraint must not be set static, remove it.")
         
-        self.inputObj = InputTaurus(self.z, self.n, self.interaction)
+        self.inputObj = self.ITYPE(self.z, self.n, self.interaction)
         
         if core_calc:
             self.inputObj.setUpValenceSpaceCalculation()
         elif axial_calc:
             self.inputObj.setUpNoCoreAxialCalculation()
         
-        _check = [(hasattr(InputTaurus.ArgsEnum,k) or 
-                   hasattr(InputTaurus.ConstrEnum,k)) for k in input_kwargs.keys()]
+        _check = [(hasattr(self.ITYPE.ArgsEnum,k) or 
+                   hasattr(self.ITYPE.ConstrEnum,k)) for k in input_kwargs.keys()]
         if not all(_check):
             raise ExecutionException("One of the arguments is invalid for "
-                f"InputTaurus:\n {input_kwargs}")
+                f"{self.ITYPE.__name__}:\n {input_kwargs}")
         
         self.inputObj.setParameters(**input_kwargs)
         self._DDparams = self.inputObj._DD_PARAMS 
@@ -150,6 +162,7 @@ class _Base1DTaurusExecutor(object):
     def defineDeformationRange(self, min_, max_, N_steps):
         """
         Set the arrays for the deformations (prolate, oblate)
+        deformation boundaries are required, only SINGLE_EVALUATION ignores them
         """
         if self.ITERATIVE_METHOD == self.IterativeEnum.SINGLE_EVALUATION:
             print("Single evaluation process do not require this process, continue")
@@ -179,7 +192,16 @@ class _Base1DTaurusExecutor(object):
         Complete the deformations to the left(oblate) and right(prol)
         for the pairing minimum. dq defined by N_max, final total length= N_max+1
         """
-        # p_min = max(p_min, 0.0)    
+        if not (p_max and p_min) or N_max == 0:
+            ## consider as ITERATIVE_METHOD SINGLE EVALUATION (save the deform)
+            q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
+            self._deform_base = q0
+            self.deform_prolate = [q0, ]
+            self._deformations_map[1] = [(0, q0)]
+            self._results[1].append(self._1stSeedMinima)
+            return
+        
+        # p_min = max(p_min, 0.0)
         deform_oblate, deform_prolate = [], []
         dq = round((p_max - p_min) / N_max,  3)
         q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
@@ -207,29 +229,32 @@ class _Base1DTaurusExecutor(object):
                 deform_prolate.append(q)
             else:
                 deform_prolate.append(p_max)
-        
-        self._deform_base   = q0
-        self.deform_oblate  = deform_oblate
-        self.deform_prolate = deform_prolate
-        
-        self._deformations_map[0] = []
-        for k, val in enumerate(deform_oblate):
-            self._deformations_map[0].append( (-k - 1, val) )
-        self._deformations_map[1] = list(enumerate(deform_prolate))
+                
         self._results[1].append(self._1stSeedMinima)
+        self._deform_base   = q0
+        ## Variable step fill the 
+        if self.ITERATIVE_METHOD != self.IterativeEnum.VARIABLE_STEP:
+            self.deform_oblate  = deform_oblate
+            self.deform_prolate = deform_prolate
+            
+            self._deformations_map[0] = []
+            for k, val in enumerate(deform_oblate):
+                self._deformations_map[0].append( (-k - 1, val) )
+            self._deformations_map[1] = list(enumerate(deform_prolate))
+        
         
     
     def run(self):
         self._checkExecutorSettings()
         
         if self.ITERATIVE_METHOD == self.IterativeEnum.VARIABLE_STEP:
-            raise Exception("Option not implemented")
+            self._runVariableStep()
         else:
             print(" ** oblate:")
             for k, val in self._deformations_map[0]: # oblate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                self._results[0].append(self._executeTaurus())
+                self._results[0].append(self._executeProgram())
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backPropagationSweeping(oblate_part=True) 
             
@@ -238,7 +263,7 @@ class _Base1DTaurusExecutor(object):
                 ## exclude the first state since it is the original seed
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                self._results[1].append(self._executeTaurus())
+                self._results[1].append(self._executeProgram())
             
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backPropagationSweeping(oblate_part=False)
@@ -256,10 +281,10 @@ class _Base1DTaurusExecutor(object):
             for k, val in reversed(self._deformations_map[0]): # oblate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                res  : DataTaurus = self._executeTaurus() # reexecuting
+                res  : self.DTYPE = self._executeProgram() # reexecuting
                 
                 indx_ = -k-1
-                res0 : DataTaurus = self._results[0][indx_]
+                res0 : self.DTYPE = self._results[0][indx_]
                 if self._backPropagationAcceptanceCriteria(res, res0):
                     self._results[0][indx_] =  res
         else:
@@ -268,9 +293,9 @@ class _Base1DTaurusExecutor(object):
                 ## exclude the first state since it is the original seed
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                res  : DataTaurus = self._executeTaurus()
+                res  : self.DTYPE = self._executeProgram()
                 # indx_ = k - 1
-                res0 : DataTaurus = self._results[1][k]
+                res0 : self.DTYPE = self._results[1][k]
                 if self._backPropagationAcceptanceCriteria(res, res0):
                     self._results[1][k] =  res
     
@@ -304,9 +329,9 @@ class _Base1DTaurusExecutor(object):
             3 3 False False -20.0 -20.0      :  True
         
         """
-        if not isinstance(result, DataTaurus): 
+        if not isinstance(result,  self.DTYPE): 
             return False    # cannot accept a new broken result
-        if isinstance(prev_result, DataTaurus): 
+        if isinstance(prev_result, self.DTYPE): 
             if   result.properly_finished and prev_result.properly_finished:
                 return result.E_HFB <= prev_result.E_HFB
             elif prev_result.properly_finished and not result.properly_finished:
@@ -318,10 +343,126 @@ class _Base1DTaurusExecutor(object):
         else:
             return True
                 
+    def _energyDiffRejectionCriteria(self, curr_energ,  old_energ, old_e_diff, 
+                                     tol_factor=2.0):
+        """
+        Criteria for Variable Step to accept a variation in energy, avoiding 
+        the TES leaps, keeping the solution as far as possible in the same path. 
+        """
+        new_e_diff = curr_energ - old_energ
+        # change in direction of the derivative, reject if difference is > 25%
+        if new_e_diff * old_e_diff < 0: 
+            return abs(new_e_diff) > 2.0 * abs(old_e_diff)
+        # reject if new difference is tol_factor greater than the last one.
+        return abs(new_e_diff) > tol_factor * abs(old_e_diff)
     
-    def _auxWindows_executeTaurus(self, output_fn):
+    def _runVariableStep(self):
+        """
+        Variable step in the oblate and prolate part.
+        Fucntion inherit from legacy:
+            TODO: Not Tested!!
+        """
+        if self._1stSeedMinima == None or self._base_wf_filename == None:
+            raise ExecutionException("Running runVarialeStep without a first "
+                                     "converged result, stop. \n Suggestion:"
+                                     "Call setUpExecution")
+        
+        self.force_converg = True
+        
+        N_MAX   = 10 * self._N_steps
+        dq_base = abs(self._deform_lim_max - self._deform_lim_min)/self._N_steps 
+        ener_base     = float(self._1stSeedMinima.E_HFB)
+        dqDivisionMax = 3
+        
+        self.inputObj.seed = 1 
+        b20_base = self._deform_base
+        print(f" ** Variable Step Running start point {self.CONSTRAINT}={b20_base:7.3f}")
+        
+        for prolate, b_lim in enumerate((self._deform_lim_min, 
+                                         self._deform_lim_max)):
+            shutil.copy(self._base_wf_filename, 'initial_wf.bin')
+            
+            b20_i  = b20_base
+            energ  = ener_base
+            curr_energ = 10.0   #  first oversized value
+            e_diff     = 10.0   #  first oversized value
+            self._iter = 0
+            div = 0
+            
+            _whileCond = b20_i < b_lim if (prolate==1) else b20_i > b_lim
+            while _whileCond and (self._iter < N_MAX):
+                b20 = b20_i - ((-1)**(prolate)*(dq_base / (2**div)))
+                
+                self.inputObj.setConstraints(**{self.CONSTRAINT: b20})
+                
+                ## TODO: legacy_, here if the division were at the limit,
+                ## the script call to a convergence loop which reduced the eta/mu 
+                ## parameters: see _legacy.exe_q20pes_taurus._convergence_loop
+                # if div > 3:
+                #     res = _convergence_loop(kwargs, output_filename, b20,
+                #                             save_final_wf=False, setDD=False)
+                # else:
+                res = self._executeProgram(base_execution=False)
+                
+                ## Case 1: the program broke and the result is NULL
+                if res.broken_execution:
+                    self._iter += 1
+                    if div < dqDivisionMax:
+                        # reject(increase division)
+                        div += 1
+                        print("  * reducing b20 increment(1): [{}] Ei{:9.2f} - Eim1{:9.2f} ={:8.5f} > {:8.5f}"
+                              .format(div, curr_energ, energ, curr_energ-energ, e_diff))
+                        continue
+                    else:
+                        # accept and continue (DONT copy final function)
+                        # increase the step for valid or deformation precision overflow 
+                        div = max(0, div - 1) ## smoothly recover the dq
+                        e_diff = curr_energ - energ
+                        energ = curr_energ
+                        b20_i = b20
+                        print("  * Failed but continue: DIV{} DIFF{:10.4f} ENER{:10.4f} B{:5.3f}"
+                              .format(div, e_diff, energ, b20_i))
+                        continue # cannot evaluate next Step or save results
+                
+                ## Case 2: the program did'nt broke and the result has values
+                # take the E_HFB energy and compare the previous (acceptance criteria)
+                curr_energ = float(res.E_HFB)
+                self._iter += 1
+                if ((div < dqDivisionMax)
+                    and (self._energyDiffRejectionCriteria(curr_energ, energ, e_diff, 
+                                                           tol_factor=2.5)
+                         or (not res.properly_finished))):
+                    # reject(increase division)
+                    div += 1
+                    print("  * reducing b20 increment(2)[i{}]: [{}] Ei{:9.2f} - Eim1{:9.2f} ={:8.5f} >  ({:8.5f}, {:8.5f})"
+                          .format(self._iter,div, curr_energ, energ, curr_energ-energ, e_diff,
+                                  3.0*e_diff, 2.0*e_diff))
+                    continue
+                else:
+                    print("  * [OK] step accepted DIV:{} CE{:10.4} C.DIFF:{:10.4}"
+                          .format(div, curr_energ, curr_energ - energ))
+                    # accept and continue (copy final function)
+                    _e = subprocess.call('cp final_wf.bin initial_wf.bin', shell=True)
+                    # increase the step for valid or deformation precision overflow 
+                    div =  max(0, div - 1) ## smoothly recover the dq
+                    e_diff = curr_energ - energ
+                    energ = curr_energ
+                    b20_i = b20
+                    print("  * [OK] WF directly copied  [i{}]: DIV:{} DIFF{:10.4f} ENER{:10.4f} B{:5.3f}"
+                          .format(self._iter, div, e_diff, energ, b20_i))
+                
+                if prolate == 0: #grow in order [-.5, -.4, .., 0, ..., +.5]
+                    self._results[0].insert(0, res) 
+                    self._deformations_map[0].append((-len(self._results[0]), b20_i))
+                else:
+                    self._results[1].append(res)
+                    self._deformations_map[1].append((len(self._results[1]), b20_i))
+                    
+                self.exportResults(include_index_header=True)
+    
+    def _auxWindows_executeProgram(self, output_fn):
         """ 
-        Dummy method to test the scripts in Windows
+        Dummy method to test the scripts1d in Windows
         """
         # program = """ """
         # exec(program)
@@ -353,7 +494,7 @@ class _Base1DTaurusExecutor(object):
     
     def saveFinalWFprocedure(self, base_execution=False):
         """ 
-        Method to save wf and other objects from _executeTaurus outputs
+        Method to save wf and other objects from _executeProgram outputs
         Args
             :result: dataTaurus result of the calculation
             :base_execution: is to know if the execution were the starter minimum
@@ -373,18 +514,18 @@ class _Base1DTaurusExecutor(object):
             shutil.copy('final_wf.bin', 'initial_wf.bin')
         
         shutil.move(self._output_filename, 
-                    f"{DataTaurus.BU_folder}/res_{tail}.OUT")
+                    f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
         shutil.copy('final_wf.bin', 
-                    f"{DataTaurus.BU_folder}/seed_{tail}.bin")
+                    f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
         
         if self.SAVE_DAT_FILES:
             dat_files = filter(lambda x: x.endswith('.dat'), os.listdir())
             dat_files = filter(lambda x: x[:-4] in self.SAVE_DAT_FILES, dat_files)
             for _df in dat_files:
                 _df2 = _df.replace('.dat', f'_{tail}.dat')
-                shutil.copy(_df, f"{DataTaurus.BU_folder}/{_df2}")
+                shutil.copy(_df, f"{self.DTYPE.BU_folder}/{_df2}")
                 if not os.getcwd().startswith('C:'):
-                    shutil.move(_df, f"{DataTaurus.BU_folder}/{_df2}")
+                    shutil.move(_df, f"{self.DTYPE.BU_folder}/{_df2}")
         
         if os.getcwd().startswith('C:'): # Testing on windows
             f_delete = filter(lambda x: x.endswith('.dat') and not 'original' in x, 
@@ -395,7 +536,7 @@ class _Base1DTaurusExecutor(object):
             _e = subprocess.call('rm *.dat *.gut', shell=True)
     
     
-    def _executeTaurus(self, base_execution=False):
+    def _executeProgram(self, base_execution=False):
         """
         TODO: Main execution method, prints.
         Input object and its dd-parameters must be already setted at this point
@@ -403,11 +544,11 @@ class _Base1DTaurusExecutor(object):
             (configure options to save the wave function)
         """
         assert self.inputObj != None, ExecutionException(
-            "Trying to launch an execution without defined InputTaurus object.")
+            "Trying to launch an execution without defined Input object.")
         
         res = None
         
-        if self.activeDDterm:
+        if self.activeDDterm and isinstance(self.inputObj, DataTaurus):
             with open(self.inputObj.INPUT_DD_FILENAME, 'w+') as f:
                 f.write(self.inputObj.get_inputDDparamsFile())
         
@@ -419,13 +560,14 @@ class _Base1DTaurusExecutor(object):
             _out_fn = self._output_filename
             
             if os.getcwd().startswith('C:'): ## Testing purpose 
-                self._auxWindows_executeTaurus(_out_fn)
+                self._auxWindows_executeProgram(_out_fn)
             else:
-                _e = subprocess.call(f'./taurus_vap.exe < {_inp_fn} > {_out_fn}', 
+                order_ =f'./{self.inputObject.PROGRAM} < {_inp_fn} > {_out_fn}'
+                _e = subprocess.call(order_, 
                                      shell=True,
                                      timeout=43200) # 12 h timeout
             
-            res = DataTaurus(self.z, self.n, _out_fn)
+            res = self.DTYPE(self.z, self.n, _out_fn)
             self._current_result = deepcopy(res)
             
             self.saveFinalWFprocedure(base_execution) ## TODO: here??
@@ -511,7 +653,7 @@ class _Base1DTaurusExecutor(object):
                 line.append(res.getAttributesDictLike)
                 line = ' ## '.join(line)
                 
-                if part_ == 1: ## prolate (add to the final)
+                if part_ == 1: ## prolate_ (add to the final)
                     res2print.append(line)
                 else:
                     res2print.insert(0, line)
@@ -533,6 +675,12 @@ class _Base1DTaurusExecutor(object):
         raise ExecutionException("Abstract Method, implement me!")
 
 
+class _Base1DAxialExecutor(_Base1DTaurusExecutor):
+    
+    EXPORT_LIST_RESULTS = 'export_resultAxial.txt'
+    
+    DTYPE = DataAxial  # DataType for the outputs to manage
+    ITYPE = InputAxial # Input type for the input management
 
 #===============================================================================
 #
@@ -549,43 +697,40 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                                                beta_schm = 0)
     
     EXPORT_LIST_RESULTS = 'export_TESq20'
-    
+        
     def setUp(self):
         """
         set up: 
             * back up folder for results
             * dumping filename
         """
-        
         self._DDparams = self.inputObj._DD_PARAMS
-        DataTaurus.BU_folder = f'BU_folder_z{self.z}n{self.n}'
-        DataTaurus.setUpFolderBackUp()
-        self.SAVE_DAT_FILES = [DataTaurus.DatFileExportEnum.canonicalbasis,]
+        self.DTYPE.BU_folder = f'BU_folder_z{self.z}n{self.n}'
+        self.DTYPE.setUpFolderBackUp()
         
-    
     def setUpExecution(self, *args, **kwargs):
         """
         base solution pre-convergence.
-            to change after the execution, put by InputTaurus.*Enum new values
+        *   to change after the execution, put by InputTaurus.*Enum new values 
+            as keyword arguments.
         """
         
         self.calculationParameters
         
-        ## TODO: see convergece or force convergence to repeat the result or 
-        ## save the aproxximation, set deform_bas
         res = None
         self._preconvergence_steps = 0
         self.printTaurusResult(None, print_head=True)
         while not self._preconvergenceAccepted(res):
-            res = self._executeTaurus(base_execution=True)
+            res = self._executeProgram(base_execution=True)
         
+        ## negative values might be obtained        
         self._setDeformationFromMinimum(self._deform_lim_min, 
                                         self._deform_lim_max, self._N_steps)
         
         
-        _new_input_args = dict(filter(lambda x: x[0] in InputTaurus.ArgsEnum.members(), 
+        _new_input_args = dict(filter(lambda x: x[0] in self.ITYPE.ArgsEnum.members(), 
                                       kwargs.items() ))
-        _new_input_cons = dict(filter(lambda x: x[0] in InputTaurus.ConstrEnum.members(), 
+        _new_input_cons = dict(filter(lambda x: x[0] in self.ITYPE.ConstrEnum.members(), 
                                       kwargs.items() ))
         self.inputObj.setParameters(**_new_input_args, **_new_input_cons)
         
@@ -637,13 +782,38 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
 
 
+class ExeAxial1D_DeformQ20(ExeTaurus1D_DeformQ20):
+    
+    CONSTRAINT    = InputAxial.ConstrEnum.b20
+    CONSTRAINT_DT = DataAxial .getDataVariable(InputAxial.ConstrEnum.b20,
+                                               beta_schm = 0)
+    EXPORT_LIST_RESULTS = 'exportAx_TESq20'
+    
+    EXPORT_LIST_RESULTS = 'export_resultAxial.txt'
+    
+    DTYPE = DataAxial  # DataType for the outputs to manage
+    ITYPE = InputAxial # Input type for the input management
+
+
+
 class ExeTaurus1D_DeformB20(ExeTaurus1D_DeformQ20):
     
     CONSTRAINT    = InputTaurus.ConstrEnum.b20
     CONSTRAINT_DT = DataTaurus.getDataVariable(InputTaurus.ConstrEnum.b20,
                                                beta_schm = 1)
-    EXPORT_LIST_RESULTS = 'export_TESq20'
+    EXPORT_LIST_RESULTS = 'export_TESb20'
     
+class ExeAxial1D_DeformB20(ExeTaurus1D_DeformB20):
+    
+    CONSTRAINT    = InputAxial.ConstrEnum.b20
+    CONSTRAINT_DT = DataAxial .getDataVariable(InputAxial.ConstrEnum.b20,
+                                               beta_schm = 1)
+    EXPORT_LIST_RESULTS = 'exportAx_TESb20'
+    
+    EXPORT_LIST_RESULTS = 'export_resultAxial.txt'
+    
+    DTYPE = DataAxial  # DataType for the outputs to manage
+    ITYPE = InputAxial # Input type for the input management
 
 #===============================================================================
 #
@@ -651,3 +821,79 @@ class ExeTaurus1D_DeformB20(ExeTaurus1D_DeformQ20):
 #
 #===============================================================================
 
+class ExeTaurus1D_AngMomentum(ExeTaurus1D_DeformB20):
+    
+    """
+    Evaluate <J_i> energy surfaces, Require setting the constraint via 
+    classmethod setPairConstraint
+    
+    (since it contains all same steps than ExeTaurus1D_DeformB20, we inherit it)
+    """
+    
+    ITERATIVE_METHOD = _Base1DTaurusExecutor.IterativeEnum.EVEN_STEP_SWEEPING
+    
+    CONSTRAINT    = None
+    CONSTRAINT_DT = None
+    
+    EXPORT_LIST_RESULTS = 'export_TES_J'
+    
+    @classmethod
+    def setAngularMomentumConstraint(cls, j_constr):
+        """
+        launch before the program to set the pairing constraint 
+        (unset to prompt an exception to avoid default constraint set up)
+        """
+        assert j_constr not in InputTaurus.ConstrEnum.members(), \
+            ExecutionException("Constraint must be in DataTaurus.ConstrEnum")
+        assert j_constr in (InputTaurus.ConstrEnum.Jx, 
+                            InputTaurus.ConstrEnum.Jy, 
+                            InputTaurus.ConstrEnum.Jz), \
+            ExecutionException("must give Jx, Jy or Jz as constraint")
+        
+        cls.CONSTRAINT    = j_constr
+        cls.CONSTRAINT_DT = DataTaurus.getDataVariable(j_constr, beta_schm=0)
+        
+        cls.EXPORT_LIST_RESULTS = f'export_TES_{j_constr}'
+
+
+
+#===============================================================================
+#
+#    EXECUTOR DEFINITIONS: PAIR-COUPLING DEFORMATIONS 
+#
+#===============================================================================
+
+class ExeTaurus1D_PairCoupling(ExeTaurus1D_DeformB20):
+    
+    """
+    Evaluate Pair-coupling energy surfaces, Require setting the constraint via 
+    classmethod setPairConstraint
+    
+    (since it contains all same steps than ExeTaurus1D_DeformB20, we inherit it)
+    """
+    
+    ITERATIVE_METHOD = _Base1DTaurusExecutor.IterativeEnum.EVEN_STEP_SWEEPING
+    
+    CONSTRAINT    = None
+    CONSTRAINT_DT = None
+    
+    EXPORT_LIST_RESULTS = 'export_TESpair'
+    
+    @classmethod
+    def setPairConstraint(cls, pair_constr):
+        """
+        launch before the program to set the pairing constraint 
+        (unset to prompt an exception to avoid default constraint set up)
+        """
+        assert pair_constr not in InputTaurus.ConstrEnum.members(), \
+            ExecutionException("Pair constraint must be in DataTaurus.ConstrEnum")
+        assert pair_constr.startswith('P_T'), \
+            ExecutionException("must give a pair-coupling constraint")
+        
+        cls.CONSTRAINT = pair_constr
+        cls.CONSTRAINT_DT = DataTaurus.getDataVariable(pair_constr, beta_schm=0)
+        
+        cls.EXPORT_LIST_RESULTS = f'export_TES_{pair_constr}'
+    
+    
+    

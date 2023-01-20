@@ -1270,6 +1270,6 @@ if __name__ == '__main__':
     
     # res = EigenbasisData()
     # res.getResults()
-    res = DataAxial(10, 10, 'out_20Ne.OUT')
-    with open(res.EXPORT_LIST_RESULTS, 'w+') as f:
-        f.write(res.getAttributesDictLike)
+    # res = DataAxial(10, 10, 'out_20Ne.OUT')
+    # with open(res.EXPORT_LIST_RESULTS, 'w+') as f:
+    #     f.write(res.getAttributesDictLike)

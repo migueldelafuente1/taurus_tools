@@ -9,18 +9,7 @@ Module to generate input files for programs.
 import numpy as np
 from copy import deepcopy, copy
 import os
-
-class Enum(object):
-    @classmethod
-    def members(cls):
-        import inspect
-        result = []
-        for i in inspect.getmembers(cls):
-            name = i[0]
-            value = i[1]
-            if not (name.startswith('_') or inspect.ismethod(value)):
-                result.append(value)
-        return result
+from tools.helpers import Enum
 
 class _Input(object):
     '''
@@ -617,7 +606,7 @@ eval full Val.Space (0,1)   = 1
 
 
 
-class AxialInput(_Input):
+class InputAxial(_Input):
     """
     Class for HFBAxial code
     """
@@ -837,12 +826,12 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
 # t_input.b20 = (1.2, 1.23)
 # print(t_input.getText4file())
 
-# a_inp = AxialInput(10, 12, 3, b_len=1.2)
-# a_inp.setParameters(**{AxialInput.ArgsEnum.com : 1,
-#                         AxialInput.ArgsEnum.seed: 2,
-#                         AxialInput.ArgsEnum.iterations: 15163,
-#                         AxialInput.ConstrEnum.b20 : 1.02,
-#                         AxialInput.ConstrEnum.sqrt_r2: (4.3212345678, 
+# a_inp = InputAxial(10, 12, 3, b_len=1.2)
+# a_inp.setParameters(**{InputAxial.ArgsEnum.com : 1,
+#                         InputAxial.ArgsEnum.seed: 2,
+#                         InputAxial.ArgsEnum.iterations: 15163,
+#                         InputAxial.ConstrEnum.b20 : 1.02,
+#                         InputAxial.ConstrEnum.sqrt_r2: (4.3212345678, 
 #                                                         3.1234567890)
 #                         })
 # a_inp.var_n = (2.365, 0.000)

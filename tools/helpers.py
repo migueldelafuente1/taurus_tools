@@ -9,7 +9,8 @@ import subprocess
 LINE_1 = "\n================================================================================\n"
 LINE_2 = "\n--------------------------------------------------------------------------------\n"
 
-GITHUB_2BME_HTTP = "https://github.com/migueldelafuente1/2B_MatrixElements.git"
+GITHUB_2BME_HTTP        = "https://github.com/migueldelafuente1/2B_MatrixElements.git"
+GITHUB_DENS_TAURUS_HTTP = "https://github.com/migueldelafuente1/dens_taurus_vap.git"
 
 def zipBUresults(folder, z,n,interaction, *args):
     """
@@ -100,3 +101,21 @@ def readAntoine(index, l_ge_10=False):
                 return [n, l, j]
     
     raise Exception("Invalid state index for Antoine Format [{}]".format(index))
+
+def importAndCompile_taurus():
+    
+    try:
+        order_ = "git clone {}".format(GITHUB_DENS_TAURUS_HTTP)
+
+        e_ = subprocess.call(order_, shell=True)
+        
+        order_ = "cd dens_taurus_vap"
+        e_ = subprocess.call(order_, shell=True)
+        order_ = "make"
+        e_ = subprocess.call(order_, shell=True)
+        order_ = "cp exe/taurus_vap.exe ../"
+        e_ = subprocess.call(order_, shell=True)
+        
+    except Exception as e:
+        print("Exception:", e.__class__.__name__)
+        print(e)
