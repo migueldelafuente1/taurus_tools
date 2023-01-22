@@ -12,6 +12,13 @@ LINE_2 = "\n--------------------------------------------------------------------
 GITHUB_2BME_HTTP        = "https://github.com/migueldelafuente1/2B_MatrixElements.git"
 GITHUB_DENS_TAURUS_HTTP = "https://github.com/migueldelafuente1/dens_taurus_vap.git"
 
+TBME_SUITE = '2B_MatrixElements'
+TBME_HAMIL_FOLDER = 'savedHamilsBeq1/'
+PATH_LSSR_IN_2BMESUITE = TBME_HAMIL_FOLDER + 'LSSR_MZ7_beq1.2b'
+PATH_COUL_IN_2BMESUITE = TBME_HAMIL_FOLDER + 'Coul_MZ7_beq1.2b'
+PATH_COM2_IN_2BMESUITE = TBME_HAMIL_FOLDER + 'COM_MZ10.com'
+TBME_RESULT_FOLDER = 'results/'
+
 def zipBUresults(folder, z,n,interaction, *args):
     """
     This method export BU_folder results and outputs into a .zip, adding an 
@@ -44,18 +51,22 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
             print(header+str(k)+':'+str(val))
 
 
+#===============================================================================
+#   Import Enum, Standard enumetation classes for the 2B_MatrixElements form 
+#   the module Enum (copied from that repository)
+#===============================================================================
 
-class Enum(object):
-    @classmethod
-    def members(cls):
-        import inspect
-        result = []
-        for i in inspect.getmembers(cls):
-            name = i[0]
-            value = i[1]
-            if not (name.startswith('_') or inspect.ismethod(value)):
-                result.append(value)
-        return result
+# class Enum(object):
+#     @classmethod
+#     def members(cls):
+#         import inspect
+#         result = []
+#         for i in inspect.getmembers(cls):
+#             name = i[0]
+#             value = i[1]
+#             if not (name.startswith('_') or inspect.ismethod(value)):
+#                 result.append(value)
+#         return result
 
 
 ValenceSpacesDict_l_ge10_byM = {

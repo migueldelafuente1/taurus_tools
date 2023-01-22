@@ -9,7 +9,7 @@ Module to generate input files for programs.
 import numpy as np
 from copy import deepcopy, copy
 import os
-from tools.helpers import Enum
+from tools.Enums import Enum
 
 class _Input(object):
     '''

@@ -8,13 +8,15 @@ Module for script setting
 '''
 import os
 import subprocess
+import inspect
 import shutil
 import numpy as np
 from copy import deepcopy, copy
 from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
-from tools.helpers import Enum, LINE_2, LINE_1, prettyPrintDictionary, \
+from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     zipBUresults
+from tools.Enums import Enum
 
 
 class ExecutionException(BaseException):
@@ -164,7 +166,9 @@ class _Base1DTaurusExecutor(object):
         deformation boundaries are required, only SINGLE_EVALUATION ignores them
         """
         if self.ITERATIVE_METHOD == self.IterativeEnum.SINGLE_EVALUATION:
-            print("Single evaluation process do not require this process, continue")
+            frame = inspect.currentframe()
+            print(" [NOTE] Single evaluation process do not require this process [{}], continue"
+                  .format(frame.f_code.co_name))
             return
         
         assert min_ < max_, "defining range for 1D where min >= max"
@@ -561,7 +565,7 @@ class _Base1DTaurusExecutor(object):
             if os.getcwd().startswith('C:'): ## Testing purpose 
                 self._auxWindows_executeProgram(_out_fn)
             else:
-                order_ =f'./{self.inputObject.PROGRAM} < {_inp_fn} > {_out_fn}'
+                order_ =f'./{self.inputObj.PROGRAM} < {_inp_fn} > {_out_fn}'
                 _e = subprocess.call(order_, 
                                      shell=True,
                                      timeout=43200) # 12 h timeout
@@ -807,7 +811,6 @@ class ExeAxial1D_DeformB20(ExeTaurus1D_DeformB20):
     CONSTRAINT    = InputAxial.ConstrEnum.b20
     CONSTRAINT_DT = DataAxial .getDataVariable(InputAxial.ConstrEnum.b20,
                                                beta_schm = 1)
-    EXPORT_LIST_RESULTS = 'exportAx_TESb20'
     
     EXPORT_LIST_RESULTS = 'export_resultAxial.txt'
     
@@ -893,6 +896,48 @@ class ExeTaurus1D_PairCoupling(ExeTaurus1D_DeformB20):
         cls.CONSTRAINT_DT = DataTaurus.getDataVariable(pair_constr, beta_schm=0)
         
         cls.EXPORT_LIST_RESULTS = f'export_TES_{pair_constr}'
+    
+    
+
+
+
+#===============================================================================
+#
+#    EXECUTOR DEFINITIONS: GENERATE HAMILTONIAN 
+#
+#===============================================================================
+
+class ExeTaurus0D_EnergyMinimum(ExeTaurus1D_DeformB20):
+    
+    ITERATIVE_METHOD = _Base1DTaurusExecutor.IterativeEnum.SINGLE_EVALUATION
+    
+    CONSTRAINT = None
+    ## default value to see, 
+    CONSTRAINT_DT = DataTaurus.getDataVariable(InputTaurus.ConstrEnum.b20,
+                                               beta_schm = 1)
+    
+    EXPORT_LIST_RESULTS = 'export_HOminimums'
+    
+    """ TODO: Finish, just get _1sMinimum and export to a file"""
+    """ TODO: Do not zip the results (change the globalTearDown())"""
+    
+    def executionTearDown(self, result : DataTaurus, base_execution, *args, **kwargs):
+        """
+        Proceedings to do after the execution of a single step.
+            copying the wf and output to a folder, clean auxiliary files,
+        """
+        if self.PRINT_STEP_RESULT:
+            self.printTaurusResult(result)
+        
+        if self.force_converg and not result.properly_finished:
+            return
+        
+        if base_execution:
+            self._1stSeedMinima = result
+        else:
+            ## save the intermediate Export File
+            self.exportResults(include_index_header=False)
+    
     
     
     

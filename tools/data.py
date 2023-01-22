@@ -18,8 +18,9 @@ import os
 import shutil
 
 import numpy as np
-from tools.helpers import Enum, ValenceSpacesDict_l_ge10_byM, readAntoine
+from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine
 from copy import copy
+from tools.Enums import Enum
 
 class DataObjectException(BaseException):
     pass

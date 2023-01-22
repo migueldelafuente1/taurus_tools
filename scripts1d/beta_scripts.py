@@ -12,7 +12,7 @@ def run_q20_surface(nucleus, q_min=-10, q_max=10, N_max=50):
     
     interaction = "hamil"
     ExeTaurus1D_DeformQ20.ITERATIVE_METHOD = \
-        ExeTaurus1D_DeformQ20.IterativeEnum.SINGLE_EVALUATION
+        ExeTaurus1D_DeformQ20.IterativeEnum.EVEN_STEP_SWEEPING
         
     ExeTaurus1D_DeformQ20.SAVE_DAT_FILES = DataTaurus.DatFileExportEnum.members()
     # ExeTaurus1D_DeformQ20.SAVE_DAT_FILES = [
