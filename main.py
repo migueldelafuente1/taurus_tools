@@ -21,6 +21,7 @@ if __name__ == '__main__':
     # importAndCompile_taurus()
     
     nucleus = [(2, 4), (4, 4)]
-    interactions = {(2,4): (4,0, 2.0), (4,4): 'hamil_2'}
-    run_b20_surface(nucleus, q_min=-1., q_max=1., N_max=10)
+    interactions = {(2, 4): (4,0, 2.0), 
+                    (4, 4): 'hamil_2'}
+    run_b20_surface(nucleus, interactions, q_min=-1., q_max=1., N_max=10)
     

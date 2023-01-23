@@ -230,6 +230,9 @@ class TBME_HamiltonianManager(object):
             final_com.append(line)
         
         self.com_filename = None
+        if not com_filename.endswith('.com'):
+            com_filename = com_filename+'.com'
+        
         if com_filename == None:  
             com_filename = 'aux_com2_{}.com'.format(self.MZmax)
         com_text = ''.join(final_com)[:-2]  # omit the last jump /n
