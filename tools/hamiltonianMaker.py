@@ -77,11 +77,8 @@ class TBME_HamiltonianManager(object):
             order_ = "git clone {}".format(GITHUB_2BME_HTTP)
             e_ = subprocess.call(order_, shell=True, timeout=180)
             
-            os.chdir(TBME_SUITE)
-            print("CWD:", os.getcwd())
-            
         except Exception as e:
-            print("Exception:", e.__class__.__name__)
+            print("Exception clonning:", e.__class__.__name__)
             print(e)
     
     def _set_valenceSpace(self):
@@ -247,7 +244,9 @@ class TBME_HamiltonianManager(object):
             raise Exception("Valence-space calculations not implemented yet!")
         
         self._path_xml = 'data_resources/input_D1S.xml'
-        print("CWD:", os.getcwd())
+        if os.getcwd().endswith(TBME_SUITE):
+            self._path_xml = '../'+self._path_xml
+        print("CWD 1(rm comment):", os.getcwd())
         tree = et.parse(self._path_xml)
         root = tree.getroot()
         
@@ -288,8 +287,15 @@ class TBME_HamiltonianManager(object):
     
     def runTBMERunnerSuite(self, specific_xml_file=None):
         """ 
-        Run the TBME suite (TBMESpeedRunner) from an input.xml file 
+        Run the TBME suite (TBMESpeedRunner) from an input.xml file, 
+            to be use from taurus_tools CWD.
         """
+        assert os.getcwd()=="taurus_tools", f"Invalid CWD: {os.getcwd()}"
+        if specific_xml_file:
+            print(" [WARNING] modifying the xml_input source:",
+                  f"[{self.xml_input_filename}] to: [{specific_xml_file}]")
+            self.xml_input_filename = specific_xml_file
+        
         shutil.copy(self.xml_input_filename, TBME_SUITE)
         os.chdir(TBME_SUITE)
         
