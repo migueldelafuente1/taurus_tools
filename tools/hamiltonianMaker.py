@@ -290,7 +290,7 @@ class TBME_HamiltonianManager(object):
         Run the TBME suite (TBMESpeedRunner) from an input.xml file, 
             to be use from taurus_tools CWD.
         """
-        assert os.getcwd()=="taurus_tools", f"Invalid CWD: {os.getcwd()}"
+        assert os.getcwd().endswith("taurus_tools"), f"Invalid CWD: {os.getcwd()}"
         if specific_xml_file:
             print(" [WARNING] modifying the xml_input source:",
                   f"[{self.xml_input_filename}] to: [{specific_xml_file}]")
