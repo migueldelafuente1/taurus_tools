@@ -11,6 +11,9 @@ LINE_2 = "\n--------------------------------------------------------------------
 
 GITHUB_2BME_HTTP        = "https://github.com/migueldelafuente1/2B_MatrixElements.git"
 GITHUB_DENS_TAURUS_HTTP = "https://github.com/migueldelafuente1/dens_taurus_vap.git"
+DENS_TAURUS_SRC_FOLDER  = "dens_taurus_vap"
+GITHUB_TAURUS_HTTP = "https://github.com/project-taurus/taurus_vap.git"
+TAURUS_SRC_FOLDER  = "taurus_vap"
 
 TBME_SUITE = '2B_MatrixElements'
 TBME_HAMIL_FOLDER = 'savedHamilsBeq1/'
@@ -113,10 +116,14 @@ def readAntoine(index, l_ge_10=False):
     
     raise Exception("Invalid state index for Antoine Format [{}]".format(index))
 
-def importAndCompile_taurus():
+def importAndCompile_taurus(use_dens_taurus=True):
+    """
+    use_dens_taurus=True uses DD modified taurus_vap, False uses normal taurus_vap
+    """
+    SRC_ = GITHUB_DENS_TAURUS_HTTP if use_dens_taurus else GITHUB_TAURUS_HTTP
     
     try:
-        order_ = "git clone {}".format(GITHUB_DENS_TAURUS_HTTP)
+        order_ = "git clone {}".format(SRC_)
         e_ = subprocess.call(order_, shell=True)
         
         os.chdir('dens_taurus_vap')

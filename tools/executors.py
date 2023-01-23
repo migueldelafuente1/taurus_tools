@@ -35,6 +35,7 @@ class _Base1DTaurusExecutor(object):
     ITERATIVE_METHOD  = None
     SAVE_DAT_FILES = []  # list for saving the auxillary files from taurus
     EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
+    HEADER_SEPARATOR = ' ## '
     
     CONSTRAINT    : str = None # InputTaurus Variable to compute
     CONSTRAINT_DT : str = None # DataTaurus (key) Variable to compute
@@ -79,6 +80,7 @@ class _Base1DTaurusExecutor(object):
         self._N_steps = 0
         self._base_wf_filename = None
         
+        self.include_header_in_results_file = True # set the export result to have the deformation header (i: Q[i]) ## data
         self.save_final_wf  = False # To set for the final wf to be copied as initial
         self.force_converg  = False # requirement of convergence for wf copy
         
@@ -460,8 +462,9 @@ class _Base1DTaurusExecutor(object):
                 else:
                     self._results[1].append(res)
                     self._deformations_map[1].append((len(self._results[1]), b20_i))
-                    
-                self.exportResults(include_index_header=True)
+                
+                self.include_header_in_results_file=True
+                self.exportResults()
     
     def _auxWindows_executeProgram(self, output_fn):
         """ 
@@ -638,10 +641,10 @@ class _Base1DTaurusExecutor(object):
             self._1stSeedMinima = result
         else:
             ## save the intermediate Export File
-            self.exportResults(include_index_header=True)
+            self.exportResults()
         
         
-    def exportResults(self, include_index_header=False, output_filename=None):
+    def exportResults(self, output_filename=None):
         """
         writes a text file with the results dict-like (before the program ends)
         Order: oblate[-N, -N-1, ..., -1] > prolate [0, 1, ..., N']
@@ -651,10 +654,10 @@ class _Base1DTaurusExecutor(object):
             for indx, res in enumerate(self._results[part_]):
                 key_, dval = self._deformations_map[part_][indx]
                 line = []
-                if include_index_header:
+                if self.include_header_in_results_file:
                     line.append(f"{key_:5}: {dval:+6.3f}")
                 line.append(res.getAttributesDictLike)
-                line = ' ## '.join(line)
+                line = self.HEADER_SEPARATOR.join(line)
                 
                 if part_ == 1: ## prolate_ (add to the final)
                     res2print.append(line)
@@ -776,12 +779,13 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## TODO: might require aditional changes
         _Base1DTaurusExecutor.run(self)
     
-    def gobalTearDown(self, *args, **kwargs):
+    def gobalTearDown(self, zip_bufolder=True, *args, **kwargs):
         """
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
         """
-        zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction)
+        if zip_bufolder:
+            zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction)
     
 
 
@@ -918,26 +922,7 @@ class ExeTaurus0D_EnergyMinimum(ExeTaurus1D_DeformB20):
     
     EXPORT_LIST_RESULTS = 'export_HOminimums'
     
-    """ TODO: Finish, just get _1sMinimum and export to a file"""
-    """ TODO: Do not zip the results (change the globalTearDown())"""
-    
-    def executionTearDown(self, result : DataTaurus, base_execution, *args, **kwargs):
-        """
-        Proceedings to do after the execution of a single step.
-            copying the wf and output to a folder, clean auxiliary files,
-        """
-        if self.PRINT_STEP_RESULT:
-            self.printTaurusResult(result)
-        
-        if self.force_converg and not result.properly_finished:
-            return
-        
-        if base_execution:
-            self._1stSeedMinima = result
-        else:
-            ## save the intermediate Export File
-            self.exportResults(include_index_header=False)
-    
+    """ Finish, just get _1sMinimum and export to a file"""    
     
     
     

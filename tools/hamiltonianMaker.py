@@ -27,7 +27,16 @@ class TBME_HamiltonianManager(object):
     '''
     Class to clone the github repository and manage the hamiltonian input.
     
-    TODO: python3 - exec(): 2B_MatrixElements/main.py < (local) input_D1S.xml
+    DONE: python3 - exec(): 2B_MatrixElements/main.py < (local) input_D1S.xml
+    
+    Usage:
+        hamil_exe = TBME_HamiltonianManager(b, MZmax, MZmin=MZmin)
+        # ##(NOTE) can change the hamiltonian_name: 
+        # hamil_exe.hamil_filename = 'hamil'
+        
+        hamil_exe.setAndRun_D1Sxml()
+        >> hamil_MZ{MZmax} (default)
+    
     '''
 
     def __init__(self, b_length, MZmax, MZmin=0, set_com2=True):
@@ -60,7 +69,7 @@ class TBME_HamiltonianManager(object):
         
         self.sp_states_list = []
         self._set_valenceSpace()
-        
+    
     
     def _cloneGitHub(self):
         
@@ -300,8 +309,10 @@ class TBME_HamiltonianManager(object):
         
         ## copy the hamiltonian file to the main folder
         hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
-        shutil.copy(hamil_path + OutputFileTypes.sho,     '..')
-        shutil.copy(hamil_path + OutputFileTypes.twoBody, '..')
+        for fl_ext in OutputFileTypes.members():
+            if not hamil_path + fl_ext in os.listdir():
+                continue
+            shutil.copy(hamil_path + fl_ext,     '..')
         
         os.chdir('..') # return to the main folder
         # shutil.copy(self.hamil_filename + OutputFileTypes.oneBody, '..')
