@@ -641,7 +641,7 @@ class _Base1DTaurusExecutor(object):
         
         status_fin = 'X' if not result.properly_finished  else '.'
         _iter_str = "[{}/{}: {}']".format(result.iter_max, self.inputObj.iterations, 
-                                          result.iter_time_seconds//60)
+                                          getattr(result, 'iter_time_seconds', 0) //60 )
         
         txt  =" {:2} {:2}    {}      {:9.3f}  {:8.3f}  {:7.3f}   {:+6.3f} "
         txt = txt.format(result.z, result.n, status_fin, 
