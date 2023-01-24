@@ -118,6 +118,9 @@ class _Base1DTaurusExecutor(object):
             self._deform_lim_min = None
             self._deform_base    = None
             
+    @property
+    def numberParityOfIsotope(self):
+        return (self.z % 2, self.n % 2)
     
     def _checkExecutorSettings(self):
         """
@@ -754,13 +757,18 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         res = None
         self._preconvergence_steps = 0
         self.printTaurusResult(None, print_head=True)
-        while not self._preconvergenceAccepted(res):
-            res = self._executeProgram(base_execution=True)
+        
+        if 1 in self.numberParityOfIsotope:
+            ## procedure to evaluate odd-even nuclei
+            self._oddNumberParitySeedConvergence()
+        else:
+            ## even-even general case
+            while not self._preconvergenceAccepted(res):
+                res = self._executeProgram(base_execution=True)
         
         ## negative values might be obtained        
         self._setDeformationFromMinimum(self._deform_lim_min, 
                                         self._deform_lim_max, self._N_steps)
-        
         
         _new_input_args = dict(filter(lambda x: x[0] in self.ITYPE.ArgsEnum.members(), 
                                       kwargs.items() ))
@@ -768,6 +776,12 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                                       kwargs.items() ))
         self.inputObj.setParameters(**_new_input_args, **_new_input_cons)
         
+    
+    def _oddNumberParitySeedConvergence(self):
+        """
+        TODO: procedure to select the sp state to block with the lower energy
+        """
+        pass
     
     def _preconvergenceAccepted(self, result: DataTaurus):
         """
@@ -778,8 +792,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         if self._preconvergence_steps == 0 and self._1stSeedMinima != None:
             self.inputObj.seed = 1
-            shutil.copy('final_wf.bin', 'initial_wf.bin')
-            return True
+            shutil.copy(self._base_wf_filename, 'initial_wf.bin')
+            return True 
         
         self._preconvergence_steps += 1
         MAX_REPETITIONS = 4

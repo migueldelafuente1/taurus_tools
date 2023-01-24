@@ -117,6 +117,20 @@ def readAntoine(index, l_ge_10=False):
     
     raise Exception("Invalid state index for Antoine Format [{}]".format(index))
 
+def getSingleSpaceDegenerations(MZmax, MZmin=0):
+    """
+    Get the number of shells for SHO in a range(MZmax, MZmin), and 
+    single particle state dimensions (not included x2 space for prot-neutr)
+    """
+    sh_dim, sp_dim = 0, 0
+    for MZ in range(MZmin, MZmax +1):
+        sp_sts = ValenceSpacesDict_l_ge10_byM[MZ]
+        sp_sts = [readAntoine(st) for st in sp_sts ]
+        
+        sh_dim += len(sp_sts)
+        sp_dim += sum(map(lambda x: x[2]+1 , sp_sts)) # deg = 2j + 1
+    return sh_dim, sp_dim
+
 def importAndCompile_taurus(use_dens_taurus=True):
     """
     use_dens_taurus=True uses DD modified taurus_vap, False uses normal taurus_vap

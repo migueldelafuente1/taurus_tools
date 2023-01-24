@@ -18,7 +18,8 @@ import os
 import shutil
 
 import numpy as np
-from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine
+from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
+    getSingleSpaceDegenerations
 from copy import copy
 from tools.Enums import Enum
 
@@ -64,7 +65,14 @@ class _DataObjectBase:
     def getResults(self):
         raise BaseException("Abstract method, implement me!")
     
-
+    def _getSingleSpaceDegenerations(self, MZmax, MZmin=0):
+        """ 
+        Auxiliary method to get the valence space for the no-core calculation
+        """
+        sh_dim, sp_dim = getSingleSpaceDegenerations(MZmax, MZmin)
+        
+        self.sh_dim = sh_dim
+        self.sp_dim = sp_dim * 2 # include z and n
 
 class EvolTaurus(_DataObjectBase):
     '''
@@ -213,7 +221,7 @@ class EvolTaurus(_DataObjectBase):
                 # self.top_h2.append( float(line[1]) )
                 if self._iter == 1: self.top_h2.append( self.top_h2[-1])
             elif line.startswith(_TR_TEST_STARTKEY):
-                line = line.replace(_TR_TEST_STARTKEY).split()
+                line = line.replace(_TR_TEST_STARTKEY, '').split()
                 tr_ratio = float(line[-1]) - 6
                 if abs(tr_ratio) > 1.0e-3:
                     print("[WARNING] Trace Test went wrong (not 6.0), got", line[-1])
@@ -1090,22 +1098,7 @@ class DataAxial(DataTaurus):
     def _getPairCoupling(self, line):
         raise DataObjectException("Invalid Method for DataAxial")
     
-    # --------------------------------------------------------------------------
-    def _getSingleSpaceDegenerations(self, MZmax):
-        """ 
-        Auxiliary method to get the valence space for the no-core calculation
-        """
-        sh_dim, sp_dim = 0, 0
-        for MZ in range(MZmax +1):
-            sp_sts = ValenceSpacesDict_l_ge10_byM[MZ]
-            sp_sts = [readAntoine(st) for st in sp_sts ]
-            
-            sh_dim += len(sp_sts)
-            sp_dim += sum(map(lambda x: x[2]+1 , sp_sts)) # deg = 2j + 1
-        
-        self.sp_dim = sh_dim
-        self.sh_dim = sp_dim * 2 # include z and n
-    
+    # --------------------------------------------------------------------------    
     def _read_HO_prop(self, lines_header):
         """
         Get the properties of the HO basis, (not adapted for the axial osc. lengths)
@@ -1125,7 +1118,7 @@ class DataAxial(DataTaurus):
         
         self.ho_b_length = b_values[0]
         self.ho_hbaromega = 41.4246052127 / (self.ho_b_length**2) ## _Suhonen
-        self._getSingleSpaceDegenerations(MZmax)
+        self._getSingleSpaceDegenerations(MZmax, MZmin=0)
         self.MZmax       = MZmax
     
     def _getValues(self, line, head_rm = ''):
@@ -1266,14 +1259,15 @@ if __name__ == '__main__':
     # res = DataTaurus(10, 10, 'aux_output_Z10N10_00_00')
     # res = DataTaurus(10, 6, 'aux_output_Z10N6_23')
     # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
+    # res = DataTaurus(18, 18, '../res_z18n18_dbase.OUT')
     # with open(res.BU_fold_constr, 'w+') as f:
     #     f.write(res.getAttributesDictLike)
     
     # res = EvolTaurus('aux_output_Z10N10_00_00')
     # res = EvolTaurus('aux_output_Z10N6_23')
-    res = EvolTaurus('../res_z18n18_dbase.OUT')
-    res.printEvolutionFigure()
-    res = EvolTaurus('aux_output_Z10N6_broken')
+    # res = EvolTaurus('../res_z18n18_dbase.OUT')
+    # res.printEvolutionFigure()
+    # res = EvolTaurus('aux_output_Z10N6_broken')
     
     # res = EigenbasisData()
     # res.getResults()
