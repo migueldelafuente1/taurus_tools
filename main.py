@@ -15,13 +15,13 @@ if not (InputTaurus.PROGRAM in os.listdir()):
 
 if __name__ == '__main__':
     
-    exe_ = TBME_HamiltonianManager(1.75, 4, set_com2=True)
+    exe_ = TBME_HamiltonianManager(1.75, 1, set_com2=True)
     exe_.setAndRun_D1Sxml()
     
     # importAndCompile_taurus()
     
     nucleus = [(2, 4), (4, 4)]
-    interactions = {(2, 4): (4,0, 2.0), 
+    interactions = {(2, 4): (2,0, 2.0), 
                     (4, 4): 'hamil_2'}
     run_b20_surface(nucleus, interactions, q_min=-1., q_max=1., N_max=10)
     

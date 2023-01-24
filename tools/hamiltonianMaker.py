@@ -97,7 +97,7 @@ class TBME_HamiltonianManager(object):
         """ 
         set valence space from shell MZmin to MZmax, no sp-energies considered
         """
-        elem.tail = '\n\t\t'
+        #elem.tail = '\n\t\t'
         for qn in self.sp_states_list:
             _ = et.SubElement(elem, ValenceSpaceParameters.Q_Number, 
                               attrib={AttributeArgs.ValenceSpaceArgs.sp_state: qn,
@@ -318,7 +318,9 @@ class TBME_HamiltonianManager(object):
         
         ## copy the hamiltonian file to the main folder
         hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
+        print("Copy hamils: listdir", TBME_RESULT_FOLDER,":",os.listdir(TBME_RESULT_FOLDER))
         for fl_ext in OutputFileTypes.members():
+            print("CWD[",os.getcwd(),"]to copy:",self.hamil_filename,": ",hamil_path)
             if not hamil_path + fl_ext in os.listdir():
                 continue
             shutil.copy(hamil_path + fl_ext,     '..')
