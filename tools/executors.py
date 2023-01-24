@@ -97,15 +97,9 @@ class _Base1DTaurusExecutor(object):
         only instanced attributes generated during the run (inputObject, params, ... keept)
         could keep the first minimum data
         """
-        
-        self.inputObj  : self.ITYPE  = None
-        self._DDparams : dict = None
-        
+                
         self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
-        
-        self.activeDDterm = True
-        self._output_filename = self.DTYPE.DEFAULT_OUTPUT_FILENAME
-        
+                
         self.deform_oblate   : list = []
         self.deform_prolate  : list = []
         self._deformations_map  : list = [[], []] #oblate, prolate
@@ -116,6 +110,7 @@ class _Base1DTaurusExecutor(object):
         self._preconvergence_steps = 0
         
         if not keep_1stMinimum:
+            
             self._1stSeedMinima : self.DTYPE  = None
             self._base_wf_filename = None
             

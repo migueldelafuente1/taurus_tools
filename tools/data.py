@@ -139,10 +139,10 @@ class EvolTaurus(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
-                print(" (TC)>> EXCEPTION from Taurus Constructor >> self::")
+                print(" (TEvC)>> EXCEPTION from Taurus Constructor >> self::")
                 print(self)
-                print(" (TC)>> exception:: ", e, "<<(TC)")
-                print(" (TC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
+                print(" (TEvC)>> exception:: ", e, "<<(TC)")
+                print(" (TEvC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
     
     def get_results(self):
         
@@ -181,13 +181,12 @@ class EvolTaurus(_DataObjectBase):
     
     
     
-    
-    
     def _read_calculation_evol(self, data_evol):
         
         _SP_DENS_KEY   = "<dens(r)> approx"
         _H2_KEY        = "*Top H2"
         _EVOL_STARTKEY = "Iteration     Gradient       Energy"
+        _TR_TEST_STARTKEY = '[Warning] Tr(rho*Gam)/= 2a*Tr(rho*Rea) ='      
         
         if _SP_DENS_KEY in data_evol: self.sp_dens = []
         if _H2_KEY in data_evol:      self.top_h2  = []
@@ -205,7 +204,7 @@ class EvolTaurus(_DataObjectBase):
             
             line = line.strip()
             if line.endswith(_SP_DENS_KEY):
-                line = line.replace('**', '').replace(_SP_DENS_KEY, '').split()
+                line = line.replace('*A*', '').replace(_SP_DENS_KEY, '').split()
                 self.sp_dens.append( float(line[0]))
                 if self._iter == 1: self.sp_dens.append( self.sp_dens[-1])
             elif line.startswith(_H2_KEY):
@@ -213,6 +212,12 @@ class EvolTaurus(_DataObjectBase):
                 self.top_h2.append( (float(line[0]), float(line[1])) )
                 # self.top_h2.append( float(line[1]) )
                 if self._iter == 1: self.top_h2.append( self.top_h2[-1])
+            elif line.startswith(_TR_TEST_STARTKEY):
+                line = line.replace(_TR_TEST_STARTKEY).split()
+                tr_ratio = float(line[-1]) - 6
+                if abs(tr_ratio) > 1.0e-3:
+                    print("[WARNING] Trace Test went wrong (not 6.0), got", line[-1])
+            
             else:
                 line = line.split()
                 _eta_print = len(line) == 9
@@ -236,7 +241,7 @@ class EvolTaurus(_DataObjectBase):
                 elif "---" in line[0]: # hline for the table, dismiss
                     continue
                 else:
-                    print("[TEST]: unknown case:",line)
+                    print("[TEvol. Parse WARNING]: unknown case (skip):", line)
         
     
     def _read_HO_prop(self, line):
@@ -1266,8 +1271,9 @@ if __name__ == '__main__':
     
     # res = EvolTaurus('aux_output_Z10N10_00_00')
     # res = EvolTaurus('aux_output_Z10N6_23')
-    # res.printEvolutionFigure()
-    # res = EvolTaurus('aux_output_Z10N6_broken')
+    res = EvolTaurus('../res_z18n18_dbase.OUT')
+    res.printEvolutionFigure()
+    res = EvolTaurus('aux_output_Z10N6_broken')
     
     # res = EigenbasisData()
     # res.getResults()

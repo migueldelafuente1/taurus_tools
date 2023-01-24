@@ -14,6 +14,7 @@ import os
 import subprocess
 import shutil
 import xml.etree.ElementTree as et
+from time import time
 
 from tools.helpers import GITHUB_2BME_HTTP, ValenceSpacesDict_l_ge10_byM,\
     PATH_COUL_IN_2BMESUITE, PATH_LSSR_IN_2BMESUITE, PATH_COM2_IN_2BMESUITE,\
@@ -306,6 +307,7 @@ class TBME_HamiltonianManager(object):
         shutil.copy(self.xml_input_filename, TBME_SUITE)
         os.chdir(TBME_SUITE)
         
+        c_time = time()
         print(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
         if os.getcwd().startswith('C:'):
             py3 = 'C:/Users/Miguel/anaconda3/python.exe'
@@ -316,7 +318,8 @@ class TBME_HamiltonianManager(object):
             e_ = subprocess.call(f'python3 main.py {self.xml_input_filename} > temp.txt',
                                  timeout=86400, # 1 day timeout
                                  shell=True)
-        print(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]")
+        print(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]: ",
+              time() - c_time," (s)")
         
         ## copy the hamiltonian file to the main folder
         hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
@@ -327,7 +330,7 @@ class TBME_HamiltonianManager(object):
                 test_count_ += 1
         if test_count_ == 0: 
             print(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
-                
+        
         os.chdir('..') # return to the main folder
         
         
