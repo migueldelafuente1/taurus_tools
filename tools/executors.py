@@ -621,8 +621,11 @@ class _Base1DTaurusExecutor(object):
             self.executionTearDown   (res, base_execution)
             
         except Exception as e:
+            print(f"  [FAIL]: {self.__class__}._executeProgram()")
+            if isinstance(res, DataTaurus):
+                print(f"  [FAIL]: result=", str(res))
+            # TODO:  manage exceptions from execution
             raise e
-            raise Exception("TODO: manage exceptions in taurus execution")
         
         return res
     

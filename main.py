@@ -27,13 +27,13 @@ if __name__ == '__main__':
     #                 (4, 4): 'hamil_2'}
     # run_b20_surface(nucleus, interactions, q_min=-1., q_max=1., N_max=10)
     interactions = {
-        ( 10, 11): (2, 0, 1.80), 
-        ( 11, 12): (2, 0, 1.80),
-        ( 11, 11): (2, 0, 1.85),
-        ( 11, 11): (2, 0, 1.85),
+        ( 10, 11): (4, 0, 1.80), 
+        ( 11, 12): (4, 0, 1.80),
+        ( 11, 11): (4, 0, 1.85),
+        ( 11, 11): (4, 0, 1.85),
     }
     nucleus = sorted(list(interactions.keys()))
-    run_b20_surface(nucleus, interactions, q_min=-2.5, q_max=2.5, N_max=51)
+    run_b20_surface(nucleus, interactions, q_min=-0.5, q_max=1.0, N_max=51)
     raise Exception("STOP HERE.")
     
     ## MZ4 lengths
