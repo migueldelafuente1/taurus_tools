@@ -29,11 +29,12 @@ def zipBUresults(folder, z,n,interaction, *args):
     the directory.
     """
     
-    buzip = "BU_z{}n{}-{}_{}".format(z,n,interaction,'-'.join(args))
+    buzip = "BU_{}_{}-z{}n{}".format('-'.join(args), interaction,z,n)
     current_zipfiles = filter(lambda x: x.endswith('.zip'), os.listdir('.'))
     count_buzips = list(filter(lambda x: x.startswith(buzip), current_zipfiles))
     
-    buzip += '_{}.zip'.format(len(count_buzips))
+    if len(count_buzips) > 0:
+        buzip += '_{}.zip'.format(len(count_buzips))
     
     order = 'zip -r {} {}'.format(buzip, folder)
     try:

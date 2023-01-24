@@ -3,6 +3,8 @@ Created on Jan 19, 2023
 
 @author: Miguel
 '''
+import os
+
 from tools.executors import ExeTaurus1D_DeformQ20, ExecutionException,\
     ExeTaurus1D_DeformB20
 from tools.inputs import InputTaurus
@@ -21,8 +23,8 @@ def run_q20_surface(nucleus, interactions, q_min=-10, q_max=10, N_max=50):
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
-        if interaction:
-            print("Interaction not found for (z,n), Continue.")
+        if interaction == None or not os.path.exists(interaction+'.sho'):
+            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -65,8 +67,8 @@ def run_q20_surface(nucleus, interactions, q_min=-10, q_max=10, N_max=50):
 
 def run_b20_surface(nucleus, interactions, q_min=-2.0, q_max=2.0, N_max=41):
     
-    ExeTaurus1D_DeformQ20.ITERATIVE_METHOD = \
-        ExeTaurus1D_DeformQ20.IterativeEnum.EVEN_STEP_SWEEPING
+    ExeTaurus1D_DeformB20.ITERATIVE_METHOD = \
+        ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_SWEEPING
         
     ExeTaurus1D_DeformB20.SAVE_DAT_FILES = DataTaurus.DatFileExportEnum.members()
     # ExeTaurus1D_DeformQ20.SAVE_DAT_FILES = [
@@ -74,8 +76,8 @@ def run_b20_surface(nucleus, interactions, q_min=-2.0, q_max=2.0, N_max=41):
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
-        if interaction:
-            print("Interaction not found for (z,n), Continue.")
+        if interaction == None or not os.path.exists(interaction+'.sho'):
+            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -88,7 +90,7 @@ def run_b20_surface(nucleus, interactions, q_min=-2.0, q_max=2.0, N_max=41):
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
-            InputTaurus.ArgsEnum.beta_schm: 0, ## 0= q_lm, 1 b_lm, 2 triaxial
+            InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
         }
         
@@ -114,3 +116,7 @@ def run_b20_surface(nucleus, interactions, q_min=-2.0, q_max=2.0, N_max=41):
             print(e)
         
     print("End run_b20_surface: ", datetime.now().time())
+
+
+
+

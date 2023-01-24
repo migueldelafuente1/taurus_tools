@@ -53,17 +53,17 @@ def getInteractionFile4D1S(interactions, z,n):
         elif isinstance(interaction, tuple):
             ## TODO: assert format (MZmax, Mzmin, b_length)
             args = interactions[(z, n)]
-            MSG_ = "args must be (MZmax <int>, (>=) Mzmin <int>, b_lengt <float>)"
+            MSG_ = "Arguments must be (MZmax <int>, (>=) Mzmin <int>, b_lengt <float>)"
             assert len(args) == 3, MSG_
             MZmax, MZmin, b_length = args
             assert type(MZmax)==int and type(MZmin) == int and type(b_length)==float, MSG_
             assert MZmax >= MZmin and MZmin >= 0, "MZmax >= Mzmin >= 0"
             
-            print(f"  Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}")
+            print(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}")
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
             exe_.setAndRun_D1Sxml()
             interaction = exe_.hamil_filename
-            print(f" [DONE] Interaction: {interaction}")
+            print(f" ** [DONE] Interaction: [{interaction}]")
             
             return interaction
         

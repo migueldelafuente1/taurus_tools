@@ -62,7 +62,6 @@ class _Base1DTaurusExecutor(object):
         
         self.inputObj  : self.ITYPE  = None
         self._DDparams : dict = None
-        self._inputCalculationArgs : dict = None
         self._1stSeedMinima : self.DTYPE  = None
         self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
         
@@ -78,6 +77,7 @@ class _Base1DTaurusExecutor(object):
         self._deform_base    = None
         self._iter    = 0
         self._N_steps = 0
+        self._preconvergence_steps = 0
         self._base_wf_filename = None
         
         self.include_header_in_results_file = True # set the export result to have the deformation header (i: Q[i]) ## data
@@ -90,6 +90,39 @@ class _Base1DTaurusExecutor(object):
                 setattr(self, key_, value)
         
         self._checkExecutorSettings()
+    
+    def resetExecutorObject(self, keep_1stMinimum=False):
+        """
+        Clean deformations and results from a previous calculation,
+        only instanced attributes generated during the run (inputObject, params, ... keept)
+        could keep the first minimum data
+        """
+        
+        self.inputObj  : self.ITYPE  = None
+        self._DDparams : dict = None
+        
+        self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
+        
+        self.activeDDterm = True
+        self._output_filename = self.DTYPE.DEFAULT_OUTPUT_FILENAME
+        
+        self.deform_oblate   : list = []
+        self.deform_prolate  : list = []
+        self._deformations_map  : list = [[], []] #oblate, prolate
+        self._curr_deform_index : int  = None
+        
+        self._iter    = 0
+        self._N_steps = 0
+        self._preconvergence_steps = 0
+        
+        if not keep_1stMinimum:
+            self._1stSeedMinima : self.DTYPE  = None
+            self._base_wf_filename = None
+            
+            self._deform_lim_max = None
+            self._deform_lim_min = None
+            self._deform_base    = None
+            
     
     def _checkExecutorSettings(self):
         """
@@ -472,9 +505,9 @@ class _Base1DTaurusExecutor(object):
         """
         # program = """ """
         # exec(program)
-        file2copy = "aux_output_Z10N10_00_00"
-        file2copy = "aux_output_Z10N6_23"
-        # file2copy = 'aux_output_Z10N6_broken'
+        file2copy = "aux_output_Z10N10_00_00.txy"
+        file2copy = "aux_output_Z10N6_23.txt"
+        # file2copy = 'aux_output_Z10N6_broken.txt'
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -743,9 +776,16 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
     def _preconvergenceAccepted(self, result: DataTaurus):
         """
-        TODO:
-        define the steps to accept the result
+        define the steps to accept the result.
+            Modification: it there is a _1sSeedMinima and _preconvergence_steps=0
+            skip (to run another constraint from a previous minimum)
         """
+        
+        if self._preconvergence_steps == 0 and self._1stSeedMinima != None:
+            self.inputObj.seed = 1
+            shutil.copy('final_wf.bin', 'initial_wf.bin')
+            return True
+        
         self._preconvergence_steps += 1
         MAX_REPETITIONS = 4
         str_rep = f"[{self._preconvergence_steps} / {MAX_REPETITIONS}]"
@@ -785,7 +825,12 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             zipping files, launch tests on the results, plotting things
         """
         if zip_bufolder:
-            zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction)
+            args = []
+            if self.CONSTRAINT != None:
+                args.append(self.CONSTRAINT)
+                
+            zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction,
+                         *args)
     
 
 
@@ -860,8 +905,8 @@ class ExeTaurus1D_AngMomentum(ExeTaurus1D_DeformB20):
         cls.CONSTRAINT_DT = DataTaurus.getDataVariable(j_constr, beta_schm=0)
         
         cls.EXPORT_LIST_RESULTS = f'export_TES_{j_constr}'
-
-
+        DataTaurus.BU_folder = f'export_TES_{j_constr}'
+    
 
 #===============================================================================
 #
@@ -900,10 +945,8 @@ class ExeTaurus1D_PairCoupling(ExeTaurus1D_DeformB20):
         cls.CONSTRAINT_DT = DataTaurus.getDataVariable(pair_constr, beta_schm=0)
         
         cls.EXPORT_LIST_RESULTS = f'export_TES_{pair_constr}'
+        DataTaurus.BU_folder = f'export_TES_{pair_constr}'
     
-    
-
-
 
 #===============================================================================
 #

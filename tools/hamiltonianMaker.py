@@ -241,7 +241,11 @@ class TBME_HamiltonianManager(object):
         self.com_filename = com_filename
     
     def setAndRun_D1Sxml(self, title=''):
-        """ Import the file from template and set up forces and valence space"""
+        """
+        Import the file from template and set up forces and valence space
+            (NOTE): method called from CWD=taurus_tools/ to import its resources
+                Change in CWD to 2BMatrixElement/ for execution in self.runTBMERunnerSuite()
+        """
         
         if self.MZmin > 0:
             raise Exception("Valence-space calculations not implemented yet!")
@@ -249,7 +253,7 @@ class TBME_HamiltonianManager(object):
         self._path_xml = 'data_resources/input_D1S.xml'
         if os.getcwd().endswith(TBME_SUITE):
             self._path_xml = '../'+self._path_xml
-        print("CWD 1(rm comment):", os.getcwd())
+        
         tree = et.parse(self._path_xml)
         root = tree.getroot()
         
@@ -291,7 +295,7 @@ class TBME_HamiltonianManager(object):
     def runTBMERunnerSuite(self, specific_xml_file=None):
         """ 
         Run the TBME suite (TBMESpeedRunner) from an input.xml file, 
-            to be use from taurus_tools CWD.
+            !!(NOTE) to be use from /taurus_tools CWD.
         """
         assert os.getcwd().endswith("taurus_tools"), f"Invalid CWD: {os.getcwd()}"
         if specific_xml_file:
@@ -302,7 +306,7 @@ class TBME_HamiltonianManager(object):
         shutil.copy(self.xml_input_filename, TBME_SUITE)
         os.chdir(TBME_SUITE)
         
-        print(f" Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
+        print(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
         if os.getcwd().startswith('C:'):
             py3 = 'C:/Users/Miguel/anaconda3/python.exe'
             e_ = subprocess.call(f'{py3} main.py {self.xml_input_filename} > temp.txt',
@@ -312,15 +316,18 @@ class TBME_HamiltonianManager(object):
             e_ = subprocess.call(f'python3 main.py {self.xml_input_filename} > temp.txt',
                                  timeout=86400, # 1 day timeout
                                  shell=True)
-        print(f" [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]")
+        print(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]")
         
         ## copy the hamiltonian file to the main folder
         hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
-        
+        test_count_ = 0
         for fl_ext in OutputFileTypes.members():
-            if self.hamil_filename+fl_ext in os.listdir():
+            if self.hamil_filename+fl_ext in os.listdir(TBME_RESULT_FOLDER):
                 shutil.copy(hamil_path + fl_ext,     '..')
-        
+                test_count_ += 1
+        if test_count_ == 0: 
+            print(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
+                
         os.chdir('..') # return to the main folder
         
         
