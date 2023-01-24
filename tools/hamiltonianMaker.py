@@ -302,7 +302,7 @@ class TBME_HamiltonianManager(object):
         shutil.copy(self.xml_input_filename, TBME_SUITE)
         os.chdir(TBME_SUITE)
         
-        print(f" Running {TBME_SUITE} for {self.xml_input_filename}")
+        print(f" Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
         if os.getcwd().startswith('C:'):
             py3 = 'C:/Users/Miguel/anaconda3/python.exe'
             e_ = subprocess.call(f'{py3} main.py {self.xml_input_filename} > temp.txt',
@@ -312,22 +312,16 @@ class TBME_HamiltonianManager(object):
             e_ = subprocess.call(f'python3 main.py {self.xml_input_filename} > temp.txt',
                                  timeout=86400, # 1 day timeout
                                  shell=True)
-        
-        print(f" [DONE] Run {TBME_SUITE} for {self.xml_input_filename}")
-        
+        print(f" [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]")
         
         ## copy the hamiltonian file to the main folder
         hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
-        print("Copy hamils: listdir", TBME_RESULT_FOLDER,":",os.listdir(TBME_RESULT_FOLDER))
+        
         for fl_ext in OutputFileTypes.members():
-            print("CWD[",os.getcwd(),"]to copy:",self.hamil_filename,": ",hamil_path)
-            if not hamil_path + fl_ext in os.listdir():
-                continue
-            shutil.copy(hamil_path + fl_ext,     '..')
+            if self.hamil_filename+fl_ext in os.listdir():
+                shutil.copy(hamil_path + fl_ext,     '..')
         
         os.chdir('..') # return to the main folder
-        # shutil.copy(self.hamil_filename + OutputFileTypes.oneBody, '..')
-        # shutil.copy(self.hamil_filename + OutputFileTypes.centerOfMass, '..')
         
         
         
