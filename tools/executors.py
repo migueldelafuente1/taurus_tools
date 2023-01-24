@@ -587,7 +587,7 @@ class _Base1DTaurusExecutor(object):
         
         res = None
         
-        if self.activeDDterm and isinstance(self.inputObj, DataTaurus):
+        if self.activeDDterm and isinstance(self.inputObj, InputTaurus):
             with open(self.inputObj.INPUT_DD_FILENAME, 'w+') as f:
                 f.write(self.inputObj.get_inputDDparamsFile())
         
@@ -894,7 +894,7 @@ class ExeTaurus1D_AngMomentum(ExeTaurus1D_DeformB20):
         launch before the program to set the pairing constraint 
         (unset to prompt an exception to avoid default constraint set up)
         """
-        assert j_constr not in InputTaurus.ConstrEnum.members(), \
+        assert j_constr in InputTaurus.ConstrEnum.members(), \
             ExecutionException("Constraint must be in DataTaurus.ConstrEnum")
         assert j_constr in (InputTaurus.ConstrEnum.Jx, 
                             InputTaurus.ConstrEnum.Jy, 
@@ -936,7 +936,7 @@ class ExeTaurus1D_PairCoupling(ExeTaurus1D_DeformB20):
         launch before the program to set the pairing constraint 
         (unset to prompt an exception to avoid default constraint set up)
         """
-        assert pair_constr not in InputTaurus.ConstrEnum.members(), \
+        assert pair_constr in InputTaurus.ConstrEnum.members(), \
             ExecutionException("Pair constraint must be in DataTaurus.ConstrEnum")
         assert pair_constr.startswith('P_T'), \
             ExecutionException("must give a pair-coupling constraint")
