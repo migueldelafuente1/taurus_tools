@@ -11,12 +11,14 @@ import subprocess
 import inspect
 import shutil
 import numpy as np
+from numpy.random import randint
 from copy import deepcopy, copy
+
 from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    zipBUresults
-from tools.Enums import Enum
+    zipBUresults, readAntoine
+from tools.Enums import Enum, OutputFileTypes
 
 
 class ExecutionException(BaseException):
@@ -42,6 +44,8 @@ class _Base1DTaurusExecutor(object):
     
     DTYPE = DataTaurus  # DataType for the outputs to manage
     ITYPE = InputTaurus # Input type for the input management
+    
+    BLOCKING_SEEDS_RANDOMIZATION = 5 # Number of random blocking sp state for odd calculation
     
     # @classmethod
     # def __new__(cls, *args, **kwargs):
@@ -506,6 +510,7 @@ class _Base1DTaurusExecutor(object):
         file2copy = "aux_output_Z10N10_00_00.txy"
         file2copy = "aux_output_Z10N6_23.txt"
         # file2copy = 'aux_output_Z10N6_broken.txt'
+        file2copy = "res_z18n18_dbase.OUT"
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -740,11 +745,18 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         set up: 
             * back up folder for results
             * dumping filename
+            * save the hamiltonian files in BU folder for recovery
         """
+        
         self._DDparams = self.inputObj._DD_PARAMS
-        self.DTYPE.BU_folder = f'BU_folder_z{self.z}n{self.n}'
+        self.DTYPE.BU_folder = f'BU_folder_{self.interaction}_z{self.z}n{self.n}'
         self.DTYPE.setUpFolderBackUp()
         
+        for ext_ in OutputFileTypes.members():
+            if os.path.exists(self.interaction+ext_):
+                shutil.copy(self.interaction+ext_,  self.DTYPE.BU_folder)
+        
+    
     def setUpExecution(self, *args, **kwargs):
         """
         base solution pre-convergence.
@@ -781,7 +793,94 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         TODO: procedure to select the sp state to block with the lower energy
         """
-        pass
+        ## get a sp_space for the state to block 
+        odd_p, odd_n = self.numberParityOfIsotope
+        # the hamiltonian is already copied in CWD for execution
+        sh_states, l_ge_10 = [], True
+        with open(self.interaction+OutputFileTypes.sho, 'r') as f:
+            data = f.readlines()
+            hmty = data[1].strip().split()
+            if int(hmty[0]) ==  1:
+                sh_states = hmty[2:] # Antoine_ v.s. hamiltonians 
+                l_ge_10 = False
+            else:
+                line = data[2].strip().split()
+                sh_states = line[1:]
+        sh_states = [int(st) for st in sh_states]
+        
+        ## construct sp_dim for index randomization (sh_state, deg(j))
+        sp_states = map(lambda x: (int(x), readAntoine(x, l_ge_10)[2] + 1), sh_states)
+        sp_states = dict(list(sp_states))
+        sp_dim    = sum(list(sp_states.values()))
+        
+        ## randomization of the blocked state and repeat the convergence
+        ## several times to get the lower energy
+        blocked_states  = []
+        blocked_sh_states     = {}
+        blocked_seeds_inputs  = {}
+        blocked_seeds_results = {}
+        blocked_energies      = {}
+        bk_min, bk_E_min      = 0, 1.0e+69
+        print("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
+              self.BLOCKING_SEEDS_RANDOMIZATION, " #-par:", self.numberParityOfIsotope, LINE_2)
+        for rand_step in range(self.BLOCKING_SEEDS_RANDOMIZATION):
+            bk_sp_p, bk_sp_n = 0, 0
+            bk_sh_p, bk_sh_n = 0, 0
+            bk_sp, bk_sh = None, None
+            if odd_p:
+                bk_sh_p = randint(0, len(sh_states))
+                cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_p)])
+                bk_sp_p = cdim + randint(1, sp_states[sh_states[bk_sh_p]] +1)
+                bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
+            if odd_n:
+                bk_sh_n = randint(0, len(sp_states))
+                cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_n)])
+                cdim += sp_dim
+                bk_sp_n = cdim + randint(1, sp_states[sh_states[bk_sh_n]] +1)
+                bk_sp = (bk_sp, bk_sp_n) if bk_sp else bk_sp_n
+                bk_sh = (bk_sh, sh_states[bk_sh_n]) if bk_sh else sh_states[bk_sh_n]
+            
+            if bk_sp in blocked_states:
+                print(rand_step, f"  * Blocked state [{bk_sp}] is already calculated [SKIP]")
+                continue
+            self.inputObj.qp_block = bk_sp if type(bk_sp)==int else [*bk_sp]
+            
+            blocked_states.append(bk_sp)
+            blocked_sh_states[bk_sp] = bk_sh
+            
+            blocked_seeds_inputs [bk_sp] = deepcopy(self.inputObj)
+            blocked_seeds_results[bk_sp] = None
+            blocked_energies     [bk_sp] = 4.20e+69
+            
+            self._preconvergence_steps = 0
+            self._1stSeedMinima = None
+            
+            res = None
+            while not self._preconvergenceAccepted(res):
+                res = self._executeProgram(base_execution=True)
+            
+            blocked_seeds_results[bk_sp] = deepcopy(res)
+            blocked_energies     [bk_sp] = res.E_HFB
+            
+            ## actualize the minimum result
+            if res.E_HFB < bk_E_min:
+                bk_min, bk_E_min = bk_sp, res.E_HFB
+        
+            print(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+        
+        print("\n  ** Blocking minimization process [FINISHED], Results:")
+        print(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")
+        for bk_st in blocked_states:
+            print(f"  {str(bk_st):>12}  {str(blocked_sh_states[bk_st]):>16}   "
+                  f"{blocked_energies[bk_st]:>9.4f}")
+        print("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
+        print(LINE_2)
+        
+        ## after the convegence, remove the blocked states and copy the 
+        # copy the lowest energy solution and output.
+        self.inputObj.qp_block = 0
+        self._1stSeedMinima = blocked_seeds_results[bk_min]
+        
     
     def _preconvergenceAccepted(self, result: DataTaurus):
         """

@@ -142,7 +142,6 @@ def importAndCompile_taurus(use_dens_taurus=True):
         e_ = subprocess.call(order_, shell=True)
         
         os.chdir('dens_taurus_vap')
-        print("CWD:", os.getcwd())
         ## compile and move executable to main directory
         order_ = "make"
         e_ = subprocess.call(order_, shell=True)
@@ -151,7 +150,6 @@ def importAndCompile_taurus(use_dens_taurus=True):
         
         ## return to the main directory
         os.chdir('..')
-        print("CWD:", os.getcwd())
         
     except Exception as e:
         print("Exception:", e.__class__.__name__)

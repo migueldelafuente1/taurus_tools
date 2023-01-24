@@ -26,19 +26,26 @@ if __name__ == '__main__':
     # interactions = {(2, 4): (2,0, 2.0), 
     #                 (4, 4): 'hamil_2'}
     # run_b20_surface(nucleus, interactions, q_min=-1., q_max=1., N_max=10)
-    
-    
+    interactions = {
+        ( 10, 11): (2, 0, 1.80), 
+        ( 11, 12): (2, 0, 1.80),
+        ( 11, 11): (2, 0, 1.85),
+        ( 11, 11): (2, 0, 1.85),
+    }
+    nucleus = sorted(list(interactions.keys()))
+    run_b20_surface(nucleus, interactions, q_min=-2.5, q_max=2.5, N_max=51)
+    raise Exception("STOP HERE.")
     
     ## MZ4 lengths
     interactions = {
-        ( 6, 6): (4, 0, 1.60), ( 6, 8): (4, 0, 1.77),
-        ( 8, 8): (4, 0, 1.85), ( 8,10): (4, 0, 1.65),
-        (10,10): (4, 0, 1.80), (10,12): (4, 0, 1.75),
-        (14,14): (4, 0, 1.65), (14,16): (4, 0, 1.80),
+        # ( 6, 6): (4, 0, 1.60), ( 6, 8): (4, 0, 1.77),
+        # ( 8, 8): (4, 0, 1.85), ( 8,10): (4, 0, 1.65),
+        # (10,10): (4, 0, 1.80), (10,12): (4, 0, 1.75),
+        # (14,14): (4, 0, 1.65), (14,16): (4, 0, 1.80),
         # (16,16): (4, 0, 1.85), (16,18): (4, 0, 1.75),
         (18,18): (4, 0, 1.80), (18,20): (4, 0, 1.80),
         (20,20): (4, 0, 1.76), 
-                    }
+    }
     nucleus = sorted(list(interactions.keys()))
     
     run_J_surface(nucleus, interactions, InputTaurus.ConstrEnum.Jx,

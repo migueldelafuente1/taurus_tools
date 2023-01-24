@@ -314,9 +314,17 @@ eval full Val.Space (0,1)   = 1
                              self.ArgsEnum.interm_wf, self.ArgsEnum.pair_schm):
                     assert value in (0,1), f"Value must be 1 or 0 [{value}]"
                 elif arg in (self.ArgsEnum.z_Mphi,   self.ArgsEnum.n_Mphi,
-                             self.ArgsEnum.qp_block, self.ArgsEnum.iterations):
+                             self.ArgsEnum.iterations):
                     assert type(value)==int and value >=0, \
                         f"Value must be non-negative integer [{value}]"
+                elif arg == self.ArgsEnum.qp_block:
+                    assert isinstance(value, (int, list)), \
+                        "QP block state value must be list of positive integers"
+                    if value != 0: 
+                        # value 0 is accepted as int_ for no blocking
+                        val_2 = [value, ] if type(value)==int else value 
+                        assert all([type(x)==int and x>0 for x in val_2]), \
+                            f"All QP block states must be > 0, got:{val_2}"
                 elif arg == self.ArgsEnum.seed:
                     assert type(value)==int and value >=0 and value < 10, \
                         f"Value must be in range 0-9 [{value}]"
@@ -399,12 +407,20 @@ eval full Val.Space (0,1)   = 1
         Set the Qp to block, attr self.qp_block is the qp state for the blocking,
         """
         if self.qp_block not in (None, 0):
-            if isinstance(self.qp_block, str):
-                assert self.qp_block.isdigit(), InputException(
-                    " ".join(["Got", self.qp_block, ", is not integer"]))
-            assert isinstance(self.qp_block, int), InputException(
-                " ".join(["Must give an integer or int-string, got:", self.qp_block]))
-            return f"1\nQP_blocked_1                  {self.qp_block}"
+            if not isinstance(self.qp_block, list):
+                blk_sts = [self.qp_block, ]
+            else:
+                blk_sts = self.qp_block
+            
+            txt = ""
+            for indx, bl_st in enumerate(blk_sts):
+                if isinstance(bl_st, str):
+                    assert bl_st.isdigit(), InputException(
+                        " ".join(["Got", blk_sts, ", smthg is not an integer"]))
+                assert isinstance(bl_st, int), InputException(
+                    " ".join(["Must give an integer or int-string, got:", blk_sts]))
+                txt +=f"1\nQP_blocked_{indx}                  {bl_st}"
+            return txt
         else:
             return '0'
     

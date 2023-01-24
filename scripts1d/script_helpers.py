@@ -59,7 +59,8 @@ def getInteractionFile4D1S(interactions, z,n):
             assert type(MZmax)==int and type(MZmin) == int and type(b_length)==float, MSG_
             assert MZmax >= MZmin and MZmin >= 0, "MZmax >= Mzmin >= 0"
             
-            print(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}")
+            print(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}"
+                  f"  Major shells: [{MZmin}, {MZmax}]")
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
             exe_.setAndRun_D1Sxml()
             interaction = exe_.hamil_filename
