@@ -548,6 +548,11 @@ class _Base1DTaurusExecutor(object):
             self._base_wf_filename = 'base_initial_wf.bin'
             shutil.copy('final_wf.bin', self._base_wf_filename)
             tail = f"z{self.z}n{self.n}_dbase"
+            
+            if 1 in self.numberParityOfIsotope: ## save all the 1st blocked seeds
+                s_n = [x.endswith("dbase.OUT") for x in os.listdir(self.DTYPE.BU_folder)]
+                s_n = len(list(filter(lambda x: x, s_n)))
+                tail = tail.replace("dbase", f"{s_n}-dbase")
         else:
             tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}"
         
@@ -791,7 +796,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
     def _oddNumberParitySeedConvergence(self):
         """
-        TODO: procedure to select the sp state to block with the lower energy
+        Procedure to select the sp state to block with the lower energy:
+         * Selects state randomly for a random sh-state in the odd-particle space
+         * Repeat the convergence N times and get the lower energy
+         * export to the BU the (discarded) blocked seeds (done in saveWF method)  
         """
         ## get a sp_space for the state to block 
         odd_p, odd_n = self.numberParityOfIsotope
@@ -867,6 +875,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 bk_min, bk_E_min = bk_sp, res.E_HFB
         
             print(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+            
         
         print("\n  ** Blocking minimization process [FINISHED], Results:")
         print(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")
