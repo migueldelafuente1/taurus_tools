@@ -296,7 +296,7 @@ class _Base1DTaurusExecutor(object):
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
                 self._results[0].append(self._executeProgram())
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
-                self._run_backPropagationSweeping(oblate_part=True) 
+                self._run_backwardsSweeping(oblate_part=True) 
             
             print(" ** prolate:")
             for k, val in self._deformations_map[1][1:]: # prolate
@@ -306,9 +306,9 @@ class _Base1DTaurusExecutor(object):
                 self._results[1].append(self._executeProgram())
             
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
-                self._run_backPropagationSweeping(oblate_part=False)
+                self._run_backwardsSweeping(oblate_part=False)
     
-    def _run_backPropagationSweeping(self, oblate_part=None):
+    def _run_backwardsSweeping(self, oblate_part=None):
         """ 
         Method to reevaluate the execution limits backwards, 
         over-writable method to change the acceptance criteria (impose lower energy)
