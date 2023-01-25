@@ -187,7 +187,9 @@ class EvolTaurus(_DataObjectBase):
         if self.sp_dens:
             print("LEN sp_dens: ", self.sp_dens.__len__())
     
-    
+    # def __str__(self):
+    #     aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
+    #     return "\n".join(k+' :\t'+str(v) for k,v in aux.items())
     
     def _read_calculation_evol(self, data_evol):
         
@@ -312,7 +314,7 @@ class EvolTaurus(_DataObjectBase):
             line = data_evol.split(hT3)[1][:80].split('\n')[0]
             line = line.split(' ITER_FINAL=')
             line, iter_max = line[0], line[1]
-            self.iter_max = int(iter_max) - 1
+            self.iter_max = min(int(iter_max) - 1, 1) # to avoid 0/0
             times_execution.append(datetime.strptime(line, self.FMT_DT))
         # save time related calculations
         if len(times_execution) == 3:
