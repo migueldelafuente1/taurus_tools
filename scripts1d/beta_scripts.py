@@ -70,7 +70,7 @@ def run_b20_surface(nucleus, interactions, q_min=-2.0, q_max=2.0, N_max=41):
     ExeTaurus1D_DeformB20.ITERATIVE_METHOD = \
         ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_SWEEPING
         
-    ExeTaurus1D_DeformQ20.SAVE_DAT_FILES = [
+    ExeTaurus1D_DeformB20.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
