@@ -17,7 +17,7 @@ from copy import deepcopy, copy
 from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    zipBUresults, readAntoine
+    zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR
 from tools.Enums import Enum, OutputFileTypes
 
 
@@ -37,7 +37,7 @@ class _Base1DTaurusExecutor(object):
     ITERATIVE_METHOD  = None
     SAVE_DAT_FILES = []  # list for saving the auxillary files from taurus
     EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
-    HEADER_SEPARATOR = ' ## '
+    HEADER_SEPARATOR = OUTPUT_HEADER_SEPARATOR
     
     CONSTRAINT    : str = None # InputTaurus Variable to compute
     CONSTRAINT_DT : str = None # DataTaurus (key) Variable to compute
@@ -112,6 +112,8 @@ class _Base1DTaurusExecutor(object):
         self._iter    = 0
         self._N_steps = 0
         self._preconvergence_steps = 0
+        
+        self._results = [[], []]
         
         if not keep_1stMinimum:
             
@@ -694,8 +696,12 @@ class _Base1DTaurusExecutor(object):
         Order: oblate[-N, -N-1, ..., -1] > prolate [0, 1, ..., N']
         """
         res2print = []
+        dtype_ = None
         for part_ in (0, 1):
             for indx, res in enumerate(self._results[part_]):
+                ## NOTE: This conditional is unnecessary, leaved here for secure iter.
+                if indx >= self._deformations_map[part_].__len__(): break
+                
                 key_, dval = self._deformations_map[part_][indx]
                 line = []
                 if self.include_header_in_results_file:
@@ -707,8 +713,13 @@ class _Base1DTaurusExecutor(object):
                     res2print.append(line)
                 else:
                     res2print.insert(0, line)
+                
+                if (dtype_ == None) and (res != None):
+                    dtype_ = res.__class__.__name__
         
-        txt_ = '\n'.join(res2print) 
+        txt_ = '\n'.join(res2print)
+        head_ = ", ".join([dtype_, self.CONSTRAINT_DT])
+        txt_ = head_ + '\n' + txt_
         
         if output_filename == None:
             output_filename = self.EXPORT_LIST_RESULTS
@@ -723,7 +734,7 @@ class _Base1DTaurusExecutor(object):
             zipping files, launch tests on the results, plotting things
         """
         raise ExecutionException("Abstract Method, implement me!")
-
+    
 
 class _Base1DAxialExecutor(_Base1DTaurusExecutor):
     
@@ -765,11 +776,15 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 shutil.copy(self.interaction+ext_,  self.DTYPE.BU_folder)
         
     
-    def setUpExecution(self, *args, **kwargs):
+    def setUpExecution(self, reset_seed=False,  *args, **kwargs):
         """
         base solution pre-convergence.
         *   to change after the execution, put by InputTaurus.*Enum new values 
             as keyword arguments.
+        
+        :reset_seed: If there is/or not a seed minimum for the calculation and
+                     we want to repeat the convergence process, turn it  <True>
+        
         """
         
         self.calculationParameters
@@ -778,13 +793,15 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self._preconvergence_steps = 0
         self.printTaurusResult(None, print_head=True)
         
-        if 1 in self.numberParityOfIsotope:
-            ## procedure to evaluate odd-even nuclei
-            self._oddNumberParitySeedConvergence()
-        else:
-            ## even-even general case
-            while not self._preconvergenceAccepted(res):
-                res = self._executeProgram(base_execution=True)
+        if self._1stSeedMinima == None or reset_seed:
+            if 1 in self.numberParityOfIsotope:
+                ## procedure to evaluate odd-even nuclei
+                self._oddNumberParitySeedConvergence()
+                ## NOTE: The state blocked is in the seed, no more blocking during the process
+            else:
+                ## even-even general case
+                while not self._preconvergenceAccepted(res):
+                    res = self._executeProgram(base_execution=True)
         
         ## negative values might be obtained        
         self._setDeformationFromMinimum(self._deform_lim_min, 
@@ -936,7 +953,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         _Base1DTaurusExecutor.saveFinalWFprocedure(self, base_execution)
     
     def run(self):
-        ## TODO: might require aditional changes
+        ## TODO: might require additional changes
         _Base1DTaurusExecutor.run(self)
     
     def gobalTearDown(self, zip_bufolder=True, *args, **kwargs):
@@ -944,11 +961,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
         """
+        args = list(args) + list(kwargs.values())
         if zip_bufolder:
-            args = []
             if self.CONSTRAINT != None:
                 args.append(self.CONSTRAINT)
-                
+            
             zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction,
                          *args)
     

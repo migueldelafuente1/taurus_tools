@@ -13,18 +13,19 @@ from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
 
 
-def run_pair_surface(nucleus, interactions, pair_constrs, seed_base=0, 
-                     p_min=-0.05, p_max=2.0, N_max=41):
+def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0, 
+                         p_min=-0.05, p_max=2.0, N_max=41):
     """
-    This method runs for each nucleus all pair constrains given ()
+    This method runs for each nucleus all pair constrains given, builds D1S m.e
     Args:
-        nucleus
-        interactions
-        pair_constrs = <list> [P_TJ**, P_TJ'**, ...]
-        seed_base (taurus_input seeds, pn-mix True= 0 & 4)
-        p_min
-        p_max
-        N_steps:   = linspace()
+        :nucleus: <list>: (z1,n1), (z2,n2), ..
+        :interactions: <dict> [Nucleus (z, n)]: (MZm_max, Mz_min, b_length)
+        :pair_constrs = <list> [P_TJ**, P_TJ'**, ...]
+    Optional:
+        :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
+        :p_min
+        :p_max
+        :N_steps:
     """
     assert all(map(lambda x: x.startswith('P_T'), pair_constrs)), f"invalid pair constraint {pair_constrs}"
     
@@ -35,6 +36,7 @@ def run_pair_surface(nucleus, interactions, pair_constrs, seed_base=0,
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
+    ExeTaurus1D_PairCoupling.BLOCKING_SEEDS_RANDOMIZATION = 3
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
@@ -64,19 +66,30 @@ def run_pair_surface(nucleus, interactions, pair_constrs, seed_base=0,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
         }
         
+        ExeTaurus1D_PairCoupling.setPairConstraint(pair_constrs[0])
+        ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}_base.txt"
+        
+        exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
+        exe_.setInputCalculationArguments(**input_args_start)
+        exe_.defineDeformationRange(p_min,  p_max, N_max)
+        exe_.setUp()
+        exe_.setUpExecution(**input_args_onrun)
+        exe_.gobalTearDown(zip_bufolder=True, _='BASE')
+        
         for ip, pair_constr in enumerate(pair_constrs):
             
             ExeTaurus1D_PairCoupling.setPairConstraint(pair_constr)
             ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
             
             try:
-                if ip == 0:
-                    exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
-                else:
-                    exe_.resetExecutorObject(keep_1stMinimum=True)
-                    input_args_start = input_args_onrun
-                    
-                exe_.setInputCalculationArguments(**input_args_start)
+                # if ip == 0:
+                #     exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
+                # else:
+                exe_.resetExecutorObject(keep_1stMinimum=True)
+                # input_args_start = input_args_onrun
+                
+                # exe_.setInputCalculationArguments(**input_args_start)
+                exe_.setInputCalculationArguments(input_args_onrun)
                 exe_.defineDeformationRange(p_min,  p_max, N_max)
                 exe_.setUp()
                 exe_.setUpExecution(**input_args_onrun)

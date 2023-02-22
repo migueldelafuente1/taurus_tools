@@ -554,8 +554,8 @@ class DataTaurus(_DataObjectBase):
         self.sh_dim      = None
         self.MZmax       = None
         
-        self.proton_numb = None
-        self.neutron_num = None
+        self.proton_numb  = None
+        self.neutron_numb = None
         self.var_p = None
         self.var_n = None
         
@@ -875,7 +875,7 @@ class DataTaurus(_DataObjectBase):
             self.proton_numb, self.var_p = vals[0], vals[1]
         elif self.HeaderEnum.Number_of_neutrons in line:
             vals = self._getValues(line, self.HeaderEnum.Number_of_neutrons)
-            self.neutron_num, self.var_n = vals[0], vals[1]
+            self.neutron_numb, self.var_n = vals[0], vals[1]
     
     def _getAngularMomentum(self, line):
         if line == "Part \ No.     Z          N          A":
@@ -1160,7 +1160,7 @@ class DataAxial(DataTaurus):
             # print(line)
             if   self.HeaderEnum.N in line:
                 vals = self._getValues(line, self.HeaderEnum.N)
-                self.proton_numb, self.neutron_num = vals[0], vals[1]
+                self.proton_numb, self.neutron_numb = vals[0], vals[1]
             elif self.HeaderEnum.Var_N in line:
                 vals = self._getValues(line, self.HeaderEnum.Var_N)
                 self.var_p, self.var_n = vals[0], vals[1]

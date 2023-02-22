@@ -22,6 +22,8 @@ PATH_COUL_IN_2BMESUITE = TBME_HAMIL_FOLDER + 'Coul_MZ7_beq1.2b'
 PATH_COM2_IN_2BMESUITE = TBME_HAMIL_FOLDER + 'COM_MZ10.com'
 TBME_RESULT_FOLDER = 'results/'
 
+OUTPUT_HEADER_SEPARATOR  = ' ## '
+
 def zipBUresults(folder, z,n,interaction, *args):
     """
     This method export BU_folder results and outputs into a .zip, adding an 
