@@ -183,7 +183,7 @@ class DataTaurus:
         self.properly_finished = False
         
         self.proton_numb = None
-        self.neutron_num = None
+        self.neutron_numb = None
         self.var_p = None
         self.var_n = None
         
@@ -474,7 +474,7 @@ class DataTaurus:
             self.proton_numb, self.var_p = vals[0], vals[1]
         elif self.Enum.Number_of_neutrons in line:
             vals = self._getValues(line, self.Enum.Number_of_neutrons)
-            self.neutron_num, self.var_n = vals[0], vals[1]
+            self.neutron_numb, self.var_n = vals[0], vals[1]
     
     def _getAngularMomentum(self, line):
         if line == "Part \ No.     Z          N          A":

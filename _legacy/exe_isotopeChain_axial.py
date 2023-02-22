@@ -109,7 +109,7 @@ class DataAxial:
         self.properly_finished = False
         
         self.proton_numb = None
-        self.neutron_num = None
+        self.neutron_numb = None
         self.var_p = None
         self.var_n = None
         
@@ -222,7 +222,7 @@ class DataAxial:
             # print(line)
             if   self.Enum.N in line:
                 vals = self._getValues(line, self.Enum.N)
-                self.proton_numb, self.neutron_num = vals[0], vals[1]
+                self.proton_numb, self.neutron_numb = vals[0], vals[1]
             elif self.Enum.Var_N in line:
                 vals = self._getValues(line, self.Enum.Var_N)
                 self.var_p, self.var_n = vals[0], vals[1]
