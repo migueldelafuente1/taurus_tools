@@ -83,6 +83,7 @@ class _Base1DTaurusExecutor(object):
         self._N_steps = 0
         self._preconvergence_steps = 0
         self._base_wf_filename = None
+        self._base_seed = None
         
         self.include_header_in_results_file = True # set the export result to have the deformation header (i: Q[i]) ## data
         self.save_final_wf  = False # To set for the final wf to be copied as initial
@@ -144,6 +145,8 @@ class _Base1DTaurusExecutor(object):
             if (self.CONSTRAINT_DT == None):
                 raise ExecutionException("Must be a defined observable for the result to",
                                          " evaluate the deformations. None set.")
+        if self._base_seed == None:
+            print("[WARNING Executor] Seed was not defined, it will be copied (s=1).")
         
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False,
                                      **input_kwargs):
@@ -186,6 +189,7 @@ class _Base1DTaurusExecutor(object):
         
         self.inputObj.setParameters(**input_kwargs)
         self._DDparams = self.inputObj._DD_PARAMS 
+        self._base_seed = self.inputObj.seed
         # NOTE:  by assign the _DD (class) dictionary in input, changes in the
         # attribute _DDparams is transfered to the input.
     
@@ -403,7 +407,7 @@ class _Base1DTaurusExecutor(object):
         Variable step in the oblate and prolate part.
         Fucntion inherit from legacy:
             TODO: Not Tested!!
-        """
+        """        
         if self._1stSeedMinima == None or self._base_wf_filename == None:
             raise ExecutionException("Running runVarialeStep without a first "
                                      "converged result, stop. \n Suggestion:"
@@ -812,6 +816,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         _new_input_cons = dict(filter(lambda x: x[0] in self.ITYPE.ConstrEnum.members(), 
                                       kwargs.items() ))
         self.inputObj.setParameters(**_new_input_args, **_new_input_cons)
+        if InputTaurus.seed in _new_input_args:
+            self._base_seed = _new_input_args.get(InputTaurus.seed, None)
         
     
     def _oddNumberParitySeedConvergence(self):
@@ -896,6 +902,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
             print(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
             
+            ## NOTE: If convergence is iterated, inputObj seed is turned 1, refresh!
+            self.inputObj = self._base_seed 
         
         print("\n  ** Blocking minimization process [FINISHED], Results:")
         print(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")

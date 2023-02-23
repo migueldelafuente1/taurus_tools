@@ -9,7 +9,7 @@ from tools.helpers import importAndCompile_taurus, TBME_SUITE
 
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
-from scripts1d.pair_scripts import run_pair_surface
+from scripts1d.pair_scripts import run_pair_surface_D1S
 from scripts1d.cranking_scripts import run_J_surface
 
 if not (InputTaurus.PROGRAM in os.listdir()):
@@ -56,6 +56,6 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.P_T00_J10,  InputTaurus.ConstrEnum.P_T10_J00,
         InputTaurus.ConstrEnum.P_T1m1_J00, InputTaurus.ConstrEnum.P_T1p1_J00
     ]
-    # run_pair_surface(nucleus, interactions, PAIR_CONSTRS, 
+    # run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS, 
     #                  seed_base=5, p_min=-0.05, p_max=2.0, N_max=41)
         
