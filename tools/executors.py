@@ -513,14 +513,14 @@ class _Base1DTaurusExecutor(object):
         """
         # program = """ """
         # exec(program)
-        file2copy = "aux_output_Z10N10_00_00.txy"
-        file2copy = "aux_output_Z10N6_23.txt"
-        # file2copy = 'aux_output_Z10N6_broken.txt'
-        file2copy = "res_z18n18_dbase.OUT"
+        file2copy = "TEMP_output_Z10N10_max_iter.txt"
+        # file2copy = 'TEMP_output_Z10N6_broken.txt'
+        # file2copy = "TEMP_z18n18_dbase.txt"
         
         txt = ''
         with open(file2copy, 'r') as f:
             txt = f.read()
+            txt = txt.format(INPUT_2_FORMAT=self.inputObj)
         
         with open(output_fn, 'w+') as f:
             f.write(txt)
@@ -555,9 +555,17 @@ class _Base1DTaurusExecutor(object):
             shutil.copy('final_wf.bin', self._base_wf_filename)
             tail = f"z{self.z}n{self.n}_dbase"
             
+            ## TODO: Extend the condition for general repetitive base-input.
             if 1 in self.numberParityOfIsotope: ## save all the 1st blocked seeds
-                s_n = [x.endswith("dbase.OUT") for x in os.listdir(self.DTYPE.BU_folder)]
-                s_n = len(list(filter(lambda x: x, s_n)))
+                s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
+                s_list = list(filter(lambda x: x.endswith("dbase.OUT"), s_list))
+                s_n = len(s_list)
+                unconv_n = " ".join(s_list).count("unconv")
+                s_n -= unconv_n
+                if getattr(self._current_result, 'properly_finished', False)==False:
+                    s_n = str(s_n)+'unconv'+str(self._preconvergence_steps)
+                    ## Note, to keep the first(unconv) and intermediate results
+                    ## read the "base" results in order until non (unconv) label
                 tail = tail.replace("dbase", f"{s_n}-dbase")
         else:
             tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}"
@@ -816,8 +824,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         _new_input_cons = dict(filter(lambda x: x[0] in self.ITYPE.ConstrEnum.members(), 
                                       kwargs.items() ))
         self.inputObj.setParameters(**_new_input_args, **_new_input_cons)
-        if InputTaurus.seed in _new_input_args:
-            self._base_seed_type = _new_input_args.get(InputTaurus.seed, None)
+        if InputTaurus.ArgsEnum.seed in _new_input_args:
+            self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, None)
         
     
     def _oddNumberParitySeedConvergence(self):
@@ -891,7 +899,12 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             
             res = None
             while not self._preconvergenceAccepted(res):
+                if res != None:
+                    ## otherwise the state is "re- blocked"
+                    print(" ** * [Not Converged] Repeating loop.")
+                    self.inputObj.qp_block = None
                 res = self._executeProgram(base_execution=True)
+            print(" ** * [OK] Result accepted. Saving result.")
             
             blocked_seeds_results[bk_sp] = deepcopy(res)
             blocked_energies     [bk_sp] = res.E_HFB

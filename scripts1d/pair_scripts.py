@@ -69,12 +69,18 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
         ExeTaurus1D_PairCoupling.setPairConstraint(pair_constrs[0])
         ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}_base.txt"
         
-        exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
-        exe_.setInputCalculationArguments(**input_args_start)
-        exe_.defineDeformationRange(p_min,  p_max, N_max)
-        exe_.setUp()
-        exe_.setUpExecution(**input_args_onrun)
-        exe_.gobalTearDown(zip_bufolder=True, _='BASE')
+        try:
+            exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
+            exe_.setInputCalculationArguments(**input_args_start)
+            exe_.defineDeformationRange(p_min,  p_max, N_max)
+            exe_.setUp()
+            exe_.setUpExecution(**input_args_onrun)
+            exe_.gobalTearDown(zip_bufolder=True, _='BASE')
+        except ExecutionException as e:
+            print("[PAIR_SCRIPT ERROR] :: Execution Exception rose:")
+            print(e)
+            print("[PAIR_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
+            continue
         
         for ip, pair_constr in enumerate(pair_constrs):
             
