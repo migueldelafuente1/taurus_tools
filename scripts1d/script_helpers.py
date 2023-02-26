@@ -10,7 +10,7 @@ from tools.hamiltonianMaker import TBME_HamiltonianManager
 
 
 
-def getInteractionFile4D1S(interactions, z,n):
+def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True):
     """
     This function import a certain hamil file for the calculations to run:
     
@@ -62,6 +62,8 @@ def getInteractionFile4D1S(interactions, z,n):
             print(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}"
                   f"  Major shells: [{MZmin}, {MZmax}]")
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
+            exe_.do_coulomb = do_Coulomb
+            exe_.do_LS      = do_LS
             exe_.setAndRun_D1Sxml()
             interaction = exe_.hamil_filename
             print(f" ** [DONE] Interaction: [{interaction}]")

@@ -11,6 +11,7 @@ from tools.executors import ExeTaurus1D_PairCoupling, ExecutionException
 from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
+from tools.helpers import LINE_2
 
 
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0, 
@@ -39,6 +40,9 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
     ExeTaurus1D_PairCoupling.BLOCKING_SEEDS_RANDOMIZATION = 3
     
     for z, n in nucleus:
+        print(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
+              datetime.now().time(), "\n")
+        
         interaction = getInteractionFile4D1S(interactions, z, n)
         if interaction == None or not os.path.exists(interaction+'.sho'):
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
@@ -104,9 +108,9 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
             except ExecutionException as e:
                 print(e)
             
-            print("End run_pair_surface: ", pair_constr, datetime.now().time())
+            print("End run_pair_surface: ", pair_constr, datetime.now().time(), "\n")
         
-        print("End all run_pair_surfaces: ", datetime.now().time())
+        print("End all run_pair_surfaces: ", datetime.now().time(), "\n\n")
 
 
 

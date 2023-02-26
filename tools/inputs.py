@@ -419,8 +419,8 @@ eval full Val.Space (0,1)   = 1
                         " ".join(["Got", blk_sts, ", smthg is not an integer"]))
                 assert isinstance(bl_st, int), InputException(
                     " ".join(["Must give an integer or int-string, got:", blk_sts]))
-                txt +=f"1\nQP_blocked_{indx}                  {bl_st}"
-            return txt
+                txt +=f"\nQP_blocked_{indx}                  {bl_st}"
+            return str(len(blk_sts))+txt
         else:
             return '0'
     
