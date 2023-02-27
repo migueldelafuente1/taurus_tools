@@ -35,10 +35,10 @@ if __name__ == '__main__':
         # (14,14): (5, 0, 1.65), (14,15): (5, 0, 1.80),
         (16,16): (5, 0, 1.85), (16,17): (5, 0, 1.75),
         (18,18): (5, 0, 1.80), (18,19): (5, 0, 1.80),
-        (20,20): (5, 0, 1.76), 
+        # (20,20): (5, 0, 1.76), 
     }
     nucleus = sorted(list(interactions.keys()))
     
     run_J_surface(nucleus, interactions, InputTaurus.ConstrEnum.Jx,
-                  seed_base=0, j_min=0.0, j_max=15.0, N_max=30)
+                  seed_base=0, j_min=0.0, j_max=15.0, N_max=45)
     

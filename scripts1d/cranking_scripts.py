@@ -16,11 +16,15 @@ def run_J_surface(nucleus, interactions, J_i,
                   seed_base=0, j_min= 0.0, j_max=25.0, N_max=50):
     """
     Reqire:
-        Args:
-        nucleus
-        interactions
-        J_i  from DataTaurus.ConstrEnum.J*
-        deform array for linspace
+    Args:
+        :nucleus: <list>: (z1,n1), (z2,n2), ..
+        :interactions: <dict> [Nucleus (z, n)]: (MZm_max, Mz_min, b_length)
+        :J_i:  from DataTaurus.ConstrEnum.J*
+    Optional:
+        :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
+        :j_min
+        :j_max
+        :N_steps:
     """
     assert J_i.startswith('J') and J_i in InputTaurus.ConstrEnum.members(), \
         "Script only accepts Jx, Jy, Jz"
@@ -32,6 +36,7 @@ def run_J_surface(nucleus, interactions, J_i,
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
+    ExeTaurus1D_AngMomentum.BLOCKING_SEEDS_RANDOMIZATION = 5
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
@@ -45,7 +50,7 @@ def run_J_surface(nucleus, interactions, J_i,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
-            InputTaurus.ArgsEnum.seed: 5,
+            InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
