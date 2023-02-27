@@ -162,10 +162,11 @@ class _Ploter1D(object):
         _0line = _0line.split(',')
         constr_, dataObjClass_ = None, None
         for val in _0line:
-            if val in _taurus_object_test.__dict__:
-                constr_ = val.strip()
-            elif isinstance(val, (DataAxial,DataTaurus)):
-                dataObjClass_ = val.strip()
+            val = val.strip()
+            if val in _taurus_object_test.__dict__.keys():
+                constr_ = val
+            elif val in ('DataAxial', 'DataTaurus'):
+                dataObjClass_ = val
         
         if not dataObjClass_:
             print("[PLT WARNING] Undefined DataObject to import, continue with [DataTaurus]")
@@ -202,8 +203,9 @@ class _Ploter1D(object):
             plt.rcParams.update({"text.usetex": False, "font.family": 'DejaVu Sans',
                                  "font.size"  : 12}) 
         
+        self.constraints_str = {}
         for constr_ in self.constraints:
-            self.constraints_str = {constr_: self._getVariableStringForDisplay(constr_)}        
+            self.constraints_str[constr_] = self._getVariableStringForDisplay(constr_)        
         
         fig , ax = plt.subplots()
         self._axes = ax
@@ -220,6 +222,9 @@ class _Ploter1D(object):
                 lab_ = self.constraints_str[constr_]
             self._axes.plot(self._x_values[file_].values(), y_values, '.-', label=lab_)
         
+        if len(self.import_files) == 0:
+            print("[WARNING] Not founded any file to plot, Exiting")
+            return
         # Global Labels.
         if self._title   == '':
             lab_ = self.import_files[0].replace("export", '').replace(".txt", "")
@@ -267,6 +272,8 @@ class _Ploter1D(object):
             return var
         
         new_var  = var
+        if var == None:
+            _ = 0
         args = var.split("_")
         args2 = copy(args) + ['', ] # omit 'tot' for the text to be less verbose
         ## 
@@ -325,48 +332,50 @@ class Ploter1D_Taurus(_Ploter1D):
 if __name__ == "__main__":
     
     
-    _Ploter1D.setFolderPath2Import('../DATA_RESULTS/')
+    # _Ploter1D.setFolderPath2Import('../DATA_RESULTS/')
+    #
+    # files_ = ['export_TESb20_z12n10_hamil_MZ4.txt',]
+    #
+    # attr2plot = 'E_HFB'
+    # # attr2plot = 'gamma_isoscalar'
+    # # attr2plot = 'gamma_isovector'
+    # # attr2plot = "b22_isoscalar"
+    # # attr2plot = "b20_isoscalar"
+    # # attr2plot = "pair_pn"
+    # plt_obj = Ploter1D_Taurus(files_, attr2plot)
+    # plt_obj.LATEX_FORMAT = True
+    # # for attr_ in _taurus_object_test.__dict__.keys():
+    # #     if attr_.startswith("_"): continue
+    # #     print(f"{attr_:20} :: ", plt_obj._getVariableStringForDisplay(attr_))
+    #
+    #
+    # for attr2plot in ('E_HFB', ):
+    #     plt_obj.setConstraintBase('b20_isoscalar')
+    #     plt_obj.setTitle(r"$$TES\ D1S\ MZ=4\qquad z,n=(12,10)$$")
+    #     plt_obj.defaultPlot(attr2plot)
+    #     # plt_obj.LATEX_FORMAT = False
+    # _taurus_object_test.E_HFB
     
-    files_ = ['export_TESb20_z12n10_hamil_MZ4.txt',]
-    
-    attr2plot = 'E_HFB'
-    # attr2plot = 'gamma_isoscalar'
-    # attr2plot = 'gamma_isovector'
-    # attr2plot = "b22_isoscalar"
-    # attr2plot = "b20_isoscalar"
-    # attr2plot = "pair_pn"
-    plt_obj = Ploter1D_Taurus(files_, attr2plot)
-    plt_obj.LATEX_FORMAT = True
-    # for attr_ in _taurus_object_test.__dict__.keys():
-    #     if attr_.startswith("_"): continue
-    #     print(f"{attr_:20} :: ", plt_obj._getVariableStringForDisplay(attr_))
-    
-    
-    for attr2plot in ('E_HFB', ):
-        plt_obj.setConstraintBase('b20_isoscalar')
-        plt_obj.setTitle(r"$$TES\ D1S\ MZ=4\qquad z,n=(12,10)$$")
-        plt_obj.defaultPlot(attr2plot)
-        # plt_obj.LATEX_FORMAT = False
-    _taurus_object_test.E_HFB
-    0/0
     
     
     #===========================================================================
     # PLOT the P_T surfaces
     #===========================================================================
-    SUBFLD_ = 'Mg_MZ4/'
+    # SUBFLD_ = 'Mg_MZ4/'
     # SUBFLD_ = 'Mg_MZ5/'
-    # SUBFLD_ = 'SD_Nuclei_MZ4/'
-    # SUBFLD_ = 'SD_Nuclei_MZ5/'
+    SUBFLD_ = 'SDnuclei_MZ4_new/'
+    # SUBFLD_ = 'SDnuclei_MZ5/'
     Ploter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/PN_mixing/'+SUBFLD_)
     
     nuclei = [(z, z) for z in range(8, 21, 2)]
     pair_constr = ['P_T00_J10', 'P_T1p1_J00', 'P_T1m1_J00',  'P_T10_J00']
+    nuclei = [(16, 17),]
     
     for z, n in nuclei:
         if SUBFLD_.startswith('Mg' ):
             if z != 12: continue
-        files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
+        # files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
+        files_ = [f"export_TES_{pp}_z{z}n{n}_hamil_MZ4.txt" for pp in pair_constr]
         
         attr2plot_list = [
             'E_HFB', 'pair', *pair_constr]

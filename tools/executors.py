@@ -13,6 +13,7 @@ import shutil
 import numpy as np
 from numpy.random import randint
 from copy import deepcopy, copy
+from random import random
 
 from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
@@ -515,7 +516,7 @@ class _Base1DTaurusExecutor(object):
         # exec(program)
         file2copy = "TEMP_output_Z10N10_max_iter.txt"
         # file2copy = 'TEMP_output_Z10N6_broken.txt'
-        # file2copy = "TEMP_z18n18_dbase.txt"
+        file2copy = "TEMP_z18n18_dbase.txt"
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -524,13 +525,14 @@ class _Base1DTaurusExecutor(object):
         
         with open(output_fn, 'w+') as f:
             f.write(txt)
-        
+            
+        hash_ = hash(random()) # random text to identify wf
         ## wf intermediate
         with open('final_wf.bin', 'w+') as f:
-            f.write("")
+            f.write(str(hash_))
         if self.inputObj.interm_wf == 1:
             with open('intermediate_wf.bin', 'w+') as f:
-                f.write("")
+                f.write(str(hash_))
         ## simulates the other .dat prompt
         for file_ in  ("canonicalbasis", "eigenbasis_h", 
                        "eigenbasis_H11", "occupation_numbers"):
@@ -863,9 +865,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         blocked_seeds_results = {}
         blocked_energies      = {}
         bk_min, bk_E_min      = 0, 1.0e+69
+        double4OO = sum(self.numberParityOfIsotope) # repeat twice for odd-odd
         print("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
-              self.BLOCKING_SEEDS_RANDOMIZATION, " #-par:", self.numberParityOfIsotope, LINE_2)
-        for rand_step in range(self.BLOCKING_SEEDS_RANDOMIZATION):
+              double4OO*self.BLOCKING_SEEDS_RANDOMIZATION, 
+              " #-par:", self.numberParityOfIsotope, LINE_2)
+        for rand_step in range(double4OO * self.BLOCKING_SEEDS_RANDOMIZATION):
             bk_sp_p, bk_sp_n = 0, 0
             bk_sh_p, bk_sh_n = 0, 0
             bk_sp, bk_sh = None, None
@@ -908,6 +912,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             
             blocked_seeds_results[bk_sp] = deepcopy(res)
             blocked_energies     [bk_sp] = res.E_HFB
+            # Move the base wf to a temporal file, then copied from the bk_min
+            shutil.move(self._base_wf_filename, f"{bk_sp}_{self._base_wf_filename}")
             
             ## actualize the minimum result
             if res.E_HFB < bk_E_min:
@@ -930,7 +936,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         # copy the lowest energy solution and output.
         self.inputObj.qp_block = 0
         self._1stSeedMinima = blocked_seeds_results[bk_min]
-        
+        shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
     
     def _preconvergenceAccepted(self, result: DataTaurus):
         """

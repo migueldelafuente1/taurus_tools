@@ -40,7 +40,7 @@ def run_J_surface(nucleus, interactions, J_i,
             continue
         
         InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.r_dim : 12,
+            **{InputTaurus.InpDDEnum.r_dim : 14,
                InputTaurus.InpDDEnum.omega_dim : 14})
         
         input_args_start = {
@@ -58,7 +58,7 @@ def run_J_surface(nucleus, interactions, J_i,
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.01,
+            InputTaurus.ArgsEnum.grad_tol : 0.005,
         }
         
         ExeTaurus1D_AngMomentum.setAngularMomentumConstraint(J_i)        

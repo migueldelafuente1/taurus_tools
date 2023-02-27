@@ -67,7 +67,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.01,
+            InputTaurus.ArgsEnum.grad_tol : 0.005,
         }
         
         ExeTaurus1D_PairCoupling.setPairConstraint(pair_constrs[0])
@@ -111,6 +111,4 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
             print("End run_pair_surface: ", pair_constr, datetime.now().time(), "\n")
         
         print("End all run_pair_surfaces: ", datetime.now().time(), "\n\n")
-
-
 

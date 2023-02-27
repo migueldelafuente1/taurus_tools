@@ -57,7 +57,7 @@ class TBME_HamiltonianManager(object):
         if not TBME_SUITE in os.listdir():
             self._cloneGitHub()
         
-        self.hamil_filename = f'hamil_MZ{self.MZmax}' ## TODO: which criteria 
+        self.hamil_filename = None #f'D1S_MZ{self.MZmax}' ## TODO: which criteria 
         
         self.do_COM2    = set_com2
         self.do_BB      = True
@@ -241,6 +241,24 @@ class TBME_HamiltonianManager(object):
             f.write(com_text)
         self.com_filename = com_filename
     
+    def _set_defaultHamilName(self):
+        """ 
+        Set a default name depending on the interaction choice.
+        """
+        if self.hamil_filename != None:
+            return
+        
+        name = 'D1S'
+        if not self.do_coulomb:
+            name += "_noCoul"
+        if not self.do_LS:
+            name += "_noLS"
+        if self.do_DD:
+            name += "_COREz{}n{}".format(*self.inner_core)
+        name += f"_MZ{self.MZmax}"
+        
+        self.hamil_filename = name       
+    
     def setAndRun_D1Sxml(self, title=''):
         """
         Import the file from template and set up forces and valence space
@@ -264,6 +282,7 @@ class TBME_HamiltonianManager(object):
         
         out_   = root.find(InputParts.Output_Parameters)
         outfn_ = out_.find(Output_Parameters.Output_Filename)
+        self._set_defaultHamilName()
         outfn_.text = self.hamil_filename
         docom_ = out_.find(Output_Parameters.COM_correction)
         docom_.text = '0' ## set to 0 and import directly the matrix element
