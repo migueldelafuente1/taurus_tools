@@ -239,7 +239,8 @@ class _Base1DTaurusExecutor(object):
         Complete the deformations to the left(oblate) and right(prol)
         for the pairing minimum. dq defined by N_max, final total length= N_max+1
         """
-        if not (p_max and p_min) or N_max == 0:
+        
+        if not (p_max!=None and p_min!=None) or N_max == 0:
             ## consider as ITERATIVE_METHOD SINGLE EVALUATION (save the deform)
             q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
             self._deform_base = q0
