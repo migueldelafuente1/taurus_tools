@@ -23,10 +23,11 @@ def _exportResultsOrSummary(results, path_, key_order=None):
     """ 
     Save the result zips from the summary case or the Output Data results"""
     case = 0
+    exp_sum_obj = []
+    exp_dat_obj = []
     for MZ in range(len(results)):
         data_dict = results[MZ]
-        exp_sum_obj = []
-        exp_dat_obj = []
+        
         for typ, vals in data_dict.items():
             if vals == None or len(vals)==0: continue
             
@@ -275,7 +276,7 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     """
     repetitions = 5
     iterations  = 10 
-    Mzmax  = 1
+    Mzmax  = 7
     b_len  = 1.75
     
     def_inter = {(z_numb, n_numb) : (Mzmax, 0, b_len), }
