@@ -20,6 +20,7 @@ from tools.data import DataTaurus, DataAxial
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR
 from tools.Enums import Enum, OutputFileTypes
+from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 
 
 class ExecutionException(BaseException):
@@ -39,6 +40,9 @@ class _Base1DTaurusExecutor(object):
     SAVE_DAT_FILES = []  # list for saving the auxillary files from taurus
     EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
     HEADER_SEPARATOR = OUTPUT_HEADER_SEPARATOR
+    
+    TRACK_TIME_AND_RAM = False
+    TRACK_TIME_FILE = '_time_program.log'
     
     CONSTRAINT    : str = None # InputTaurus Variable to compute
     CONSTRAINT_DT : str = None # DataTaurus (key) Variable to compute
@@ -239,7 +243,7 @@ class _Base1DTaurusExecutor(object):
         Complete the deformations to the left(oblate) and right(prol)
         for the pairing minimum. dq defined by N_max, final total length= N_max+1
         """
-        
+
         if not (p_max!=None and p_min!=None) or N_max == 0:
             ## consider as ITERATIVE_METHOD SINGLE EVALUATION (save the deform)
             q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
@@ -526,7 +530,7 @@ class _Base1DTaurusExecutor(object):
         
         with open(output_fn, 'w+') as f:
             f.write(txt)
-            
+        
         hash_ = hash(random()) # random text to identify wf
         ## wf intermediate
         with open('final_wf.bin', 'w+') as f:
@@ -534,6 +538,13 @@ class _Base1DTaurusExecutor(object):
         if self.inputObj.interm_wf == 1:
             with open('intermediate_wf.bin', 'w+') as f:
                 f.write(str(hash_))
+        
+        if self.TRACK_TIME_AND_RAM:
+            with open('TEMP_time_verbose_output.txt', 'r') as f:
+                data = f.read()
+                with open(self.TRACK_TIME_FILE, 'w+') as f2:
+                    f2.write(data)
+        
         ## simulates the other .dat prompt
         for file_ in  ("canonicalbasis", "eigenbasis_h", 
                        "eigenbasis_H11", "occupation_numbers"):
@@ -602,7 +613,6 @@ class _Base1DTaurusExecutor(object):
     
     def _executeProgram(self, base_execution=False):
         """
-        TODO: Main execution method, prints.
         Input object and its dd-parameters must be already setted at this point
             :base_execution: indicates the minimization to be for the 1 seed
             (configure options to save the wave function)
@@ -627,11 +637,18 @@ class _Base1DTaurusExecutor(object):
                 self._auxWindows_executeProgram(_out_fn)
             else:
                 order_ =f'./{self.inputObj.PROGRAM} < {_inp_fn} > {_out_fn}'
+                if self.TRACK_TIME_AND_RAM: 
+                    ## option to analyze the program performance
+                    order_ = f'{{ /usr/bin/time -v {order_}; }} 2> {self.TIME_FILE}'
+                
                 _e = subprocess.call(order_, 
                                      shell=True,
                                      timeout=43200) # 12 h timeout
             
             res = self.DTYPE(self.z, self.n, _out_fn)
+            if self.TRACK_TIME_AND_RAM: 
+                res = self._addExecutionPerformanceData(res)
+                
             self._current_result = deepcopy(res)
             
             self.saveFinalWFprocedure(base_execution) ## TODO: here??
@@ -646,6 +663,17 @@ class _Base1DTaurusExecutor(object):
         
         return res
     
+    def _addExecutionPerformanceData(self, result: DataTaurus):
+        """
+        Reads the information from the time command output and append to it.
+        """
+        args = parseTimeVerboseCommandOutputFile(self.TRACK_TIME_FILE)
+        iters_ = max(1, getattr(result, 'iter_max', 0))
+        result.iter_time_cpu = args['user_time']
+        result.time_per_iter_cpu = args['user_time']  / iters_
+        result.memory_max_KB = args['memory_max']
+        return result
+        
     def printTaurusResult(self, result : DataTaurus, print_head=False, 
                           *params2print):
         """

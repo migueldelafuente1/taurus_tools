@@ -676,6 +676,10 @@ class DataTaurus(_DataObjectBase):
         self.iter_time_seconds = None
         self.time_per_iter = None
         
+        self.iter_time_cpu = 0
+        self.time_per_iter_cpu = 0
+        self.memory_max_KB = 0
+        
         self._filename = filename
         self._evol_obj  = None
         self._input_obj = None

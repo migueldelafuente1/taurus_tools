@@ -272,7 +272,7 @@ class TBME_HamiltonianManager(object):
         self._path_xml = 'data_resources/input_D1S.xml'
         if os.getcwd().endswith(TBME_SUITE):
             self._path_xml = '../'+self._path_xml
-        
+        print(os.getcwd())
         tree = et.parse(self._path_xml)
         root = tree.getroot()
         

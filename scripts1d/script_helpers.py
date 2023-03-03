@@ -72,8 +72,35 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True):
         
         else:
             raise Exception(f"Invalid interactions[z,n] types given: {interaction}")
-            
-            
-            
-            
+
+
+
+def parseTimeVerboseCommandOutputFile(time_filename):
+    """ 
+    Process the /usr/bin/time -v <executable> output.
+    Only gives times (real/cpu/system) and maximum ram used (extend for other values)
+    """
+    vals = {'user_time': 1,  'sys_time' : 2, 'real_time': 4,  'memory_max': 9}
     
+    if not os.path.exists(time_filename):
+        print(f" [WARNING] Could not found timing file [{time_filename}]")
+        return None
+    
+    aux = {}
+    with open(time_filename, 'r') as f:
+        lines = f.readlines()
+        for key_, indx in vals.items():
+            line = lines[indx].split(' ')[-1] # no argument after the last ":" has spaces
+            
+            if indx == 4: ## hh:mm:ss or mm:ss
+                line = [float(x) for x in line.split(':')]
+                if len(line) == 3: #has hours
+                    line = 3600*line[0] + 60*line[1] + line[2] 
+                else:
+                    line = 60*line[0] + line[1]
+            else:
+                line = int(line) if indx == 9 else float(line) 
+         
+            aux[key_] = line
+    return aux
+
