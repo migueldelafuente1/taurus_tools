@@ -278,7 +278,7 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     """
     repetitions = 5
     iterations  = 10 
-    Mzmax  = 7
+    Mzmax  = 2
     b_len  = 1.75
     
     def_inter = {(z_numb, n_numb) : (Mzmax, 0, b_len), }
@@ -288,7 +288,7 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     ## 1) Build a very large Hamiltonian_ (Max shell), save the states for 
     ## the procedure to remove from shell to shell.
     hamil_filename = getInteractionFile4D1S(def_inter, z_numb,n_numb)
-    rem_sts = [list(ValenceSpacesDict_l_ge10_byM[MZ]) for MZ in range(Mzmax)]
+    rem_sts = [list(ValenceSpacesDict_l_ge10_byM[MZ]) for MZ in range(Mzmax +1)]
     
     data_times   = []
     data_results = []
@@ -300,7 +300,7 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
             print("[WARNING] Process STOP!, reached the occupation for the N,Z")
             break
         
-        new_hamil_fn = f'hamil_MZ{MZ}' 
+        new_hamil_fn = f'hamil_noMZ{MZ}' 
         rem_sts  = _removeShellsFromHamilAndCOMfile(rem_sts, MZ, hamil_filename, 
                                                     new_hamil_fn, b_len)
         
