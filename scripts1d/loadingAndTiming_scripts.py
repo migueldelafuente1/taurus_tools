@@ -15,7 +15,7 @@ from scripts1d.script_helpers import getInteractionFile4D1S,\
     parseTimeVerboseCommandOutputFile
 from tools.data import DataTaurus
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, getSingleSpaceDegenerations,\
-    prettyPrintDictionary
+    prettyPrintDictionary, importAndCompile_taurus
 
 
 
@@ -98,7 +98,7 @@ def _removeShellsFromHamilAndCOMfile(remain_sts, MZ_2remove, filename, hamilf_ou
     aux_sts = []
     for sts in remain_sts:
         aux_sts = aux_sts + [st for st in sts]
-    TEMPLATE_SHO[2] = "    {} {}".format(len(remain_sts), ' '.join(aux_sts)) 
+    TEMPLATE_SHO[2] = "    {} {}".format(len(aux_sts), ' '.join(aux_sts)) 
     TEMPLATE_SHO[4] = "2 {:6.3f}".format(41.42460 / (b_len**2))
     
     # set SHO
@@ -243,6 +243,8 @@ def __execute_taurus_diagnose(inp_taurus: DataTaurus, output_fn):
                 f.write(txt)
             shutil.copy('TEMP_time_verbose_output.txt', _time_fn)
         else:
+            if not 'taurus_vap.exe' in os.listdir():
+                importAndCompile_taurus()
             order_ = f'./taurus_vap.exe < {_inp_fn} > {output_fn}'
             order_ = f'{{ /usr/bin/time -v {order_}; }} 2> {_time_fn}'
             _e = subprocess.call(order_, 
@@ -280,6 +282,9 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     b_len  = 1.75
     
     def_inter = {(z_numb, n_numb) : (Mzmax, 0, b_len), }
+    if all([os.path.exists(f'D1S_MZ{Mzmax}.{ext}') for ext in ('2b','com','sho')]):
+        ## Option to reuse the hamiltonian
+        def_inter = {(z_numb, n_numb) : f'D1S_MZ{Mzmax}', }
     ## 1) Build a very large Hamiltonian_ (Max shell), save the states for 
     ## the procedure to remove from shell to shell.
     hamil_filename = getInteractionFile4D1S(def_inter, z_numb,n_numb)

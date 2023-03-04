@@ -89,6 +89,10 @@ def parseTimeVerboseCommandOutputFile(time_filename):
     aux = {}
     with open(time_filename, 'r') as f:
         lines = f.readlines()
+        exit_status = int(lines[-1].replace('Exit status:', '').strip())
+        if exit_status != 0:
+            ## Error, the program prompt some error, returning None
+            return aux
         for key_, indx in vals.items():
             line = lines[indx].split(' ')[-1] # no argument after the last ":" has spaces
             
