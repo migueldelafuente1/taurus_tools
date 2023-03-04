@@ -56,8 +56,11 @@ def _exportResultsOrSummary(results, path_, key_order=None):
             f.writelines(exp_dat_obj)
 
 
-def _reset_hamil_files(sps_2_clear, filename, hamilf_out, com_file):
+def _reset_hamil_files(remain_sts, sps_2_clear, filename, hamilf_out, com_file):
     extension = '.2b' if not com_file else '.com'
+    valid_states = []
+    for sh_sts in remain_sts:
+        valid_states = valid_states + sh_sts
     
     final_ = []
     with open(filename + extension, 'r') as f:
@@ -71,11 +74,14 @@ def _reset_hamil_files(sps_2_clear, filename, hamilf_out, com_file):
         sts_head = sts_head.split()[:-2]
         
         ignore_ = False
-        for sp_clear in sps_2_clear:
-            if sp_clear in sts_head:
+        # for sp_clear in sps_2_clear:
+        #     if sp_clear in sts_head:
+        #         ignore_ = True
+        #         break
+        for sp_ in sts_head:
+            if sp_ not in valid_states:
                 ignore_ = True
                 break
-        
         if not ignore_:
             final_.append(' 0 5 ' + sp_block)
     
@@ -91,10 +97,11 @@ def _removeShellsFromHamilAndCOMfile(remain_sts, MZ_2remove, filename, hamilf_ou
         ]
     sts2rem = ValenceSpacesDict_l_ge10_byM[MZ_2remove]
     for st_ in sts2rem:
-        try:
-            remain_sts.remove(st_)
-        except ValueError:
-            pass
+        for sh_ in range(len(remain_sts)):
+            try:
+                remain_sts[sh_].remove(st_)
+            except ValueError:
+                pass
     aux_sts = []
     for sts in remain_sts:
         aux_sts = aux_sts + [st for st in sts]
@@ -105,9 +112,9 @@ def _removeShellsFromHamilAndCOMfile(remain_sts, MZ_2remove, filename, hamilf_ou
     with open(hamilf_out+'.sho', 'w+') as f:
         f.write('\n'.join(TEMPLATE_SHO))
     # set .2b
-    _reset_hamil_files(sts2rem, filename, hamilf_out, False)
+    _reset_hamil_files(remain_sts, sts2rem, filename, hamilf_out, False)
     # set .COM
-    _reset_hamil_files(sts2rem, filename, hamilf_out, True)
+    _reset_hamil_files(remain_sts, sts2rem, filename, hamilf_out, True)
     
     return remain_sts
 
