@@ -285,7 +285,7 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     """
     repetitions = 5
     iterations  = 10 
-    Mzmax  = 2
+    Mzmax  = 7
     b_len  = 1.75
     
     def_inter = {(z_numb, n_numb) : (Mzmax, 0, b_len), }
