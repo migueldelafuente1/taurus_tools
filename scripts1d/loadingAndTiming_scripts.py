@@ -191,7 +191,7 @@ def _summaryOfCalculations(calc_opt, results, ROmega):
     Returns:
         MZmax, sh_states, sp_states, 
         int_dims, 
-        cpu_time_s, ram_max_kB , 
+        cpu_time_s average (per iter), ram_max_kB average,  
         best_dens_approx
     """
     cpu_time_s = 0.0
@@ -297,6 +297,7 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     hamil_filename = getInteractionFile4D1S(def_inter, z_numb,n_numb)
     rem_sts = [list(ValenceSpacesDict_l_ge10_byM[MZ]) for MZ in range(Mzmax +1)]
     
+    str_rome = 'R{}_O{}'.format(*ROmegaMax)
     data_times   = []
     data_results = []
     ## 2) Iterate the shells to evaluate (reversed to clean)
@@ -322,8 +323,8 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
         data_results.append(results_sh[0])
         data_times.  append(results_sh[1])
         ## : Save the results in terms of the involved shell
-        _exportResultsOrSummary(data_results, 'global_results.txt')
-        _exportResultsOrSummary(data_times,   'global_summary.txt')
+        _exportResultsOrSummary(data_results, f'global_results_{str_rome}.txt')
+        _exportResultsOrSummary(data_times,   f'global_summary_{str_rome}.txt')
         
     f"[MAIN END] Main running of substracting shells are done."
     ## TODO: We need the plotters for the results:
