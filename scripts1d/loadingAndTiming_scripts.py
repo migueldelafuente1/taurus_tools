@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 import shutil
 import subprocess
+import numpy as np
 
 from tools.executors import ExecutionException, ExeTaurus1D_AngMomentum
 from tools.inputs import InputTaurus
@@ -17,6 +18,8 @@ from tools.data import DataTaurus
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, getSingleSpaceDegenerations,\
     prettyPrintDictionary, importAndCompile_taurus
 
+__RESULTS_FILENAME = 'global_results'
+__SUMMARY_FILENAME = 'global_summary'
 
 
 def _exportResultsOrSummary(results, path_, key_order=None):
@@ -192,10 +195,11 @@ def _summaryOfCalculations(calc_opt, results, ROmega):
         MZmax, sh_states, sp_states, 
         int_dims, 
         cpu_time_s average (per iter), ram_max_kB average,  
+        cpu_desv std, ram_desv std, repetitions, 
         best_dens_approx
     """
-    cpu_time_s = 0.0
-    ram_max_kB = 0
+    cpu_time_s = []
+    ram_max_kB = []
     sh_states  = None
     sp_states  = None
     MZmax      = None
@@ -207,8 +211,8 @@ def _summaryOfCalculations(calc_opt, results, ROmega):
     
     res : DataTaurus = None
     for res in results[calc_opt].values():
-        cpu_time_s += res.time_per_iter_cpu
-        ram_max_kB += res.memory_max_KB
+        cpu_time_s.append(res.time_per_iter_cpu)
+        ram_max_kB.append(res.memory_max_KB)
         if not sp_states:
             sp_states = res.sp_dim
             sh_states = res.sh_dim
@@ -219,9 +223,18 @@ def _summaryOfCalculations(calc_opt, results, ROmega):
         if best_dens_approx != None:
             best_dens_approx = best_dens_approx[-1]
     
-
+    if len(cpu_time_s) == 0:
+        cpu_time_s_mean, cpu_stdv = 0.0, 0.0
+        ram_max_kB_mean, ram_stdv = 0, 0.0
+    else:
+        cpu_time_s_mean = np.mean(cpu_time_s)
+        cpu_stdv = np.std(cpu_time_s) * (repet/(repet-1))**.5
+        ram_max_kB_mean = np.mean(ram_max_kB)
+        ram_stdv = np.std(ram_max_kB) * (repet/(repet-1))**.5
+    
     return (MZmax, sh_states, sp_states, int_dims, 
-            cpu_time_s / repet, ram_max_kB / repet, best_dens_approx)
+            cpu_time_s_mean, ram_max_kB_mean, cpu_stdv, ram_stdv, repet,
+            best_dens_approx)
 
 def __execute_taurus_diagnose(inp_taurus: DataTaurus, output_fn):
     """
@@ -277,7 +290,7 @@ def __execute_taurus_diagnose(inp_taurus: DataTaurus, output_fn):
 
 
 def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
-        ROmegaMax=(10,12), z_numb=2, n_numb=2):
+        Mzmax=7, ROmegaMax=(10,12), z_numb=2, n_numb=2):
     """
     This script runs dens_taurus_vap program for the D1S shell. 
     Depending on the 
@@ -285,7 +298,6 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     """
     repetitions = 5
     iterations  = 10 
-    Mzmax  = 7
     b_len  = 1.75
     
     def_inter = {(z_numb, n_numb) : (Mzmax, 0, b_len), }
@@ -323,10 +335,168 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
         data_results.append(results_sh[0])
         data_times.  append(results_sh[1])
         ## : Save the results in terms of the involved shell
-        _exportResultsOrSummary(data_results, f'global_results_{str_rome}.txt')
-        _exportResultsOrSummary(data_times,   f'global_summary_{str_rome}.txt')
+        _exportResultsOrSummary(data_results, f'{__RESULTS_FILENAME}_{str_rome}.txt')
+        _exportResultsOrSummary(data_times,   f'{__SUMMARY_FILENAME}_{str_rome}.txt')
         
     f"[MAIN END] Main running of substracting shells are done."
     ## TODO: We need the plotters for the results:
     ## 1. The Time/sp_dim    2. Time/integ_dim   3. Regression Time (sp_dim, RO)
-    _=0
+
+
+if __name__ == '__main__' and os.getcwd().startswith('C'):
+    
+    
+    #===========================================================================
+    # PLOT RESULTS  
+    #===========================================================================
+    # Summary results is a non  conventional export_results file, so there is
+    # the plotter specific for the CPU - RAM - dimensions here.
+    
+    ## Files to plot
+    DATA_FOLDER = '../DATA_RESULTS/TestLoading/'
+    files2plot = list(filter(lambda f: f.startswith(__SUMMARY_FILENAME), 
+                             os.listdir(DATA_FOLDER)))
+    
+    data_base = {}
+    data_noRea= {}
+    data_full = {}
+    for file_ in files2plot:
+        if not file_.startswith(__SUMMARY_FILENAME): continue
+        _,R,O = file_.replace(__SUMMARY_FILENAME,'').replace('.txt','').split('_')
+        R,  O = int( R.replace('R', '')), int( O.replace('O', ''))
+        RO_key = (R, O)
+        data_base[RO_key] = {}
+        data_noRea[RO_key]= {}
+        data_full[RO_key] = {}
+        
+        with open(DATA_FOLDER+file_, 'r') as f:
+            
+            for line in f.readlines():
+                ## Process the data
+                _, typ_, vals = line.split('##')
+                vals = vals.split(', ')
+                for i in range(len(vals)):
+                    if  (i < 4) or (i == 8):
+                        vals[i] = int  ( vals[i] )
+                    elif i != 9:
+                        vals[i] = float( vals[i] )
+                    else:
+                        if typ_ != 'base':
+                            vals[i] = float( vals[i] )
+                        else:
+                            vals[i] = 0                            
+                
+                ## Save the data (MZ is the second key)
+                if   typ_ == 'base':
+                    data_base[RO_key][vals[0]] = vals
+                elif typ_ == 'noRea':
+                    data_noRea[RO_key][vals[0]]= vals
+                elif typ_ == 'full':
+                    data_full[RO_key][vals[0]] = vals
+    
+    data_summary = {
+        'base' : data_base,
+        'noRea': data_noRea,
+        'full' : data_full
+    }
+    
+    ## TODO: set to print 
+    MODE2PRINT = 'base'
+    MODE2PRINT = 'full'
+    
+    import matplotlib.pyplot as plt
+    
+    fig1, ax1 = plt.subplots() # plot sp^3    vs  t_cpu
+    fig2, ax2 = plt.subplots() # plot RO      vs  t_cpu
+    fig3, ax3 = plt.subplots() # plot RO*sp^2 vs  ram
+    fig4, ax4 = plt.subplots() # plot sp_dim  vs  precision on spatial density 
+    
+    _func_sppow = {
+        'base' : lambda xx: xx**3, 
+        'full' : lambda  xx: xx**3, 
+        'noRea' : lambda xx: xx**3}
+    _label_sppow = {
+        'base' : 'sp dim $^3$', 'full' : 'sp dim $^3$', 'noRea': 'sp dim $^3$'}
+    x_RO_vs_dim = {}
+    mz_set, RO_set = set(), set()
+    for RO_, mzvals in data_summary[MODE2PRINT].items():
+        x_mz = {}
+        x_RO = []
+        x_sp = []
+        x_sp_pw     = []
+        x_sp_pw_RO  = []
+        y_Tcpu_s    = []
+        y_ram_MB    = []
+        err_dens    = []
+        RO_set.add(RO_)
+        err_bar_cpu = []
+        
+        for mz, vals in mzvals.items():
+            mz_set.add(mz)
+            x_mz[vals[2]] = vals[0]
+            x_sp.append(vals[2])
+            x_sp_pw.append(_func_sppow[MODE2PRINT](x_sp[-1]))
+            x_RO.append(vals[3])
+            
+            y_Tcpu_s.append(vals[4])
+            y_ram_MB.append(vals[5] / 1024)
+            # err_dens.append(abs(round(vals[6]) - vals[6]))
+            err_dens.append(abs(round(vals[9]) - vals[9]))
+            ## TODO: import from file  (vals[7])
+            err_bar_cpu.append(np.random.rand()*0.05*y_Tcpu_s[-1])
+            x_sp_pw_RO.append(x_sp[-1]**2 * x_RO[-1]**2)
+                
+        RO_label = "R:{}, Omega: {}= {}".format(*RO_, x_RO[0])
+        ax1.plot(x_sp_pw, y_Tcpu_s, '*--', label=RO_label)
+        ax1.errorbar(x_sp_pw, y_Tcpu_s, yerr=err_bar_cpu, 
+                     fmt = '.', elinewidth=1.5, capsize=7, color='k')
+        ## add the sp-dimensions involved in the calculation (no scaling) -----
+        ax12 = ax1.twiny()
+        ax12.set_xlim(ax1.get_xlim())
+        ax12.set_xticks(x_sp_pw)
+        ax12.set_xticklabels([f"{x_mz[a]}:{a}" for a in x_sp])
+        ax12.set_xlabel("MZ and sp dimension")
+        ## --------------------------------------------------------------------
+        
+        ax3.plot(x_sp_pw_RO, y_ram_MB, '.-', label=RO_label)
+        
+        ax4.plot(x_mz.values(), np.log10(err_dens), '.-', label=RO_label)
+    
+    ## organize time per iteration by the sp_(MZ)
+    for mz in sorted(mz_set):
+        x, y = [], []
+        for ro_ in sorted(RO_set):
+            vals = data_summary[MODE2PRINT].get(ro_)
+            if vals:
+                vals = vals.get(mz)
+            if vals:
+                x.append(vals[3])
+                y.append(vals[4]) # cpu Time
+        ax2.plot(x, y, '*--', label=f"Mz={mz}") 
+    
+    ax1.legend()
+    ax1.set_title ("CPU time per iteration (s)")
+    ax1.set_xlabel(_label_sppow[MODE2PRINT])
+    
+    ax2.legend()
+    ax2.set_title ("CPU time per iteration (s) / ") #+_label_sppow[MODE2PRINT])
+    ax2.set_xlabel(" ( RO_dim ) ")
+    
+    ax3.legend()
+    ax3.set_title ("RAM memory usage (MB)")
+    ax3.set_xlabel(" ( RO_dim * sp_dim )^2 ")
+    
+    ax4.legend()
+    ax4.set_title ("error = A - integral <dens(r)> ")
+    ax4.set_xlabel(" sp_dim ")
+    
+    plt.tight_layout()
+    
+    fig1.show()
+    fig2.show()
+    fig3.show()
+    fig4.show()
+    _ = 0
+    
+    
+    

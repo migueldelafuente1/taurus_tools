@@ -15,4 +15,4 @@ if __name__ == '__main__':
     # RO = (20,20)
     
     run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
-        ROmegaMax=RO, z_numb=Z, n_numb=N)
+        Mzmax=7, ROmegaMax=RO, z_numb=Z, n_numb=N)
