@@ -74,7 +74,7 @@ def run_b20_surface(nucleus, interactions, q_min=-2.0, q_max=2.0, N_max=41):
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
-    ExeTaurus1D_DeformB20.BLOCKING_SEEDS_RANDOMIZATION = 2
+    ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = 2
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)

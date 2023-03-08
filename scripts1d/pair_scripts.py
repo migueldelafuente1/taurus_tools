@@ -37,7 +37,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
-    ExeTaurus1D_PairCoupling.BLOCKING_SEEDS_RANDOMIZATION = 5
+    ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = 5
     
     for z, n in nucleus:
         print(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",

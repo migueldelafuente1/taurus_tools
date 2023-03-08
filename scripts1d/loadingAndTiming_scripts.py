@@ -16,7 +16,7 @@ from scripts1d.script_helpers import getInteractionFile4D1S,\
     parseTimeVerboseCommandOutputFile
 from tools.data import DataTaurus
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, getSingleSpaceDegenerations,\
-    prettyPrintDictionary, importAndCompile_taurus
+    prettyPrintDictionary, importAndCompile_taurus, linear_regression
 
 __RESULTS_FILENAME = 'global_results'
 __SUMMARY_FILENAME = 'global_summary'
@@ -413,10 +413,9 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
     
     _func_sppow = {
         'base' : lambda xx: xx**3, 
-        'full' : lambda  xx: xx**3, 
-        'noRea' : lambda xx: xx**3}
-    _label_sppow = {
-        'base' : 'sp dim $^3$', 'full' : 'sp dim $^3$', 'noRea': 'sp dim $^3$'}
+        'full' : lambda xx: xx**2.5, 
+        'noRea': lambda xx: xx**3}
+    
     x_RO_vs_dim = {}
     mz_set, RO_set = set(), set()
     for RO_, mzvals in data_summary[MODE2PRINT].items():
@@ -441,13 +440,18 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
             y_Tcpu_s.append(vals[4])
             y_ram_MB.append(vals[5] / 1024)
             # err_dens.append(abs(round(vals[6]) - vals[6]))
-            err_dens.append(abs(round(vals[9]) - vals[9]))
+            err_dens.append(max(abs(round(vals[9]) - vals[9]), 1.e-9))
             ## TODO: import from file  (vals[7])
             err_bar_cpu.append(np.random.rand()*0.05*y_Tcpu_s[-1])
-            x_sp_pw_RO.append(x_sp[-1]**2 * x_RO[-1]**2)
-                
-        RO_label = "R:{}, Omega: {}= {}".format(*RO_, x_RO[0])
-        ax1.plot(x_sp_pw, y_Tcpu_s, '*--', label=RO_label)
+            if MODE2PRINT != 'base':
+                x_sp_pw_RO.append(x_sp[-1]**2 * x_RO[-1]**2)
+            else:
+                x_sp_pw_RO.append(x_sp[-1]**3)    
+        
+        A,B = linear_regression(x_sp_pw, y_Tcpu_s)
+        RO_label = "R,Om:{}= {:>5}".format(RO_, x_RO[0])
+        ax1.plot(x_sp_pw, y_Tcpu_s, '*--', 
+                 label=RO_label + "  Reg: A[{:4.2e}] B[{:4.2e}]".format(A,B))
         ax1.errorbar(x_sp_pw, y_Tcpu_s, yerr=err_bar_cpu, 
                      fmt = '.', elinewidth=1.5, capsize=7, color='k')
         ## add the sp-dimensions involved in the calculation (no scaling) -----
@@ -458,7 +462,9 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
         ax12.set_xlabel("MZ and sp dimension")
         ## --------------------------------------------------------------------
         
-        ax3.plot(x_sp_pw_RO, y_ram_MB, '.-', label=RO_label)
+        A,B = linear_regression(x_sp_pw_RO, y_ram_MB)
+        ax3.plot(x_sp_pw_RO, y_ram_MB, '.-', 
+                 label=RO_label + "  Reg: A[{:4.2e}] B[{:4.2e}]".format(A,B))
         
         ax4.plot(x_mz.values(), np.log10(err_dens), '.-', label=RO_label)
     
@@ -472,22 +478,28 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
             if vals:
                 x.append(vals[3])
                 y.append(vals[4]) # cpu Time
-        ax2.plot(x, y, '*--', label=f"Mz={mz}") 
+        A,B = linear_regression(x, y)
+        ax2.plot(x, y, '*--', label="Mz={}  Reg: A[{:4.2e}] B[{:4.2e}]".format(mz,A,B)) 
     
+    _label_sppow = {
+        'base' : 'sp dim $^{2.5}$', 'full' : 'sp dim $^3$', 'noRea': 'sp dim $^3$'}
     ax1.legend()
-    ax1.set_title ("CPU time per iteration (s)")
+    ax1.set_title (f"CPU time per iteration (s) [{MODE2PRINT} calculation]")
     ax1.set_xlabel(_label_sppow[MODE2PRINT])
     
     ax2.legend()
-    ax2.set_title ("CPU time per iteration (s) / ") #+_label_sppow[MODE2PRINT])
+    ax2.set_title (f"CPU time per iteration (s) [{MODE2PRINT} calculation] ") #+_label_sppow[MODE2PRINT])
     ax2.set_xlabel(" ( RO_dim ) ")
     
+    _label_sppow = {
+        'base' : " ( sp_dim )$^3$ ", 'full' : " ( RO_dim * sp_dim )$^2$ ", 
+        'noRea': " ( RO_dim * sp_dim )$^2$ "}
     ax3.legend()
-    ax3.set_title ("RAM memory usage (MB)")
-    ax3.set_xlabel(" ( RO_dim * sp_dim )^2 ")
+    ax3.set_title (f"RAM memory usage (MB) [{MODE2PRINT} calculation]")
+    ax3.set_xlabel(_label_sppow[MODE2PRINT])
     
     ax4.legend()
-    ax4.set_title ("error = A - integral <dens(r)> ")
+    ax4.set_title (f"error = A - integral <dens(r)> [{MODE2PRINT} calculation]")
     ax4.set_xlabel(" sp_dim ")
     
     plt.tight_layout()

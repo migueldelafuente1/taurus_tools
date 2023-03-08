@@ -50,8 +50,9 @@ class _Base1DTaurusExecutor(object):
     DTYPE = DataTaurus  # DataType for the outputs to manage
     ITYPE = InputTaurus # Input type for the input management
     
-    BLOCKING_SEEDS_RANDOMIZATION = 5 # Number of random blocking sp state for odd calculation
-    
+    SEEDS_RANDOMIZATION = 5 # Number of random seeds for even-even calculation / 
+                            # ALSO: Number of blocking sp state for odd calculation
+    GENERATE_RANDOM_SEEDS = False
     # @classmethod
     # def __new__(cls, *args, **kwargs):
     #     """
@@ -569,8 +570,9 @@ class _Base1DTaurusExecutor(object):
             shutil.copy('final_wf.bin', self._base_wf_filename)
             tail = f"z{self.z}n{self.n}_dbase"
             
-            ## TODO: Extend the condition for general repetitive base-input.
-            if 1 in self.numberParityOfIsotope: ## save all the 1st blocked seeds
+            ## save all the 1st blocked seeds
+            ## Extend the condition for general repetitive base-input.
+            if 1 in self.numberParityOfIsotope or self.GENERATE_RANDOM_SEEDS: 
                 s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
                 s_list = list(filter(lambda x: x.endswith("dbase.OUT"), s_list))
                 s_n = len(s_list)
@@ -651,7 +653,7 @@ class _Base1DTaurusExecutor(object):
                 
             self._current_result = deepcopy(res)
             
-            self.saveFinalWFprocedure(base_execution) ## TODO: here??
+            self.saveFinalWFprocedure(base_execution)
             self.executionTearDown   (res, base_execution)
             
         except Exception as e:
@@ -841,6 +843,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 ## procedure to evaluate odd-even nuclei
                 self._oddNumberParitySeedConvergence()
                 ## NOTE: The state blocked is in the seed, no more blocking during the process
+            elif self.GENERATE_RANDOM_SEEDS:
+                ## Procedure to evaluate a set of random states (for even-even)
+                ## to get the lowest energy.
+                self._evenNumberParitySeedConvergence()
             else:
                 ## even-even general case
                 while not self._preconvergenceAccepted(res):
@@ -861,7 +867,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
     def _oddNumberParitySeedConvergence(self):
         """
-        Procedure to select the sp state to block with the lower energy:
+        Procedure to select the sp state to block with the lowest energy:
          * Selects state randomly for a random sh-state in the odd-particle space
          * Repeat the convergence N times and get the lower energy
          * export to the BU the (discarded) blocked seeds (done in saveWF method)  
@@ -896,9 +902,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         bk_min, bk_E_min      = 0, 1.0e+69
         double4OO = sum(self.numberParityOfIsotope) # repeat twice for odd-odd
         print("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
-              double4OO*self.BLOCKING_SEEDS_RANDOMIZATION, 
+              double4OO*self.SEEDS_RANDOMIZATION, 
               " #-par:", self.numberParityOfIsotope, LINE_2)
-        for rand_step in range(double4OO * self.BLOCKING_SEEDS_RANDOMIZATION):
+        for rand_step in range(double4OO * self.SEEDS_RANDOMIZATION):
             bk_sp_p, bk_sp_n = 0, 0
             bk_sh_p, bk_sh_n = 0, 0
             bk_sp, bk_sh = None, None
@@ -966,6 +972,73 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self.inputObj.qp_block = 0
         self._1stSeedMinima = blocked_seeds_results[bk_min]
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
+    
+    
+    
+    def _evenNumberParitySeedConvergence(self):
+        """
+        Procedure to find the lowest energy for the even-even nuclei:
+         * Taurus_ seeds start randomly (with its corresponding symmetry restrictions)
+         * Repeat the convergence N times and get the lower energy
+         * export to the BU the (discarded) blocked seeds (done in saveWF method)
+        """
+        ## randomization of the blocked state and repeat the convergence
+        ## several times to get the lower energy
+        converged_seeds = []
+        seeds_results   = {}
+        energies        = {}
+        pairing_E       = {}
+        beta_gamma      = {}
+        bk_min, bk_E_min = 0, 1.0e+69
+        
+        for rand_step in range(self.SEEDS_RANDOMIZATION):
+            bk_sp = rand_step
+            
+            seeds_results[bk_sp] = None
+            energies     [bk_sp] = 4.20e+69
+            
+            self._preconvergence_steps = 0
+            self._1stSeedMinima = None
+            
+            res = None
+            while not self._preconvergenceAccepted(res):
+                if res != None:
+                    ## otherwise the state is "re- blocked"
+                    print(" ** * [Not Converged] Repeating loop.")
+                res = self._executeProgram(base_execution=True)
+            #print(" ** * [OK] Result accepted. Saving result.")
+            converged_seeds.append(bk_sp)
+            
+            seeds_results[bk_sp] = deepcopy(res)
+            energies     [bk_sp] = res.E_HFB
+            pairing_E    [bk_sp] = res.pair
+            beta_gamma   [bk_sp] = (res.beta_isoscalar, res.gamma_isoscalar)
+            # Move the base wf to a temporal file, then copied from the bk_min
+            shutil.move(self._base_wf_filename, f"{bk_sp}_{self._base_wf_filename}")
+            
+            ## actualize the minimum result
+            if res.E_HFB < bk_E_min:
+                bk_min, bk_E_min = bk_sp, res.E_HFB
+        
+            print(f" ** * [OK] Seed [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+            
+            ## NOTE: If convergence is iterated, inputObj seed is turned 1, refresh!
+            self.inputObj.seed = self._base_seed_type
+        
+        print("\n  ** Blocking minimization process [FINISHED], Results:")
+        print(f"  [  ]     [ E HFB ] [ E pair] [beta, gamma]")
+        for bk_st in converged_seeds:
+            print(f"   {bk_st:>2}      {energies[bk_st]:>9.4f} {pairing_E[bk_st]:>9.4f}"
+                  f" ({beta_gamma[bk_st][0]:>4.3f}, {beta_gamma[bk_st][1]:>4.1f})")
+        print("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
+        print(LINE_2)
+        
+        ## after the convegence, remove the blocked states and copy the 
+        # copy the lowest energy solution and output.
+        self._1stSeedMinima = seeds_results[bk_min]
+        shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
+    
+    
     
     def _preconvergenceAccepted(self, result: DataTaurus):
         """

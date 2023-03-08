@@ -362,72 +362,74 @@ if __name__ == "__main__":
     #===========================================================================
     # PLOT the P_T surfaces
     #===========================================================================
-    # # SUBFLD_ = 'Mg_MZ4/'
-    # # SUBFLD_ = 'Mg_MZ5/'
+    # SUBFLD_ = 'Mg_MZ4/'
+    # SUBFLD_ = 'Mg_MZ5/'
     # SUBFLD_ = 'SDnuclei_MZ4_new/'
-    # # SUBFLD_ = 'SDnuclei_MZ5/'
-    # Ploter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/PN_mixing/'+SUBFLD_)
-    #
-    # nuclei = [(z, z) for z in range(8, 21, 2)]
-    # pair_constr = ['P_T00_J10', 'P_T1p1_J00', 'P_T1m1_J00',  'P_T10_J00']
-    # nuclei = [(16, 17),]
-    #
-    # for z, n in nuclei:
-    #     if SUBFLD_.startswith('Mg' ):
-    #         if z != 12: continue
-    #     # files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
-    #     files_ = [f"export_TES_{pp}_z{z}n{n}_hamil_MZ4.txt" for pp in pair_constr]
-    #
-    #     attr2plot_list = [
-    #         'E_HFB', 'pair', *pair_constr]
-    #
-    #     plt_obj = Ploter1D_Taurus(files_)
-    #     plt_obj.LATEX_FORMAT = True
-    #
-    #     for attr2plot in attr2plot_list:
-    #         plt_obj.setXlabel("Pair Constr. value")
-    #         plt_obj.defaultPlot(attr2plot)
-    #
-    #
-
-    #===========================================================================
-    # PLOT J cranking surfaces
-    #===========================================================================
-    
-    SUBFLD_ = ''
+    SUBFLD_ = 'SDnuclei_MZ5_new/'
     # SUBFLD_ = 'SDnuclei_MZ5/'
-    Ploter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/Cranking/'+SUBFLD_)
+    Ploter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/PN_mixing/'+SUBFLD_)
     
-    # nuclei = [(z, z) for z in range(8, 21, 2)]
-    constr = ['Jx']
-    nuclei = [(10, 10),]
-    pair_constr = ['P_T10_J00', 'P_T1p1_J00', 'P_T1m1_J00',  
-                   'P_T00_J10', 'P_T00_J1p1', 'P_T00_J1m1']
+    nuclei = [(z, z) for z in range(8, 21, 2)]
+    pair_constr = ['P_T00_J10', 'P_T1p1_J00', 'P_T1m1_J00',  'P_T10_J00']
+    nuclei = [(8, 9), (10,11), (12,13),]
     
     for z, n in nuclei:
         if SUBFLD_.startswith('Mg' ):
             if z != 12: continue
         # files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
-        files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ5.txt" for pp in constr]
-        
+        files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ5.txt" for pp in pair_constr]
+    
         attr2plot_list = [
-            'E_HFB', 
-            # 'E_HFB_pp', 'E_HFB_nn', 'E_HFB_pn', 
-            # 'hf', 'hf_pp', 'hf_nn', 'hf_pn',
-            # 'pair_pp', 'pair_nn', 'pair_pn', 
-            *pair_constr
-            # 'beta_isoscalar', 'gamma_isoscalar',
-            # 'b30_isoscalar',  'b32_isoscalar',
-            # 'Jz',
-            ]
-        # x = DataTaurus(0,0,None)
-        # x.beta
-        
+            'E_HFB', 'pair', *pair_constr]
+    
         plt_obj = Ploter1D_Taurus(files_)
         plt_obj.LATEX_FORMAT = True
-        
+    
         for attr2plot in attr2plot_list:
-            plt_obj.setXlabel("Jx Constr. value")
-            plt_obj.defaultPlot(attr2plot, 
-                                show_plot = attr2plot==attr2plot_list[-1])
+            plt_obj.setXlabel("Pair Constr. value")
+            plt_obj.defaultPlot(attr2plot)
+    
+    _=0
+    
+    #===========================================================================
+    # PLOT J cranking surfaces
+    #===========================================================================
+    
+    # SUBFLD_ = ''
+    # # SUBFLD_ = 'SDnuclei_MZ5/'
+    # Ploter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/Cranking/'+SUBFLD_)
+    #
+    # # nuclei = [(z, z) for z in range(8, 21, 2)]
+    # constr = ['Jx']
+    # nuclei = [(10, 11),]
+    # pair_constr = ['P_T10_J00', 'P_T1p1_J00', 'P_T1m1_J00',  
+    #                'P_T00_J10', 'P_T00_J1p1', 'P_T00_J1m1']
+    #
+    # for z, n in nuclei:
+    #     if SUBFLD_.startswith('Mg' ):
+    #         if z != 12: continue
+    #     # files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
+    #     files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ5.txt" for pp in constr]
+    #
+    #     attr2plot_list = [
+    #         'E_HFB', 
+    #         # 'E_HFB_pp', 'E_HFB_nn', 'E_HFB_pn', 
+    #         # 'hf', 'hf_pp', 'hf_nn', 'hf_pn',
+    #         'pair_pp', 'pair_nn', 'pair_pn', 
+    #         *pair_constr
+    #         # 'beta_isoscalar', 'gamma_isoscalar',
+    #         # 'b30_isoscalar',  'b32_isoscalar',
+    #         # 'Jz',
+    #         ]
+    #     # x = DataTaurus(0,0,None)
+    #     # x.beta
+    #
+    #     plt_obj = Ploter1D_Taurus(files_)
+    #     plt_obj.LATEX_FORMAT = True
+    #
+    #     for attr2plot in attr2plot_list:
+    #         plt_obj.setXlabel("Jx Constr. value")
+    #         plt_obj.defaultPlot(attr2plot, 
+    #                             show_plot = attr2plot==attr2plot_list[-1])
+    #     _=0
     

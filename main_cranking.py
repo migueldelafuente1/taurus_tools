@@ -40,5 +40,5 @@ if __name__ == '__main__':
     nucleus = sorted(list(interactions.keys()))
     
     run_J_surface(nucleus, interactions, InputTaurus.ConstrEnum.Jx,
-                  seed_base=0, j_min=-0.5, j_max=15.0, N_max=45)
+                  seed_base=0, j_min=-0.5, j_max=15.0, N_max=45, convergences=3)
     

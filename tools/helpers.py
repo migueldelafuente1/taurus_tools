@@ -5,6 +5,7 @@ Created on Jan 11, 2023
 '''
 import os
 import subprocess
+import numpy as np
 
 LINE_1 = "\n================================================================================\n"
 LINE_2 = "\n--------------------------------------------------------------------------------\n"
@@ -56,6 +57,25 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
         else:
             print(header+str(k)+':'+str(val))
 
+def linear_regression(X, Y, get_errors=False):
+    """ Get the linear regression for an array of [Y] = A*[X] + B """
+    x, y = np.array(X), np.array(Y)
+    n = np.sum((x-np.mean(x)) * (y - np.mean(y)))
+    d = np.sum((x - np.mean(x))**2)
+    ## n and d are equivalent to the eq. from error analysis
+    A = n / d
+    B = np.mean(y) - (A*np.mean(x))
+    if not get_errors: 
+        return A, B
+    
+    if len(x) < 2:
+        return A, B, np.NaN, np.NaN
+    nn = np.sum((y - (A*x) - B)**2)
+    EA = ((len(x)/(len(x) - 2)) * nn / d)**0.5
+    EB = EA * (np.sum(x**2) / len(x))**.5
+    
+    return A, B, EA, EB
+    
 
 #===============================================================================
 #   Import Enum, Standard enumetation classes for the 2B_MatrixElements form 
