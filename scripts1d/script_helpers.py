@@ -81,6 +81,11 @@ def parseTimeVerboseCommandOutputFile(time_filename):
     Only gives times (real/cpu/system) and maximum ram used (extend for other values)
     """
     vals = {'user_time': 1,  'sys_time' : 2, 'real_time': 4,  'memory_max': 9}
+    headers_checks = {
+        'user_time': 'User time (seconds)',  
+        'sys_time' : 'System time (seconds)', 
+        'real_time': 'Elapsed (wall clock) time',  
+        'memory_max': 'Maximum resident set size (kbytes)'}
     
     if not os.path.exists(time_filename):
         print(f" [WARNING] Could not found timing file [{time_filename}]")
@@ -94,6 +99,10 @@ def parseTimeVerboseCommandOutputFile(time_filename):
             ## Error, the program prompt some error, returning None
             return aux
         for key_, indx in vals.items():
+            if headers_checks[key_] not in lines[indx]:
+                print(f"[WARNING TIME OUTPUT] line [{indx}] for parameter [{key_}] does not match",
+                      f"expected header [{headers_checks[key_]}].\n",
+                      f"Got: [{lines[indx]}]")
             line = lines[indx].split(' ')[-1] # no argument after the last ":" has spaces
             
             if indx == 4: ## hh:mm:ss or mm:ss

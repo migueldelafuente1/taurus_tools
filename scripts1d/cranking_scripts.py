@@ -13,7 +13,7 @@ from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
 
 def run_J_surface(nucleus, interactions, J_i, 
-                  seed_base=0, j_min= 0.0, j_max=25.0, N_max=50):
+                  seed_base=0, j_min= 0.0, j_max=25.0, N_max=50, convergences=None):
     """
     Reqire:
     Args:
@@ -25,6 +25,7 @@ def run_J_surface(nucleus, interactions, J_i,
         :j_min
         :j_max
         :N_steps:
+        :convergences: <int> number of random seeds / blocked states to get the global minimum
     """
     assert J_i.startswith('J') and J_i in InputTaurus.ConstrEnum.members(), \
         "Script only accepts Jx, Jy, Jz"
@@ -36,7 +37,10 @@ def run_J_surface(nucleus, interactions, J_i,
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
-    ExeTaurus1D_AngMomentum.BLOCKING_SEEDS_RANDOMIZATION = 5
+    ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = 5
+    if convergences != None:
+        ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = convergences
+        ExeTaurus1D_AngMomentum.GENERATE_RANDOM_SEEDS = True
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
