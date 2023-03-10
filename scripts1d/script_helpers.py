@@ -100,8 +100,8 @@ def parseTimeVerboseCommandOutputFile(time_filename):
             return aux
         for key_, indx in vals.items():
             if headers_checks[key_] not in lines[indx]:
-                print(f"[WARNING TIME OUTPUT] line [{indx}] for parameter [{key_}] does not match",
-                      f"expected header [{headers_checks[key_]}].\n",
+                print(f"[WARNING TIME OUTPUT PARSING] line [{indx}] for parameter [{key_}]",
+                      f" does not match expected header [{headers_checks[key_]}].\n",
                       f"Got: [{lines[indx]}]")
             line = lines[indx].split(' ')[-1] # no argument after the last ":" has spaces
             

@@ -12,7 +12,7 @@ from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
 
-def run_J_surface(nucleus, interactions, J_i, 
+def run_J_surface(nucleus, interactions, J_i,
                   seed_base=0, j_min= 0.0, j_max=25.0, N_max=50, convergences=None):
     """
     Reqire:
@@ -76,9 +76,10 @@ def run_J_surface(nucleus, interactions, J_i,
         try:
             exe_ = ExeTaurus1D_AngMomentum(z, n, interaction)
             exe_.setInputCalculationArguments(**input_args_start)
-            exe_.defineDeformationRange(j_min,  j_max, N_max)
+            exe_.defineDeformationRange(j_min, j_max, N_max)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
+            exe_.force_converg = True
             exe_.run()
             exe_.gobalTearDown()
         except ExecutionException as e:

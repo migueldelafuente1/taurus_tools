@@ -5,6 +5,7 @@ Created on Mar 1, 2023
 '''
 
 import os
+import re
 from datetime import datetime
 import shutil
 import subprocess
@@ -16,11 +17,15 @@ from scripts1d.script_helpers import getInteractionFile4D1S,\
     parseTimeVerboseCommandOutputFile
 from tools.data import DataTaurus
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, getSingleSpaceDegenerations,\
-    prettyPrintDictionary, importAndCompile_taurus, linear_regression
+    prettyPrintDictionary, importAndCompile_taurus, linear_regression,\
+    LEBEDEV_GRID_POINTS
+from copy import deepcopy
+
+if os.getcwd().startswith("C:"):
+    import matplotlib.pyplot as plt
 
 __RESULTS_FILENAME = 'global_results'
 __SUMMARY_FILENAME = 'global_summary'
-
 
 def _exportResultsOrSummary(results, path_, key_order=None):
     """ 
@@ -205,9 +210,7 @@ def _summaryOfCalculations(calc_opt, results, ROmega):
     MZmax      = None
     repet      = len(results)
     
-    __nPoints = [6,14,26,38,50,74,86,110,146,170,194,230,266,
-                 302,350,434,590,770,974,1202,1454,1730,2030] ## 22
-    int_dims =  __nPoints[ROmega[1] - 1] * ROmega[0]
+    int_dims =  LEBEDEV_GRID_POINTS[ROmega[1] - 1] * ROmega[0]
     
     res : DataTaurus = None
     for res in results[calc_opt].values():
@@ -267,8 +270,7 @@ def __execute_taurus_diagnose(inp_taurus: DataTaurus, output_fn):
                 importAndCompile_taurus()
             order_ = f'./taurus_vap.exe < {_inp_fn} > {output_fn}'
             order_ = f'{{ /usr/bin/time -v {order_}; }} 2> {_time_fn}'
-            _e = subprocess.call(order_, 
-                                 shell=True,
+            _e = subprocess.call(order_, shell=True,
                                  timeout=43200) # 12 h timeout
         
         res = DataTaurus(inp_taurus.z, inp_taurus.n, output_fn)
@@ -342,21 +344,112 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     ## TODO: We need the plotters for the results:
     ## 1. The Time/sp_dim    2. Time/integ_dim   3. Regression Time (sp_dim, RO)
 
+def getCPUandIterTimeFromCPU(res : DataTaurus):
+    """
+    Approximate the time for the setUp from the total CPU time from the 
+    relative time lapse of the 
+    """
+    _tcpu_setup, _tcpu_per_iter = 0, 0
+    
+    tcpu_tot  = res.iter_time_cpu
+    treal_tot = res.date_end_iter - res.date_start
+    treal_setUp = res.date_start_iter - res.date_start
+    if treal_tot.seconds == 0:
+        _=0
+    ratio_real = (treal_setUp.seconds + 1e-6*treal_setUp.microseconds) / \
+        (treal_tot.seconds + 1e-6*treal_tot.microseconds)
+    
+    _tcpu_setup = tcpu_tot * ratio_real
+    _tcpu_per_iter = tcpu_tot * (1 - ratio_real) / res.iter_max
 
-if __name__ == '__main__' and os.getcwd().startswith('C'):
+    return _tcpu_setup, _tcpu_per_iter
+
+def _averageOfValues2Print(*datas):
+    """ For the list of MZ values"""
+    datasAvr = []
+    for data_ in datas:
+        for RO_key, mz_vals in data_.items():
+            for mz, vals_lists in mz_vals.items():
+                if not isinstance(vals_lists[0], list): 
+                    data_[RO_key][mz] = vals_lists
+                    continue  ## this value has been processed
+                
+                rep = len(vals_lists)
+                f_std = (rep / (rep - 1))**0.5
+                
+                tcpuiter = [x[ 4] for x in vals_lists]
+                ram      = [x[ 5] for x in vals_lists]
+                tcpuSUp  = [x[10] for x in vals_lists]
+                av_vals = [
+                    *vals_lists[0][:4], np.mean(tcpuiter), np.mean(ram),
+                    f_std * np.std(tcpuiter), f_std * np.std(ram), rep, 0.0,
+                    np.mean(tcpuSUp), f_std * np.std(tcpuSUp)
+                ]
+                data_[RO_key][mz] = av_vals
+        datasAvr.append(deepcopy(data_))
+    return datasAvr
     
     
-    #===========================================================================
-    # PLOT RESULTS  
-    #===========================================================================
-    # Summary results is a non  conventional export_results file, so there is
-    # the plotter specific for the CPU - RAM - dimensions here.
-    
-    ## Files to plot
-    DATA_FOLDER = '../DATA_RESULTS/TestLoading/'
-    files2plot = list(filter(lambda f: f.startswith(__SUMMARY_FILENAME), 
-                             os.listdir(DATA_FOLDER)))
-    
+def _importDataFromResultsFiles(files2plot, folder_):
+    """ Process data from individual DataTaurus results in "results" files """
+    data_base = {}
+    data_noRea= {}
+    data_full = {}
+    for file_ in files2plot:
+        if not file_.startswith(__RESULTS_FILENAME): continue
+        _,R,O = file_.replace(__RESULTS_FILENAME,'').replace('.txt','').split('_')
+        R,  O = int( R.replace('R', '')), int( O.replace('O', ''))
+        RO_key = (R, O)
+        data_base[RO_key] = {}
+        data_noRea[RO_key]= {}
+        data_full[RO_key] = {}
+        integr_points = LEBEDEV_GRID_POINTS[ O - 1 ] * R
+        
+        with open(folder_+file_, 'r') as f:
+            for line in f.readlines():
+                if len(line.strip()) == 0: 
+                    continue
+                ## Process the data
+                _, typ_, iter_, vals = line.split('##')
+                res = DataTaurus(0, 0, None, True)
+                res.setDataFromCSVLine(vals)
+                mz = int(res.MZmax)
+                _tcpu_setup, _tcpu_per_iter = getCPUandIterTimeFromCPU(res)
+                
+                vals = [
+                    mz, int(res.sh_dim), int(res.sp_dim), integr_points,
+                    _tcpu_per_iter, res.memory_max_KB / 1024, 
+                    0.0, 0.0, 0, 0.0, _tcpu_setup, 0.0]
+                
+                ## Save the data (MZ is the second key)
+                if   typ_ == 'base':
+                    if mz not in data_base[RO_key]: 
+                        data_base[RO_key][mz] = [vals, ]
+                    else:
+                        data_base[RO_key][mz].append(vals)
+                elif typ_ == 'noRea':
+                    if mz not in data_noRea[RO_key]: 
+                        data_noRea[RO_key][mz]= [vals, ]
+                    else:
+                        data_noRea[RO_key][mz].append(vals)
+                elif typ_ == 'full':
+                    if mz not in data_full[RO_key]: 
+                        data_full[RO_key][mz]= [vals, ]
+                    else:
+                        data_full[RO_key][mz].append(vals)
+            
+    ## do the averages from the lists.
+    args = data_base, data_noRea, data_full
+    data_base, data_noRea, data_full = _averageOfValues2Print(*args)
+                
+    return {
+        'base' : data_base,
+        'noRea': data_noRea,
+        'full' : data_full
+    }
+
+def _importDataFromSummaryFiles(files2plot, folder_):
+    """ Process data from Summary files """
     data_base = {}
     data_noRea= {}
     data_full = {}
@@ -369,7 +462,7 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
         data_noRea[RO_key]= {}
         data_full[RO_key] = {}
         
-        with open(DATA_FOLDER+file_, 'r') as f:
+        with open(folder_+file_, 'r') as f:
             
             for line in f.readlines():
                 ## Process the data
@@ -394,30 +487,51 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
                 elif typ_ == 'full':
                     data_full[RO_key][vals[0]] = vals
     
-    data_summary = {
+    return {
         'base' : data_base,
         'noRea': data_noRea,
-        'full' : data_full
-    }
+        'full' : data_full }
+
+def __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, IMPORT_FILENAME, MODE2PRINT,
+                                          EXPORT_PDF_IMG=False):
+    """
+    Print all results [IMPORT_FILENAME] from [DATAFOLDER], being IMPORT_FILENAME
+    the "summary files" or explicit DataTaurus "Results_files",
+    """
     
-    ## TODO: set to print 
-    MODE2PRINT = 'base'
-    MODE2PRINT = 'full'
+    assert MODE2PRINT in ('base', 'noRea', 'full'), "Invalid Mode"
+    assert IMPORT_FILENAME in (__SUMMARY_FILENAME, __RESULTS_FILENAME), "Invalid fileTypes"
     
-    import matplotlib.pyplot as plt
+    files2plot = list(filter(lambda f: f.startswith(IMPORT_FILENAME), 
+                             os.listdir(DATA_FOLDER)))
+    # sort by Rand Omega order
+    sorteable_files = []
+    for file_ in files2plot:
+        k_ = [int(x) for x in re.findall(r'\d+', file_)]
+        k_ = [k_[1], k_[0], file_, ]
+        sorteable_files.append(k_)
+    files2plot = [k_[2] for k_ in sorted(sorteable_files)] # sort R then Omega
+    
+    ## PROCESS THE DATA TO PLOT
+    if   IMPORT_FILENAME == __SUMMARY_FILENAME:
+        data_summary = _importDataFromSummaryFiles(files2plot, DATA_FOLDER)
+    elif IMPORT_FILENAME == __RESULTS_FILENAME:
+        data_summary = _importDataFromResultsFiles(files2plot, DATA_FOLDER)
     
     fig1, ax1 = plt.subplots() # plot sp^3    vs  t_cpu
     fig2, ax2 = plt.subplots() # plot RO      vs  t_cpu
     fig3, ax3 = plt.subplots() # plot RO*sp^2 vs  ram
     fig4, ax4 = plt.subplots() # plot sp_dim  vs  precision on spatial density 
+    fig5, ax5 = plt.subplots() # plot the trends of t_cpu_iter/N^x by RO
+    fig6, ax6 = plt.subplots() # plot the trends of t_cpu for setUp (ONLY SUMMARY)
     
     _func_sppow = {
-        'base' : lambda xx: xx**3, 
-        'full' : lambda xx: xx**2.5, 
-        'noRea': lambda xx: xx**3}
+        'base' : lambda xx: xx**3 , 
+        'noRea': lambda xx: xx**3 ,
+        'full' : lambda xx: xx**2.5 ,}
     
-    x_RO_vs_dim = {}
     mz_set, RO_set = set(), set()
+    trends_MZ_RO_list = []
     for RO_, mzvals in data_summary[MODE2PRINT].items():
         x_mz = {}
         x_RO = []
@@ -432,17 +546,18 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
         
         for mz, vals in mzvals.items():
             mz_set.add(mz)
-            x_mz[vals[2]] = vals[0]
-            x_sp.append(vals[2])
+            x_mz[vals[2]] = int(vals[0])
+            x_sp.append(int(vals[2]))
             x_sp_pw.append(_func_sppow[MODE2PRINT](x_sp[-1]))
-            x_RO.append(vals[3])
+            x_RO.append(int(vals[3]))
             
             y_Tcpu_s.append(vals[4])
             y_ram_MB.append(vals[5] / 1024)
             # err_dens.append(abs(round(vals[6]) - vals[6]))
             err_dens.append(max(abs(round(vals[9]) - vals[9]), 1.e-9))
-            ## TODO: import from file  (vals[7])
-            err_bar_cpu.append(np.random.rand()*0.05*y_Tcpu_s[-1])
+            
+            #err_bar_cpu.append(np.random.rand()*0.05*y_Tcpu_s[-1])
+            err_bar_cpu.append(vals[6])           ## import from file  (vals[6])
             if MODE2PRINT != 'base':
                 x_sp_pw_RO.append(x_sp[-1]**2 * x_RO[-1]**2)
             else:
@@ -454,6 +569,7 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
                  label=RO_label + "  Reg: A[{:4.2e}] B[{:4.2e}]".format(A,B))
         ax1.errorbar(x_sp_pw, y_Tcpu_s, yerr=err_bar_cpu, 
                      fmt = '.', elinewidth=1.5, capsize=7, color='k')
+        trends_MZ_RO_list.append( (x_RO[0], A) )
         ## add the sp-dimensions involved in the calculation (no scaling) -----
         ax12 = ax1.twiny()
         ax12.set_xlim(ax1.get_xlim())
@@ -467,7 +583,28 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
                  label=RO_label + "  Reg: A[{:4.2e}] B[{:4.2e}]".format(A,B))
         
         ax4.plot(x_mz.values(), np.log10(err_dens), '.-', label=RO_label)
-    
+        
+        ## For Collection of Results, the time cpu for the SetUp of fields is available
+        if IMPORT_FILENAME == __RESULTS_FILENAME:
+            xx = np.power(np.array(x_sp), 3)
+            y_TcpuSetUp, err_TcpuSetUp_s = [], []
+            for mz, vals in mzvals.items():
+                y_TcpuSetUp.    append(vals[10])
+                err_TcpuSetUp_s.append(vals[11])
+            A,B = linear_regression(xx, y_TcpuSetUp)
+            ax6.plot(xx, y_TcpuSetUp, 
+                     label=RO_label + "  Reg: A[{:4.2e}] B[{:4.2e}]".format(A,B))
+            ax6.errorbar(xx, y_TcpuSetUp, yerr=err_TcpuSetUp_s, 
+                         fmt = '.', elinewidth=1.5, capsize=7, color='k')
+            ax6.set_xlabel('sp dim $^3$')
+            ## add the sp-dimensions involved in the calculation (no scaling) -----
+            ax62 = ax6.twiny()
+            ax62.set_xlim(ax6.get_xlim())
+            ax62.set_xticks(xx)
+            ax62.set_xticklabels([f"{x_mz[a]}:{a}" for a in x_sp])
+            ax62.set_xlabel("MZ and sp dimension")
+            ## --------------------------------------------------------------------
+        
     ## organize time per iteration by the sp_(MZ)
     for mz in sorted(mz_set):
         x, y = [], []
@@ -479,10 +616,14 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
                 x.append(vals[3])
                 y.append(vals[4]) # cpu Time
         A,B = linear_regression(x, y)
-        ax2.plot(x, y, '*--', label="Mz={}  Reg: A[{:4.2e}] B[{:4.2e}]".format(mz,A,B)) 
+        ax2.plot(x, y, '*--', label="Mz={}  Reg: A[{:4.2e}] B[{:4.2e}]".format(mz,A,B))
+    
+    labels_RadAng_integ = [f"  R,Om:{RO_}" for RO_ in sorted(RO_set)]
+    for i in range(len(x)): 
+        ax2.text(x[i], y[i], labels_RadAng_integ[i], rotation='vertical')
     
     _label_sppow = {
-        'base' : 'sp dim $^{2.5}$', 'full' : 'sp dim $^3$', 'noRea': 'sp dim $^3$'}
+        'base': 'sp dim $^3$', 'noRea': 'sp dim $^3$', 'full': 'sp dim $^{2.5}$'}
     ax1.legend()
     ax1.set_title (f"CPU time per iteration (s) [{MODE2PRINT} calculation]")
     ax1.set_xlabel(_label_sppow[MODE2PRINT])
@@ -490,6 +631,15 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
     ax2.legend()
     ax2.set_title (f"CPU time per iteration (s) [{MODE2PRINT} calculation] ") #+_label_sppow[MODE2PRINT])
     ax2.set_xlabel(" ( RO_dim ) ")
+    
+    X, Y = [i[0] for i in trends_MZ_RO_list], [i[1] for i in trends_MZ_RO_list]
+    A,B = linear_regression(X, Y)
+    ax5.plot(X, Y,  'r*--')
+    ax5.set_title(f"Trend of CPU time by sp_dim and RO:\n A= {A:4.2e}   B= {B:+4.2e}")
+    ax5.set_ylabel(" t_cpu_iter / {} (s) ".format(_label_sppow[MODE2PRINT]))
+    ax5.set_xlabel("  RO_dim  ")
+    labels_RadAng_integ = [f"  {x}" for x in data_summary[MODE2PRINT].keys()]
+    for i in range(len(x)): ax5.text(X[i], Y[i], labels_RadAng_integ[i])
     
     _label_sppow = {
         'base' : " ( sp_dim )$^3$ ", 'full' : " ( RO_dim * sp_dim )$^2$ ", 
@@ -502,13 +652,51 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
     ax4.set_title (f"error = A - integral <dens(r)> [{MODE2PRINT} calculation]")
     ax4.set_xlabel(" sp_dim ")
     
-    plt.tight_layout()
+    ax6.legend()
+    ax6.set_title("Estimation of Set Up (CPU) Time by ROmega")
+    ax6.set_ylabel("Total SetUp Time (s)")
     
-    fig1.show()
-    fig2.show()
-    fig3.show()
-    fig4.show()
+    
+    fn_names = []
+    from pypdf import PdfMerger
+    merger = PdfMerger()
+    figures_dict = {'tcpuPi_by_spdim':fig1, 'tcpuPi_byRO':fig2, 
+                    'ramUsage_by_spdimRO':fig3, 'densErr_byRO':fig4, 
+                    'tpItrend_by_spdimAndRO':fig5, 'setUpTime_byspdim':fig6  }
+    for title, f_ in figures_dict.items():
+        f_.tight_layout()
+        if EXPORT_PDF_IMG:
+            fn_names.append(f'{title}.pdf')
+            f_.savefig(fn_names[-1])
+            merger.append(fn_names[-1])
+        f_.show()
+    if EXPORT_PDF_IMG:
+        merger.write(f"results_{IMPORT_FILENAME}_{MODE2PRINT}.pdf")
+        
     _ = 0
+
+
+if __name__ == '__main__' and os.getcwd().startswith('C'):
     
     
+    #===========================================================================
+    # PLOT RESULTS  
+    #===========================================================================
+    # Summary results is a non  conventional export_results file, so there is
+    # the plotter specific for the CPU - RAM - dimensions here.
     
+    ## Files to plot
+    ## TODO: set to print 
+    MODE2PRINT = 'base'
+    MODE2PRINT = 'full'
+    
+    DATA_FOLDER = '../DATA_RESULTS/TestLoading/'
+    # __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, __SUMMARY_FILENAME, MODE2PRINT)
+    
+    #===========================================================================
+    ##  Upgrading the results by using the single results 
+    ##  from Data results collections (statistics etc). 
+    #===========================================================================
+    
+    __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, __RESULTS_FILENAME, MODE2PRINT,
+                                          EXPORT_PDF_IMG=False)

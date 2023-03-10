@@ -244,7 +244,7 @@ class _Base1DTaurusExecutor(object):
         Complete the deformations to the left(oblate) and right(prol)
         for the pairing minimum. dq defined by N_max, final total length= N_max+1
         """
-
+        
         if not (p_max!=None and p_min!=None) or N_max == 0:
             ## consider as ITERATIVE_METHOD SINGLE EVALUATION (save the deform)
             q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
@@ -296,6 +296,27 @@ class _Base1DTaurusExecutor(object):
             self._deformations_map[1] = list(enumerate(deform_prolate))
         
         
+    def _runUntilConvergence(self, MAX_STEPS=3):
+        """
+        Option to converge a result 
+        """
+        res : self.DTYPE = None
+        res = self._executeProgram()
+        
+        if not self.force_converg or MAX_STEPS==0:
+            return  res
+        
+        if res == None:
+            print(f"         [WRN] result broken or invalid, repeating [{MAX_STEPS}/tot]")
+            res = self._runUntilConvergence(MAX_STEPS-1)
+        elif not res.properly_finished:
+            print(f"         [WRN] result not finished, continue from last point [{MAX_STEPS}/tot]")
+            _base_seed = self.inputObj.seed
+            self.inputObj.seed = 1
+            res = self._runUntilConvergence(MAX_STEPS-1)
+            self.inputObj.seed = _base_seed
+        
+        return res
     
     def run(self):
         self._checkExecutorSettings()
@@ -307,7 +328,14 @@ class _Base1DTaurusExecutor(object):
             for k, val in self._deformations_map[0]: # oblate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                self._results[0].append(self._executeProgram())
+                
+                res : self.DTYPE = self._runUntilConvergence()
+                # if self.force_converg:
+                #     res : self.DTYPE = self._runUntilConvergence()
+                # else:
+                #     res : self.DTYPE = self._executeProgram()
+                                
+                self._results[0].append(res)
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backwardsSweeping(oblate_part=True) 
             
@@ -316,7 +344,10 @@ class _Base1DTaurusExecutor(object):
                 ## exclude the first state since it is the original seed
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                self._results[1].append(self._executeProgram())
+                res : self.DTYPE = self._runUntilConvergence()
+                
+                self._results[1].append(res)
+                # self._results[1].append(self._executeProgram())
             
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backwardsSweeping(oblate_part=False)
@@ -550,10 +581,37 @@ class _Base1DTaurusExecutor(object):
         for file_ in  ("canonicalbasis", "eigenbasis_h", 
                        "eigenbasis_H11", "occupation_numbers"):
             txt = ""
-            with open(f"{file_}_original.dat", 'r') as f:
+            with open(f"TEMP_{file_}.txt", 'r') as f:
                 txt = f.read()
             with open(f"{file_}.dat", 'w+') as f:
                 f.write(txt) 
+    
+    def _namingFilesToSaveInTheBUfolder(self):
+        """ 
+        Naming and  tracking of the unconverged and converged results 
+        """
+        tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}"
+        s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
+        s_list = list(filter(lambda x: tail in x, s_list))
+        s_list = list(filter(lambda x: x.endswith(".OUT"), s_list))
+        s_n = len(s_list)
+        
+        unconv_n = " ".join(s_list).count("unconv")
+        s_n -= unconv_n
+        if getattr(self._current_result, 'properly_finished', False)==False:
+            s_n = str(s_n)+'unconv'+str(unconv_n)
+            ## Note, to keep the first(unconv) and intermediate results
+            ## read the "base" results in order until non (unconv) label
+        else:
+            # if unconv_n > 0:
+            #     s_n = str(s_n) ## there are no results converged of any type
+            #     ## [res_0unconv0, res_0unconv1] -> append(res_0)
+            #    NOTA: esto no vale porque si no se producen convergencias, confundiras
+            #    estados de ida (no convergidos) con un resultado valido pero que ocurrio a la vuelta
+            # else:
+            s_n = str(s_n + unconv_n)
+        tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}_{s_n}"
+        return tail
     
     def saveFinalWFprocedure(self, base_execution=False):
         """ 
@@ -584,7 +642,7 @@ class _Base1DTaurusExecutor(object):
                     ## read the "base" results in order until non (unconv) label
                 tail = tail.replace("dbase", f"{s_n}-dbase")
         else:
-            tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}"
+            tail = self._namingFilesToSaveInTheBUfolder()
         
         ## copy the wf to the initial wf always except non 
         if (not self.force_converg) or self._current_result.properly_finished:
@@ -1233,5 +1291,8 @@ class ExeTaurus0D_EnergyMinimum(ExeTaurus1D_DeformB20):
     
     """ Finish, just get _1sMinimum and export to a file"""    
     
+
+class ExeTaurus1D_FromBuckUpFiles(ExeTaurus1D_DeformB20):
     
+    pass
     
