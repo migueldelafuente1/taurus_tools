@@ -45,5 +45,7 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.P_T1m1_J00, InputTaurus.ConstrEnum.P_T1p1_J00
     ]
     run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS, 
-                         seed_base=0, p_min=-0.05, p_max=2.0, N_max=41)
+                         ROmega=(16,16), convergences=3,
+                         seed_base=0, 
+                         p_min=-0.05, p_max=2.0, N_max=41)
             
