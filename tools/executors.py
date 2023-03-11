@@ -739,7 +739,7 @@ class _Base1DTaurusExecutor(object):
         """
         Standard step information
         """
-        HEAD = "  z  n  (st)        E_HFB        Kin     Pair       b2"
+        HEAD = "  z  n  (st) ( d)       E_HFB        Kin     Pair       b2"
         if print_head:
             print('\n'+HEAD+LINE_2)
             return
@@ -748,8 +748,9 @@ class _Base1DTaurusExecutor(object):
         _iter_str = "[{}/{}: {}']".format(result.iter_max, self.inputObj.iterations, 
                                           getattr(result, 'iter_time_seconds', 0) //60 )
         
-        txt  =" {:2} {:2}    {}      {:9.3f}  {:8.3f}  {:7.3f}   {:+6.3f} "
+        txt  =" {:2} {:2}    {}  {:>4}    {:9.3f}  {:8.3f}  {:7.3f}   {:+6.3f} "
         txt = txt.format(result.z, result.n, status_fin, 
+                         str(self._curr_deform_index),
                          result.E_HFB, result.kin, result.pair, 
                          result.b20_isoscalar)
         print(txt, _iter_str)

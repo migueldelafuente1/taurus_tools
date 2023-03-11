@@ -688,10 +688,10 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
     ## Files to plot
     ## TODO: set to print 
     MODE2PRINT = 'base'
-    MODE2PRINT = 'full'
+    # MODE2PRINT = 'full'
     
     DATA_FOLDER = '../DATA_RESULTS/TestLoading/'
-    # __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, __SUMMARY_FILENAME, MODE2PRINT)
+    # __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, __SUMMARY_FILENAME, MODE2PRINT, EXPORT_PDF_IMG=True)
     
     #===========================================================================
     ##  Upgrading the results by using the single results 
@@ -699,4 +699,4 @@ if __name__ == '__main__' and os.getcwd().startswith('C'):
     #===========================================================================
     
     __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, __RESULTS_FILENAME, MODE2PRINT,
-                                          EXPORT_PDF_IMG=False)
+                                          EXPORT_PDF_IMG=True)

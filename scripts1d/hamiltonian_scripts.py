@@ -68,6 +68,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
                 exe_.include_header_in_results_file = False
                 exe_.setUp()
                 exe_.setUpExecution(**input_args_onrun)
+                exe_.force_converg = True 
                 exe_.run()
                 exe_.gobalTearDown(zip_bufolder=False)
             except ExecutionException as e:

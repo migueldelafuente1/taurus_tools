@@ -6,7 +6,7 @@ Created on Mar 3, 2023
 from scripts1d.loadingAndTiming_scripts import run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh
 
 if __name__ == '__main__':
-    Z,N = 12,10
+    Z,N = 2,2
     
     # RO = (6, 6)
     # RO = (10,10)
@@ -15,4 +15,4 @@ if __name__ == '__main__':
     # RO = (20,20)
     
     run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
-        Mzmax=7, ROmegaMax=RO, z_numb=Z, n_numb=N)
+        Mzmax=1, ROmegaMax=RO, z_numb=Z, n_numb=N)

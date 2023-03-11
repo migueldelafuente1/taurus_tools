@@ -14,8 +14,9 @@ from tools.data import DataTaurus
 from tools.helpers import LINE_2
 
 
-def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0, 
-                         p_min=-0.05, p_max=2.0, N_max=41):
+def run_pair_surface_D1S(nucleus, interactions, pair_constrs, 
+                         seed_base=0, ROmega=(13, 13),
+                         p_min=-0.05, p_max=2.0, N_max=41, convergences=None):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
     Args:
@@ -24,9 +25,11 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
         :pair_constrs = <list> [P_TJ**, P_TJ'**, ...]
     Optional:
         :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
+        :ROmega tuple of the integration grids
         :p_min
         :p_max
         :N_steps:
+        :convergences: <int> number of random seeds / blocked states to get the global minimum
     """
     assert all(map(lambda x: x.startswith('P_T'), pair_constrs)), f"invalid pair constraint {pair_constrs}"
     
@@ -37,7 +40,10 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         ]
-    ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = 5
+    ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = 3
+    if convergences != None:
+        ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = convergences
+        ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = True
     
     for z, n in nucleus:
         print(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
@@ -49,8 +55,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
             continue
         
         InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.r_dim : 12,
-               InputTaurus.InpDDEnum.omega_dim : 14})
+            **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
@@ -103,6 +109,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs, seed_base=0,
                 exe_.defineDeformationRange(p_min,  p_max, N_max)
                 exe_.setUp()
                 exe_.setUpExecution(**input_args_onrun)
+                exe_.force_converg = True
                 exe_.run()
                 exe_.gobalTearDown()
             except ExecutionException as e:

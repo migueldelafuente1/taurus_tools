@@ -12,8 +12,9 @@ from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
 
-def run_J_surface(nucleus, interactions, J_i,
-                  seed_base=0, j_min= 0.0, j_max=25.0, N_max=50, convergences=None):
+def run_J_surface(nucleus, interactions, J_i, 
+                  seed_base=0, ROmega=(13, 13),
+                  j_min= 0.0, j_max=25.0, N_max=50, convergences=None):
     """
     Reqire:
     Args:
@@ -22,6 +23,7 @@ def run_J_surface(nucleus, interactions, J_i,
         :J_i:  from DataTaurus.ConstrEnum.J*
     Optional:
         :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
+        :ROmega: <tuple>=(R, Omega) grid of Integration (Default is 10, 10)
         :j_min
         :j_max
         :N_steps:
@@ -49,8 +51,8 @@ def run_J_surface(nucleus, interactions, J_i,
             continue
         
         InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.r_dim : 14,
-               InputTaurus.InpDDEnum.omega_dim : 14})
+            **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
