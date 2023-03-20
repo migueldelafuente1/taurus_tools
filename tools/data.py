@@ -385,35 +385,47 @@ class EvolTaurus(_DataObjectBase):
 
 class EigenbasisData(_DataObjectBase):
     
-    FILENAME_DEFAULT = 'canonicalbasis.dat'
-    
+    """ 
+    Object to manage the data information of canonicalbasis and eigenbasis_h/H11
+    """
     class HeaderEnum(Enum):
         FermiProt = "Proton  fermi energy ="
         FermiNeut = "Neutron fermi energy ="
     
+    EIGENBASIS_H_HEADER   = '   #      Z        N        n        l        p        j       jz         h  '
+    CANONICALBASIS_HEADER = '   #      Z        N        n        l        p        j       jz         v2           h '
+    EIGENBASIS_H11_HEADER = '   #      Z        N        n        l        p        j       jz         H11'
+            
     def __init__(self, filename=None):
         
         self.fermi_energ_prot = None
         self.fermi_energ_neut = None 
+        self.DAT_FILE = None
         
         self.index = []
-        self.avg_neut = []
-        self.avg_prot = []
+        self.avg_proton  = []
+        self.avg_neutron = []
         self.avg_n    = []
         self.avg_l    = []
-        self.avg_p    = []
+        self.avg_parity    = []
         self.avg_j    = []
         self.avg_jz   = []
         self.v2   = []
         self.h    = []
+        self.H11  = []
         
-        self.filename = filename if (filename!=None) else self.FILENAME_DEFAULT
+        self.filename = filename
         
     def getResults(self):
-        
+        """
+        Once specified the filename, get the data of the file.
+        """
         with open(self.filename, 'r') as f:
             data = f.readlines()
+        self._setDATFile(data)
         
+        ## #      Z        N        n        l        p        j       jz    ...
+        ## -------------------------------------------------------------------
         _in_values = False
         for line in data:
             line = line.strip()
@@ -421,33 +433,88 @@ class EigenbasisData(_DataObjectBase):
                 continue
             if not _in_values:
                 if   line.startswith(self.HeaderEnum.FermiProt):
-                    self.fermi_energ_prot = self._getValues(line, self.HeaderEnum.FermiProt)
+                    self.fermi_energ_prot = self._getValues(line, self.HeaderEnum.FermiProt)[0]
                 elif line.startswith(self.HeaderEnum.FermiNeut):
-                    self.fermi_energ_neut = self._getValues(line, self.HeaderEnum.FermiNeut)
-                # elif line.startswith('#      Z        N'): 
-                #     pass
+                    self.fermi_energ_neut = self._getValues(line, self.HeaderEnum.FermiNeut)[0]
                 elif line.startswith('---'):
                     _in_values = True
                 continue
             else:
                 
                 vals = self._getValues(line)
+                vals[0] = int(vals[0])
                 
                 self.index.append(vals[0])
-                self.avg_prot.append(vals[1])
-                self.avg_neut.append(vals[2])
+                self.avg_proton.append(vals[1])
+                self.avg_neutron.append(vals[2])
                 self.avg_n.append( vals[3])
                 self.avg_l.append( vals[4])
-                self.avg_p.append( vals[5])
+                self.avg_parity.append( vals[5])
                 self.avg_j.append( vals[6])
                 self.avg_jz.append(vals[7])
-                if len(vals) == 9: 
-                    ## you are importing an eigenbasis file, v2 is not present 
-                    self.v2.append(vals[8])
-                self.h .append(vals[-1])
-    
+                
+                if self.DAT_FILE == DataTaurus.DatFileExportEnum.canonicalbasis:
+                    self.v2 .append(vals[8])
+                    self.h  .append(vals[9])
+                if self.DAT_FILE == DataTaurus.DatFileExportEnum.eigenbasis_h:
+                    self.h  .append(vals[8])
+                if self.DAT_FILE == DataTaurus.DatFileExportEnum.eigenbasis_H11:
+                    self.H11.append(vals[8])    
         _=0
+    
+    def _setDATFile(self, lines_file):
+        """ Identify the file by the column names at the top. """
+        if   self.EIGENBASIS_H11_HEADER in lines_file[0]:
+            self.DAT_FILE = DataTaurus.DatFileExportEnum.eigenbasis_H11
+        elif self.EIGENBASIS_H_HEADER   in lines_file[3]:
+            self.DAT_FILE = DataTaurus.DatFileExportEnum.eigenbasis_h
+        elif self.CANONICALBASIS_HEADER in lines_file[3]:
+            self.DAT_FILE = DataTaurus.DatFileExportEnum.canonicalbasis
+        else:
+            raise DataObjectException(f"Cannot identify the file [{self.filename}]")
+
+
+class OccupationNumberData(_DataObjectBase):
+    
+    """ 
+    Object to manage the data from occupation_number file.
+    """
+    
+    def __init__(self, filename=None):
         
+        self._occupations_unprojected = {-1: {}, 1: {}}
+        self._occupations_projected   = {-1: {}, 1: {}}
+        self._numbers_by_label = {}
+        
+        self.filename = filename
+    
+    def getResults(self):
+        """
+        Once specified the filename, get the data of the file.
+        """
+        with open(self.filename, 'r') as f:
+            data = f.readlines()[3:]
+        
+        ##  #    2*mt    n     l    2*j   label   unprojected    projected
+        ##----------------------------------------------------------------
+        for line in data:
+            
+            if line.startswith('sum') or line.startswith('---'):
+                continue
+            _, mt, n, l, j, label, unproj, proj = line.split()
+            
+            mt, n, l, j, label = int(mt), int(n), int(l), int(j), int(label)
+            unproj, proj = float(unproj), float(proj)
+            
+            if label in self._occupations_unprojected[mt]:
+                raise DataObjectException(f"Label [{label}]is already registered:"
+                                          f"{self._numbers_by_label.keys()}")
+            self._numbers_by_label[label] = (n, l, j)
+            self._occupations_projected[mt][label]   = proj
+            self._occupations_unprojected[mt][label] = unproj
+    
+
+
 #===============================================================================
 #   RESULTS FROM TAURUS 
 #===============================================================================
@@ -920,7 +987,8 @@ class DataTaurus(_DataObjectBase):
             if k in 'zn':
                 setattr(self, k, int(val))
             elif k in ('properly_finished', 'broken_execution'):
-                setattr(self, k, bool(val))
+                bool_ = val.lower() in ('true', 't', '1') # bool("len>0 str") = True
+                setattr(self, k, bool_)
             elif k.startswith('_'):
                 continue
             elif k.startswith('date_'):
@@ -1257,8 +1325,66 @@ class DataAxial(DataTaurus):
     @property
     def getAttributesDictLike(self):
         return ', '.join([k+' : '+str(v) for k,v in self.__dict__.items()])
-    
 
+
+class DataAttributeHandler(object):
+    """
+    This class is used to define an arbitrary function of one (or several) 
+    attribute values of implemented _DataObject class instances.
+    
+    f(x, y, z, ...) on DTYPE object, being {x,y,z,} attributes
+    
+    NOTE: Remember the attributes to be in the order given for the lambda function
+    
+    Examples:
+        We want the function(pair_pn, var_n) = 1.25* pair_pn / sqrt(var_n) - 1.2
+    
+    
+    complex_attr = DataAttributeHandler(
+                        lambda x, y: 1.25*x/(y**0.5) - 1.2,
+                        pair_pn, 
+                        var_n)
+    
+    res = DataTaurus(z, n, 'file2import') ## Defines all the attributes
+    print(complex_attr.getValue(res)) 
+        >> 1.5321684 (i.e.)
+    
+    
+    res = DataAxial(z, n, 'file2import') ## Note, DataAxial has no 'pair_pn'
+    print(complex_attr.getValue(res)) 
+        >> AttributeError: 'DataAxial' object has no attribute 'pair_pn'
+    """
+    def __init__(self, function_, *attrs2use):
+        
+        assert isinstance(function_, type(lambda x:x)), "function must be a lambda functional instance"
+        self._function = function_
+        
+        for attr in attrs2use:
+            assert isinstance(attr, str), "Attributes given must be strings for the DataObject to use getattr"
+        
+        self._attr2use = attrs2use
+        self._name = ', '.join(attrs2use)
+        self._name = f"f({self._name})"
+    
+    def getValue(self, result: _DataObjectBase):
+        """ 
+        Return the value of the function on the result object. 
+        Invalid access will result into an error.
+        """
+        vals = [getattr(result, attr_) for attr_ in self._attr2use]
+        return self._function(*vals)
+    
+    def setName(self, name: str):
+        self._name = name
+    
+    ## COMMON METHODS NORMALY USED FOR ATTRIBUTE IMPORTING:
+    #-------------------------------------------------------------------------
+    def __str__(self):
+        return self._name
+    def startswith(self, str_):
+        return False
+    def endsswith(self, str_):
+        return False
 
 if __name__ == '__main__':
     pass

@@ -37,7 +37,8 @@ def run_J_surface(nucleus, interactions, J_i,
         
     ExeTaurus1D_AngMomentum.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
-        DataTaurus.DatFileExportEnum.eigenbasis_h,
+        DataTaurus.DatFileExportEnum.eigenbasis_h,        
+        DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = 5
     if convergences != None:

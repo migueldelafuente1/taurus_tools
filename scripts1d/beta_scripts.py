@@ -95,6 +95,7 @@ def run_b20_surface(nucleus, interactions,
     ExeTaurus1D_DeformB20.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
+        DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = 3
     if convergences != None:

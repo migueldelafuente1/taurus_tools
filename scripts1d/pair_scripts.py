@@ -39,6 +39,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     ExeTaurus1D_PairCoupling.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
+        DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = 3
     if convergences != None:
