@@ -959,6 +959,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         blocked_seeds_results = {}
         blocked_energies      = {}
         bk_min, bk_E_min      = 0, 1.0e+69
+        bu_results = {}
         double4OO = sum(self.numberParityOfIsotope) # repeat twice for odd-odd
         print("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
               double4OO*self.SEEDS_RANDOMIZATION, 
@@ -1008,6 +1009,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             blocked_energies     [bk_sp] = res.E_HFB
             # Move the base wf to a temporal file, then copied from the bk_min
             shutil.move(self._base_wf_filename, f"{bk_sp}_{self._base_wf_filename}")
+            bu_results[(bk_sh_p, bk_sh_n)] = res
             
             ## actualize the minimum result
             if res.E_HFB < bk_E_min:
@@ -1031,8 +1033,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self.inputObj.qp_block = 0
         self._1stSeedMinima = blocked_seeds_results[bk_min]
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
-    
-    
+        self._exportBaseResultFile(bu_results)    
     
     def _evenNumberParitySeedConvergence(self):
         """
@@ -1049,6 +1050,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         pairing_E       = {}
         beta_gamma      = {}
         bk_min, bk_E_min = 0, 1.0e+69
+        bu_results      = {}
         
         for rand_step in range(self.SEEDS_RANDOMIZATION):
             bk_sp = rand_step
@@ -1066,6 +1068,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                     print(" ** * [Not Converged] Repeating loop.")
                 res = self._executeProgram(base_execution=True)
             #print(" ** * [OK] Result accepted. Saving result.")
+            bu_results[bk_sp] = res
             converged_seeds.append(bk_sp)
             
             seeds_results[bk_sp] = deepcopy(res)
@@ -1096,9 +1099,31 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         # copy the lowest energy solution and output.
         self._1stSeedMinima = seeds_results[bk_min]
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
+        
+        self._exportBaseResultFile(bu_results)
     
-    
-    
+    def _exportBaseResultFile(self, bu_results):
+        """ sExport in a results file the wf indexed by blocked states."""
+        
+        count = 0
+        res : DataTaurus = None
+        write_lines = []
+        for indx, res in bu_results.items():
+            if isinstance(indx, tuple):
+                head = f'{indx[0]}_{indx[1]}'
+            else:
+                head = f'0_0'
+            
+            vals = res.getAttributesDictLike
+            line = f'{count}: {head}' + OUTPUT_HEADER_SEPARATOR + vals
+            write_lines.append(line)                
+            count += 1
+        
+        with open('BASE-'+self.EXPORT_LIST_RESULTS, 'w+') as f:
+            f.writelines(write_lines)
+        print(f" [DONE] Exported [{len(write_lines)}] convergence results in "
+              f"[BASE-{self.EXPORT_LIST_RESULTS}]")
+        
     def _preconvergenceAccepted(self, result: DataTaurus):
         """
         define the steps to accept the result.
