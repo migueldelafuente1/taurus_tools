@@ -18,10 +18,9 @@ from random import random
 from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR
+    zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
-
 
 class ExecutionException(BaseException):
     pass
@@ -577,6 +576,7 @@ class _Base1DTaurusExecutor(object):
                 with open(self.TRACK_TIME_FILE, 'w+') as f2:
                     f2.write(data)
         
+        MAX_TO = max(self._getMinimumIterationTimeTaurus(), 43200) # 12 h timeout
         ## simulates the other .dat prompt
         for file_ in  ("canonicalbasis", "eigenbasis_h", 
                        "eigenbasis_H11", "occupation_numbers"):
@@ -670,6 +670,21 @@ class _Base1DTaurusExecutor(object):
         else:
             _e = subprocess.call('rm *.dat *.gut', shell=True)
     
+    def _getMinimumIterationTimeTaurus(self):
+        """
+        Get the minimum estimation time with the DD term on according to the
+        cpu time regression formula
+        
+            t_per_iter / sp_dim^3 = 1.5e-9 * ROmega_dim + 7e-6  [seconds]
+        
+        setting the time for a maximum of 600 steps.
+        """
+        Om  = self.inputObj._DD_PARAMS['omega_dim']
+        ROm_dim = LEBEDEV_GRID_POINTS[Om - 1] * self.inputObj._DD_PARAMS['r_dim']
+        
+        time_  = (1.5e-9 * ROm_dim) + 7e-6 
+        time_ *= self._sp_dim ** 3
+        return 600 * time_
     
     def _executeProgram(self, base_execution=False):
         """
@@ -701,9 +716,10 @@ class _Base1DTaurusExecutor(object):
                     ## option to analyze the program performance
                     order_ = f'{{ /usr/bin/time -v {order_}; }} 2> {self.TIME_FILE}'
                 
+                MAX_TO = max(self._getMinimumIterationTimeTaurus(), 43200) # 12 h timeout
                 _e = subprocess.call(order_, 
                                      shell=True,
-                                     timeout=43200) # 12 h timeout
+                                     timeout=MAX_TO)
             
             res = self.DTYPE(self.z, self.n, _out_fn)
             if self.TRACK_TIME_AND_RAM: 
@@ -896,6 +912,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         res = None
         self._preconvergence_steps = 0
         self.printTaurusResult(None, print_head=True)
+        ## read the properties of the basis for the interaction
+        self._getStatesAndDimensionsOfHamiltonian()
         
         if self._1stSeedMinima == None or reset_seed:
             if 1 in self.numberParityOfIsotope:
@@ -923,17 +941,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         if InputTaurus.ArgsEnum.seed in _new_input_args:
             self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, None)
         
-    
-    def _oddNumberParitySeedConvergence(self):
+    def _getStatesAndDimensionsOfHamiltonian(self):
         """
-        Procedure to select the sp state to block with the lowest energy:
-         * Selects state randomly for a random sh-state in the odd-particle space
-         * Repeat the convergence N times and get the lower energy
-         * export to the BU the (discarded) blocked seeds (done in saveWF method)  
+        Read the hamiltonian and get the sp states/shell for the calculation
         """
-        ## get a sp_space for the state to block 
-        odd_p, odd_n = self.numberParityOfIsotope
-        # the hamiltonian is already copied in CWD for execution
+        ## the hamiltonian is already copied in CWD for execution
         sh_states, l_ge_10 = [], True
         with open(self.interaction+OutputFileTypes.sho, 'r') as f:
             data = f.readlines()
@@ -950,6 +962,24 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         sp_states = map(lambda x: (int(x), readAntoine(x, l_ge_10)[2] + 1), sh_states)
         sp_states = dict(list(sp_states))
         sp_dim    = sum(list(sp_states.values()))
+        
+        self._sh_states = sh_states
+        self._sp_states = sp_states
+        self._sp_dim    = sp_dim        
+    
+    def _oddNumberParitySeedConvergence(self):
+        """
+        Procedure to select the sp state to block with the lowest energy:
+         * Selects state randomly for a random sh-state in the odd-particle space
+         * Repeat the convergence N times and get the lower energy
+         * export to the BU the (discarded) blocked seeds (done in saveWF method)  
+        """
+        ## get a sp_space for the state to block 
+        odd_p, odd_n = self.numberParityOfIsotope
+        ## this was set in setUpExecution._getStatesAndDimensionsOfHamiltonian
+        sh_states = self._sh_states
+        sp_states = self._sp_states
+        sp_dim    = self._sp_dim
         
         ## randomization of the blocked state and repeat the convergence
         ## several times to get the lower energy

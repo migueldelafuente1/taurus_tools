@@ -513,6 +513,30 @@ class OccupationNumberData(_DataObjectBase):
             self._occupations_projected[mt][label]   = proj
             self._occupations_unprojected[mt][label] = unproj
     
+    @property
+    def hasProjectedOccupations(self):
+        """
+        Are there any value of projected occupations.
+        """
+        if ((len(self._occupations_projected[-1])> 0)
+             or (len(self._occupations_projected[1])> 0)):
+            for mt in (-1, 1):
+                vals = self._occupations_projected[mt].values()
+                if any(filter(lambda x: abs(x)>1.0e-6, vals)):
+                    return True
+            return False
+        else:
+            return False
+    
+    
+    @property
+    def get_numbers(self):
+        return self._numbers_by_label
+    @property
+    def get_occupations(self):
+        if self.hasProjectedOccupations:
+            return self._occupations_unprojected, self._occupations_projected
+        return self._occupations_unprojected, None
 
 
 #===============================================================================
