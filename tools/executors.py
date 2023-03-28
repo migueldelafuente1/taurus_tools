@@ -684,7 +684,7 @@ class _Base1DTaurusExecutor(object):
         
         time_  = (1.5e-9 * ROm_dim) + 7e-6 
         time_ *= self._sp_dim ** 3
-        return 600 * time_
+        return max(self.inputObj.iterations, 600) * time_
     
     def _executeProgram(self, base_execution=False):
         """
