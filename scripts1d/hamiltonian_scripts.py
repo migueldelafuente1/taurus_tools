@@ -6,8 +6,9 @@ Created on Jan 20, 2023
 import os
 import numpy as np
 from tools.hamiltonianMaker import TBME_HamiltonianManager
-from tools.inputs import InputTaurus
-from tools.executors import ExeTaurus0D_EnergyMinimum, ExecutionException
+from tools.inputs import InputTaurus, InputAxial
+from tools.executors import ExeTaurus0D_EnergyMinimum, ExeAxial1D_DeformB20, \
+    ExecutionException
 
 def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75, 
                                    Nsteps=6, MZmin=0):
@@ -91,6 +92,80 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             os.remove(ExeTaurus0D_EnergyMinimum.EXPORT_LIST_RESULTS)
 
 
+def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBAxial',
+                                         MZmax=4, bHO_min=1.5, bHO_max=2.75, 
+                                         Nsteps=6):
+    """ 
+    Script for HFBAxial, get a curve b length to see where is the minimum of E hfb
+        NOTE: MzMin is always 0
+        HFBAxial cannot be imported from github
+    """
+    assert program in os.listdir(), \
+         f"[ERROR] program[{program}] not found in cwd[{os.getcwd()}]"\
+          ", compile and place it there"
+    
+    b_lengths = list(np.linspace(bHO_min, bHO_max, Nsteps, endpoint=True))
+    
+    input_args_start = {
+        InputAxial.ArgsEnum.com : 2,
+        InputAxial.ArgsEnum.seed: 2,
+        InputAxial.ArgsEnum.iterations: 1000,
+    }
+    
+    input_args_onrun = { **input_args_start,
+        InputAxial.ArgsEnum.seed: 0,
+        InputAxial.ArgsEnum.iterations: 1000,
+    } # just get the minimum result    
+    
+    for z, n in nucleus:
+        
+        if z % 2 == 1 or n % 2 == 1:
+            print(f"[WARNING] isotope :z{z}, n{n} is not even-even, no blocking applied")
+            
+        summary_results = f'export_HO_TES_axial_z{z}n{n}.txt'
+        if summary_results in os.listdir():
+            with open(summary_results, 'w+') as f:
+                f.write('')
+            
+        for step_, b in enumerate(b_lengths.reverse()):           
+            
+            ## input args_for must change seeed=1 after the right minimum
+            if step_ > 0:
+                input_args_start[InputTaurus.ArgsEnum.seed] = 1
+                        
+            ## after the export (do not zip the files) import the results and 
+            ## copy here to an auxiliary file
+            
+            ExeAxial1D_DeformB20.EXPORT_LIST_RESULTS = f"export_{step_}.txt"
+        
+            try:
+                exe_ = ExeAxial1D_DeformB20(z, n)
+                exe_.setInputCalculationArguments(**input_args_start)
+                exe_.defineDeformationRange(0,  0, 0)
+                exe_.include_header_in_results_file = False
+                exe_.setUp()
+                exe_.setUpExecution(**input_args_onrun)
+                exe_.force_converg = True 
+                exe_.run()
+                exe_.gobalTearDown(zip_bufolder=False)
+            except ExecutionException as e:
+                print(e)
+            
+            line = ''
+            with open(ExeAxial1D_DeformB20.EXPORT_LIST_RESULTS, 'r') as r:
+                line = r.readlines()
+                if len(line)>1:
+                    print("[WARNING], unexpected export data file with multiple lines:\n"
+                          '  \n'.join(line))
+                    line = line[0]
+            if line not in  ('', '\n'):
+                with open(summary_results, 'a+') as f:
+                    header_  = f"{len(b_lengths)-step_}: {b:5.3f}"
+                    header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
+                    f.write('\n'+header_+line)
+            
+            ## rm the intermediate step output
+            os.remove(ExeAxial1D_DeformB20.EXPORT_LIST_RESULTS)
 
 
 

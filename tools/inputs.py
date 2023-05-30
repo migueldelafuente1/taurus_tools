@@ -637,15 +637,15 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
 {_constraints}          >>>>>>>>>> E N D <<<<<<<<<<<<<<<<<<<<<<<<<<<  """
     
     class ArgsEnum(Enum):
-        interaction    = 'interaction'
-        com        = 'com'
-        coul       = 'coul'
+        interaction    = 'interaction' # 0-D1S (dependent on the program IPAR)
+        com        = 'com'    # 0: no, 1: 1body, 2: 1body + 2body 
+        coul       = 'coul'   # 0: no, 1: slater approx_, 2:exact
         z          = 'z'
         a          = 'a'
-        seed       = 'seed'
+        seed       = 'seed'   # 0: from fort.10, 1: idem with kick, 2: new function
         iterations = 'iterations'
-        grad_tol   = 'grad_tol'
-        b_len      = 'b_len'
+        grad_tol   = 'grad_tol' #  // don't touch
+        b_len      = 'b_len'    # = b_z = b_perp (fm)
         _constraints = '_constraints'
     
     class ConstrEnum(Enum):
