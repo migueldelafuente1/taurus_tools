@@ -16,6 +16,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
     Script for Taurus, get a curve b length to see where is the minimum of E hfb
     """
     b_lengths = list(np.linspace(bHO_min, bHO_max, Nsteps, endpoint=True))
+    b_lengths.reverse()
     
     InputTaurus.set_inputDDparamsFile(
         **{InputTaurus.InpDDEnum.r_dim : 12,
@@ -45,7 +46,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
                 f.write('')
             
         
-        for step_, b in enumerate(b_lengths.reverse()):
+        for step_, b in enumerate(b_lengths):
             
             ## set up the Hamiltonian in the set up 
             hamil_exe = TBME_HamiltonianManager(b, MZmax, MZmin=MZmin)
@@ -92,7 +93,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             os.remove(ExeTaurus0D_EnergyMinimum.EXPORT_LIST_RESULTS)
 
 
-def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBAxial',
+def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
                                          MZmax=4, bHO_min=1.5, bHO_max=2.75, 
                                          Nsteps=6):
     """ 
@@ -105,6 +106,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBAxial',
           ", compile and place it there"
     
     b_lengths = list(np.linspace(bHO_min, bHO_max, Nsteps, endpoint=True))
+    b_lengths.reverse()
     
     input_args_start = {
         InputAxial.ArgsEnum.com : 2,
@@ -127,7 +129,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBAxial',
             with open(summary_results, 'w+') as f:
                 f.write('')
             
-        for step_, b in enumerate(b_lengths.reverse()):           
+        for step_, b in enumerate(b_lengths):           
             
             ## input args_for must change seeed=1 after the right minimum
             if step_ > 0:
