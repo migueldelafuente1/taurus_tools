@@ -18,9 +18,11 @@ from random import random
 from tools.inputs import InputTaurus, InputAxial
 from tools.data import DataTaurus, DataAxial
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS
+    zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS,\
+    ValenceSpacesDict_l_ge10_byM
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
+from future.builtins.misc import isinstance
 
 class ExecutionException(BaseException):
     pass
@@ -193,7 +195,8 @@ class _Base1DTaurusExecutor(object):
                 f"{self.ITYPE.__name__}:\n {input_kwargs}")
         
         self.inputObj.setParameters(**input_kwargs)
-        self._DDparams = self.inputObj._DD_PARAMS 
+        if isinstance(self.ITYPE, InputTaurus):
+            self._DDparams = self.inputObj._DD_PARAMS
         self._base_seed_type = self.inputObj.seed
         # NOTE:  by assign the _DD (class) dictionary in input, changes in the
         # attribute _DDparams is transfered to the input.
@@ -750,8 +753,8 @@ class _Base1DTaurusExecutor(object):
         result.memory_max_KB = args['memory_max']
         return result
         
-    def printTaurusResult(self, result : DataTaurus, print_head=False, 
-                          *params2print):
+    def printExecutionResult(self, result : DataTaurus, print_head=False, 
+                             *params2print):
         """
         Standard step information
         """
@@ -798,7 +801,7 @@ class _Base1DTaurusExecutor(object):
             copying the wf and output to a folder, clean auxiliary files,
         """
         if self.PRINT_STEP_RESULT:
-            self.printTaurusResult(result)
+            self.printExecutionResult(result)
         
         if self.force_converg and not result.properly_finished:
             return
@@ -862,12 +865,74 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
     
     DTYPE = DataAxial  # DataType for the outputs to manage
     ITYPE = InputAxial # Input type for the input management
-
+    
+        
+    def __init__(self, z, n, ipar_int, MZmax, *args, **kwargs):
+        """
+        :ipar_int: [0:9] choice of program parameters for a Gogny interaction
+        """
+        _Base1DTaurusExecutor.__init__(self, z, n, ipar_int, *args, **kwargs)
+        
+        del self._DDparams # not necessary
+        self.interaction : int = int(self.interaction)
+        self.MzMax = MZmax
+    
+    
+    def _run_backwardsSweeping(self, oblate_part=None):
+        raise ExecutionException("Method not implemented for Axial calculation")
+    def _runUntilConvergence(self, MAX_STEPS=3):
+        raise ExecutionException("Method not implemented for Axial calculation")
+    def _runVariableStep(self):
+        raise ExecutionException("Method not implemented for Axial calculation")
 #===============================================================================
 #
 #    EXECUTOR DEFINITIONS: MULTIPOLE DEFORMATIONS 
 #
 #===============================================================================
+    
+    def _auxWindows_executeProgram(self, output_fn):
+        """ 
+        Dummy method to test the scripts1d in Windows
+        """
+        # program = """ """
+        # exec(program)
+        file2copy = "DATA_RESULTS/axial_output_maxiter.OUT"
+        # file2copy = 'TEMP_output_Z10N6_broken.txt'
+        file2copy = "DATA_RESULTS/axial_output.OUT"
+        
+        txt = ''
+        with open(file2copy, 'r') as f:
+            txt = f.read()
+            txt = txt.format(INPUT_2_FORMAT=self.inputObj)
+        
+        with open(output_fn, 'w+') as f:
+            f.write(txt)
+        
+        hash_ = hash(random()) # random text to identify wf
+        ## wf intermediate
+        with open('fort.11', 'w+') as f:
+            f.write(str(hash_))
+            
+    def printExecutionResult(self, result : DataTaurus, print_head=False, 
+                             *params2print):
+        """
+        Standard step information
+        """
+        HEAD = "  z  n  (st) ( d)       E_HFB        Kin     Pair       b2"
+        if print_head:
+            print('\n'+HEAD+LINE_2)
+            return
+        
+        status_fin = 'X' if not result.properly_finished  else '.'
+        _iter_str = "[{}/{}: {}']".format(result.iter_max, self.inputObj.iterations, 
+                                          getattr(result, 'iter_time_seconds', 0) //60 )
+        
+        txt  =" {:2} {:2}    {}  {:>4}    {:9.3f}  {:8.3f}  {:7.3f}   {:+6.3f} "
+        txt = txt.format(result.z, result.n, status_fin, 
+                         str(self._curr_deform_index),
+                         result.E_HFB, result.kin, result.pair, 
+                         result.b20_isoscalar)
+        print(txt, _iter_str)
 
 class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
@@ -879,7 +944,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
     EXPORT_LIST_RESULTS = 'export_TESq20'
         
-    def setUp(self):
+    def setUp(self, reset_folder=True):
         """
         set up: 
             * back up folder for results
@@ -889,7 +954,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         self._DDparams = self.inputObj._DD_PARAMS
         self.DTYPE.BU_folder = f'BU_folder_{self.interaction}_z{self.z}n{self.n}'
-        self.DTYPE.setUpFolderBackUp()
+        if reset_folder:
+            self.DTYPE.setUpFolderBackUp()
         
         for ext_ in OutputFileTypes.members():
             if os.path.exists(self.interaction+ext_):
@@ -911,7 +977,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         res = None
         self._preconvergence_steps = 0
-        self.printTaurusResult(None, print_head=True)
+        self.printExecutionResult(None, print_head=True)
         ## read the properties of the basis for the interaction
         self._getStatesAndDimensionsOfHamiltonian()
         
@@ -938,8 +1004,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         _new_input_cons = dict(filter(lambda x: x[0] in self.ITYPE.ConstrEnum.members(), 
                                       kwargs.items() ))
         self.inputObj.setParameters(**_new_input_args, **_new_input_cons)
-        if InputTaurus.ArgsEnum.seed in _new_input_args:
-            self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, None)
+        
+        if ((self.ITYPE is InputTaurus) and 
+            (InputTaurus.ArgsEnum.seed in _new_input_args)):
+            self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, 
+                                                       None)
         
     def _getStatesAndDimensionsOfHamiltonian(self):
         """
@@ -1214,7 +1283,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
 
 
-class ExeAxial1D_DeformQ20(ExeTaurus1D_DeformQ20):
+class ExeAxial1D_DeformQ20(_Base1DAxialExecutor, ExeTaurus1D_DeformQ20):
     
     CONSTRAINT    = InputAxial.ConstrEnum.b20
     CONSTRAINT_DT = DataAxial .getDataVariable(InputAxial.ConstrEnum.b20,
@@ -1226,7 +1295,37 @@ class ExeAxial1D_DeformQ20(ExeTaurus1D_DeformQ20):
     DTYPE = DataAxial  # DataType for the outputs to manage
     ITYPE = InputAxial # Input type for the input management
 
-
+    def setUp(self, reset_folder=True):
+        """
+        set up: 
+            * back up folder for results
+            * dumping filename
+            * save the hamiltonian files in BU folder for recovery
+        """
+        
+        self.DTYPE.BU_folder = f'BU_folder_D1S_z{self.z}n{self.n}'
+        if reset_folder:
+            self.DTYPE.setUpFolderBackUp()
+        # No Hamil files.
+    
+    def _getStatesAndDimensionsOfHamiltonian(self):
+        """
+        Read the hamiltonian and get the sp states/shell for the calculation
+        """
+        ## the hamiltonian is already copied in CWD for execution
+        sh_states, l_ge_10 = [], True
+        for m in range(self.MzMax +1):
+            sh_states = sh_states + list(ValenceSpacesDict_l_ge10_byM[m])
+        sh_states = [int(st) for st in sh_states]
+        
+        ## construct sp_dim for index randomization (sh_state, deg(j))
+        sp_states = map(lambda x: (int(x), readAntoine(x, l_ge_10)[2] + 1), sh_states)
+        sp_states = dict(list(sp_states))
+        sp_dim    = sum(list(sp_states.values()))
+        
+        self._sh_states = sh_states
+        self._sp_states = sp_states
+        self._sp_dim    = sp_dim  
 
 class ExeTaurus1D_DeformB20(ExeTaurus1D_DeformQ20):
     
@@ -1235,7 +1334,7 @@ class ExeTaurus1D_DeformB20(ExeTaurus1D_DeformQ20):
                                                beta_schm = 1)
     EXPORT_LIST_RESULTS = 'export_TESb20'
     
-class ExeAxial1D_DeformB20(ExeTaurus1D_DeformB20):
+class ExeAxial1D_DeformB20(ExeAxial1D_DeformQ20):
     
     CONSTRAINT    = InputAxial.ConstrEnum.b20
     CONSTRAINT_DT = DataAxial .getDataVariable(InputAxial.ConstrEnum.b20,
@@ -1347,6 +1446,18 @@ class ExeTaurus0D_EnergyMinimum(ExeTaurus1D_DeformB20):
     
     """ Finish, just get _1sMinimum and export to a file"""    
     
+class ExeAxial0D_EnergyMinimum(ExeAxial1D_DeformB20):
+    
+    ITERATIVE_METHOD = _Base1DTaurusExecutor.IterativeEnum.SINGLE_EVALUATION
+    
+    CONSTRAINT = None
+    ## default value to see, 
+    CONSTRAINT_DT = InputAxial.ConstrEnum.b20
+    
+    EXPORT_LIST_RESULTS = 'export_HOminimums_axial'
+    
+    """ Finish, just get _1sMinimum and export to a file"""
+
 
 class ExeTaurus1D_FromBuckUpFiles(ExeTaurus1D_DeformB20):
     

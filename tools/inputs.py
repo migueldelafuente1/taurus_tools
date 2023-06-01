@@ -670,7 +670,7 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
     _R2_CONSTR_TEMPL   = "<R**2>     {:1} {:1}   {:10.8f}D+00"
     
     
-    def __init__(self, z, n, interaction, **params):
+    def __init__(self, z, n, interaction, input_filename=None, **params):
         
         self.z = z
         self.a = n + z
@@ -695,7 +695,12 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
         self.var_jx     = None
         self.var_n      = None
         
+        self.input_filename = self.DEFAULT_INPUT_FILENAME
+        if input_filename:
+            self.input_filename = input_filename
+        
         self.setParameters(**params)
+        
     
     def setParameters(self, **params):
         """

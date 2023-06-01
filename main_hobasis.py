@@ -20,5 +20,6 @@ if __name__ == '__main__':
         ( 12, 20),
     ]
     # nucleus = sorted(list(interactions.keys()))
-    run_computingHOhbarOmegaForD1S_Axial(nucleus, program="HFBaxial", MZmax=4,
+    # run_computingHOhbarOmegaForD1S(nucleus, MZmax=1, bHO_min=1.1, bHO_max=2.0, Nsteps=3, MZmin=0)
+    run_computingHOhbarOmegaForD1S_Axial(nucleus, program="HFBaxialMZ4", MZmax=4,
                                          bHO_min=1.5, bHO_max=2.5, Nsteps=30)

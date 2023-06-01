@@ -1173,7 +1173,8 @@ class DataAxial(DataTaurus):
         
         del self.time_per_iter
         self._filename = filename
-        del self._evol_obj       
+        del self._evol_obj   
+        self.iter_max  = None    
         if not empty_data:
             try:
                 self.get_results()
@@ -1244,9 +1245,19 @@ class DataAxial(DataTaurus):
                      self.HeaderEnum.Coul_Dir)
         
         skip_evol = True
+        endIter  = False
         for line in data:
             
             if skip_evol and (not self.__endIteration_message in line):
+                
+                if endIter:
+                    # getting the last iteration for the argument
+                    if ' ITER' in line:
+                        line = line.strip().split()
+                        self.iter_max = int(line[5])
+                elif ((self.__message_converged in line) or 
+                      (self.__message_not_conv in line)):
+                    endIter = True
                 continue
             else: 
                 skip_evol = False

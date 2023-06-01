@@ -8,7 +8,8 @@ import numpy as np
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus, InputAxial
 from tools.executors import ExeTaurus0D_EnergyMinimum, ExeAxial1D_DeformB20, \
-    ExecutionException
+    ExecutionException, ExeAxial0D_EnergyMinimum
+from tools.data import DataTaurus
 
 def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75, 
                                    Nsteps=6, MZmin=0):
@@ -42,10 +43,11 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
         
         summary_results = f'export_HO_TES_z{z}n{n}.txt'
         if summary_results in os.listdir():
+            head_ = ", ".join([ExeAxial0D_EnergyMinimum.DTYPE.__name__,
+                               'ho_b_length'])
             with open(summary_results, 'w+') as f:
-                f.write('')
-            
-        
+                f.write(head_+'\n')
+                
         for step_, b in enumerate(b_lengths):
             
             ## set up the Hamiltonian in the set up 
@@ -61,8 +63,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             ## after the export (do not zip the files) import the results and 
             ## copy here to an auxiliary file
             
-            ExeTaurus0D_EnergyMinimum.EXPORT_LIST_RESULTS = f"export_{step_}.txt"
-        
+            line = ''        
             try:
                 exe_ = ExeTaurus0D_EnergyMinimum(z, n, hamil_fn_new)
                 exe_.setInputCalculationArguments(**input_args_start)
@@ -73,24 +74,18 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
                 exe_.force_converg = True 
                 exe_.run()
                 exe_.gobalTearDown(zip_bufolder=False)
+                
+                line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
                 print(e)
             
-            line = ''
-            with open(ExeTaurus0D_EnergyMinimum.EXPORT_LIST_RESULTS, 'r') as r:
-                line = r.readlines()
-                if len(line)>1:
-                    print("[WARNING], unexpected export data file with multiple lines:\n"
-                          '  \n'.join(line))
-                    line = line[0]
+            
             if line not in  ('', '\n'):
                 with open(summary_results, 'a+') as f:
                     header_  = f"{len(b_lengths)-step_}: {b:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
-                    f.write('\n'+header_+line)
+                    f.write(header_+line+'\n')
             
-            ## rm the intermediate step output
-            os.remove(ExeTaurus0D_EnergyMinimum.EXPORT_LIST_RESULTS)
 
 
 def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
@@ -126,9 +121,11 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
             
         summary_results = f'export_HO_TES_axial_z{z}n{n}.txt'
         if summary_results in os.listdir():
+            head_ = ", ".join([ExeAxial0D_EnergyMinimum.DTYPE.__name__,
+                               'ho_b_length'])
             with open(summary_results, 'w+') as f:
-                f.write('')
-            
+                f.write(head_+'\n')
+        
         for step_, b in enumerate(b_lengths):           
             
             ## input args_for must change seeed=1 after the right minimum
@@ -138,36 +135,28 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
             ## after the export (do not zip the files) import the results and 
             ## copy here to an auxiliary file
             
-            ExeAxial1D_DeformB20.EXPORT_LIST_RESULTS = f"export_{step_}.txt"
-        
+            
+            line = ''
             try:
-                exe_ = ExeAxial1D_DeformB20(z, n)
+                exe_ = ExeAxial0D_EnergyMinimum(z, n, 0, MZmax)
                 exe_.setInputCalculationArguments(**input_args_start)
                 exe_.defineDeformationRange(0,  0, 0)
                 exe_.include_header_in_results_file = False
-                exe_.setUp()
+                exe_.setUp(reset_folder= step_==0 )
                 exe_.setUpExecution(**input_args_onrun)
                 exe_.force_converg = True 
                 exe_.run()
                 exe_.gobalTearDown(zip_bufolder=False)
+                
+                line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
                 print(e)
             
-            line = ''
-            with open(ExeAxial1D_DeformB20.EXPORT_LIST_RESULTS, 'r') as r:
-                line = r.readlines()
-                if len(line)>1:
-                    print("[WARNING], unexpected export data file with multiple lines:\n"
-                          '  \n'.join(line))
-                    line = line[0]
             if line not in  ('', '\n'):
                 with open(summary_results, 'a+') as f:
                     header_  = f"{len(b_lengths)-step_}: {b:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
-                    f.write('\n'+header_+line)
-            
-            ## rm the intermediate step output
-            os.remove(ExeAxial1D_DeformB20.EXPORT_LIST_RESULTS)
+                    f.write(header_+line+'\n')
 
 
 
