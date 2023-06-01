@@ -682,6 +682,7 @@ class _Base1DTaurusExecutor(object):
         
         setting the time for a maximum of 600 steps.
         """
+        print(f"Input class: [{self.inputObj.__class__}]")
         if isinstance(self.inputObj, InputAxial):
             return 600
         
