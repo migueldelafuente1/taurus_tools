@@ -682,6 +682,9 @@ class _Base1DTaurusExecutor(object):
         
         setting the time for a maximum of 600 steps.
         """
+        if isinstance(self.inputObj, DataAxial):
+            return 600
+        
         Om  = self.inputObj._DD_PARAMS['omega_dim']
         ROm_dim = LEBEDEV_GRID_POINTS[Om - 1] * self.inputObj._DD_PARAMS['r_dim']
         
