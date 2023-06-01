@@ -682,7 +682,7 @@ class _Base1DTaurusExecutor(object):
         
         setting the time for a maximum of 600 steps.
         """
-        if isinstance(self.inputObj, DataAxial):
+        if isinstance(self.inputObj, InputAxial):
             return 600
         
         Om  = self.inputObj._DD_PARAMS['omega_dim']
