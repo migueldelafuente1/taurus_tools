@@ -38,6 +38,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
         InputTaurus.ArgsEnum.seed: 1,
         InputTaurus.ArgsEnum.iterations: 0,
     } # just get the minimum result
+    ExeAxial0D_EnergyMinimum.PRINT_CALCULATION_PARAMETERS = False
     
     for z, n in nucleus:
         
@@ -116,6 +117,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
     
     if InputAxial.PROGRAM != program:
         InputAxial.PROGRAM = program
+    ExeAxial0D_EnergyMinimum.PRINT_CALCULATION_PARAMETERS = False
     
     for z, n in nucleus:
         
@@ -160,13 +162,6 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
                     header_  = f"{len(b_lengths)-step_}: {b:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
                     f.write(header_+line+'\n')
-
-
-
-
-
-
-
 
 
 

@@ -37,6 +37,7 @@ class _Base1DTaurusExecutor(object):
         VARIABLE_STEP      = "VARIABLE_STEP"       # do the ranges once with non-fixed step
         
     PRINT_STEP_RESULT = True
+    PRINT_CALCULATION_PARAMETERS = True
     ITERATIVE_METHOD  = None
     SAVE_DAT_FILES = []  # list for saving the auxillary files from taurus
     EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
@@ -781,9 +782,11 @@ class _Base1DTaurusExecutor(object):
     @property
     def calculationParameters(self):
         """
-        TODO: Print properties of the calculation to know while running, 
+            Print properties of the calculation to know while running, 
             such as the input object, folders, set up properties, attributes ...
         """
+        if not self.PRINT_CALCULATION_PARAMETERS:
+            return
         print(LINE_2)
         print(f" ** Executor 1D [{self.__class__.__name__}] Parameters:")
         print(LINE_1)
