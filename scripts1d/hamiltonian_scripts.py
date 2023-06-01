@@ -114,6 +114,9 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
         InputAxial.ArgsEnum.iterations: 1000,
     } # just get the minimum result    
     
+    if InputAxial.PROGRAM != program:
+        InputAxial.PROGRAM = program
+    
     for z, n in nucleus:
         
         if z % 2 == 1 or n % 2 == 1:

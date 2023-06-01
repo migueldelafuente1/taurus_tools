@@ -636,6 +636,9 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
           >>>>>>>>>> C O N S T R A I N T S <<<<<<<<<<<
 {_constraints}          >>>>>>>>>> E N D <<<<<<<<<<<<<<<<<<<<<<<<<<<  """
     
+    PROGRAM         = 'HFBaxial'
+    _PROGRAM_DEFAULT_NAME = 'HFBaxial'
+    
     class ArgsEnum(Enum):
         interaction    = 'interaction' # 0-D1S (dependent on the program IPAR)
         com        = 'com'    # 0: no, 1: 1body, 2: 1body + 2body 
