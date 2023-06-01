@@ -1278,7 +1278,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         if self._preconvergence_steps == 0 and self._1stSeedMinima != None:
             self.inputObj.seed = 1
-            shutil.copy(self._base_wf_filename, 'initial_wf.bin')
+            if   isinstance(self.inputObj, InputTaurus):
+                shutil.copy(self._base_wf_filename, 'initial_wf.bin')
+            elif  isinstance(self.inputObj, InputAxial):
+                shutil.copy(self._base_wf_filename, 'fort.10')
             return True 
         
         self._preconvergence_steps += 1
@@ -1298,7 +1301,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             ## not enough iterations, the result is copied and changed the input
             ## to import it (if result is crazy the process will stop in if #1)
             self.inputObj.seed = 1
-            shutil.copy('final_wf.bin', 'initial_wf.bin')
+            if   isinstance(self.inputObj, InputTaurus):
+                shutil.copy('final_wf.bin', 'initial_wf.bin')
+            elif  isinstance(self.inputObj, InputAxial):
+                shutil.copy('fort.11', 'fort.10')
+            
             if result.properly_finished:
                 print(f" ** {str_rep} Seed convergence procedure [DONE]:")
             else:
