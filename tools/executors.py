@@ -974,7 +974,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
         
         shutil.move(self._output_filename, 
                     f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
-        shutil.copy('final_wf.bin', 
+        shutil.copy('fort.11', 
                     f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
         
         
