@@ -49,11 +49,11 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             with open(summary_results, 'w+') as f:
                 f.write(head_+'\n')
                 
-        for step_, b in enumerate(b_lengths):
+        for step_, b_len in enumerate(b_lengths):
             
             ## set up the Hamiltonian in the set up 
-            hamil_exe = TBME_HamiltonianManager(b, MZmax, MZmin=MZmin)
-            hamil_fn_new = f'D1S_t0_z{z}n{n}_MZ{MZmax}_b{1000*b:4.0f}'
+            hamil_exe = TBME_HamiltonianManager(b_len, MZmax, MZmin=MZmin)
+            hamil_fn_new = f'D1S_t0_z{z}n{n}_MZ{MZmax}_b{1000*b_len:4.0f}'
             hamil_exe.hamil_filename = hamil_fn_new
             hamil_exe.setAndRun_D1Sxml()
         
@@ -83,7 +83,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             
             if line not in  ('', '\n'):
                 with open(summary_results, 'a+') as f:
-                    header_  = f"{len(b_lengths)-step_}: {b:5.3f}"
+                    header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
                     f.write(header_+line+'\n')
             
@@ -131,15 +131,14 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
             with open(summary_results, 'w+') as f:
                 f.write(head_+'\n')
         
-        for step_, b in enumerate(b_lengths):           
-            
+        for step_, b_len in enumerate(b_lengths):           
+            input_args_start[InputAxial.ArgsEnum.b_len] = b_len
             ## input args_for must change seeed=1 after the right minimum
             if step_ > 0:
-                input_args_start[InputTaurus.ArgsEnum.seed] = 1
+                input_args_start[InputAxial.ArgsEnum.seed] = 1
                         
             ## after the export (do not zip the files) import the results and 
             ## copy here to an auxiliary file
-            
             
             line = ''
             try:
@@ -159,7 +158,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
             
             if line not in  ('', '\n'):
                 with open(summary_results, 'a+') as f:
-                    header_  = f"{len(b_lengths)-step_}: {b:5.3f}"
+                    header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
                     f.write(header_+line+'\n')
 
