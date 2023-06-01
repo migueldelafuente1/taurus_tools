@@ -682,7 +682,6 @@ class _Base1DTaurusExecutor(object):
         
         setting the time for a maximum of 600 steps.
         """
-        print(f"Input class: [{self.inputObj.__class__}]")
         if isinstance(self.inputObj, InputAxial):
             return 600
         
@@ -937,6 +936,49 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
                          result.E_HFB, result.kin, result.pair, 
                          result.b20_isoscalar)
         print(txt, _iter_str)
+        
+    def saveFinalWFprocedure(self, base_execution=False):
+        """ 
+        Method to save wf and other objects from _executeProgram outputs
+        Args
+            :result: dataTaurus result of the calculation
+            :base_execution: is to know if the execution were the starter minimum
+            localization or if it is in the run process
+        """
+        if self._current_result.broken_execution: return
+        
+        if base_execution:
+            self._base_wf_filename = 'base_initial_wf.bin'
+            shutil.copy('fort.11', self._base_wf_filename)
+            tail = f"z{self.z}n{self.n}_dbase"
+            
+            ## save all the 1st blocked seeds
+            ## Extend the condition for general repetitive base-input.
+            if 1 in self.numberParityOfIsotope or self.GENERATE_RANDOM_SEEDS: 
+                s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
+                s_list = list(filter(lambda x: x.endswith("dbase.OUT"), s_list))
+                s_n = len(s_list)
+                unconv_n = " ".join(s_list).count("unconv")
+                s_n -= unconv_n
+                if getattr(self._current_result, 'properly_finished', False)==False:
+                    s_n = str(s_n)+'unconv'+str(self._preconvergence_steps)
+                    ## Note, to keep the first(unconv) and intermediate results
+                    ## read the "base" results in order until non (unconv) label
+                tail = tail.replace("dbase", f"{s_n}-dbase")
+        else:
+            tail = self._namingFilesToSaveInTheBUfolder()
+        
+        ## copy the wf to the initial wf always except non 
+        if (not self.force_converg) or self._current_result.properly_finished:
+            shutil.copy('fort.11', 'fort.10')
+        
+        shutil.move(self._output_filename, 
+                    f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
+        shutil.copy('final_wf.bin', 
+                    f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
+        
+        
+        
 
 class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
