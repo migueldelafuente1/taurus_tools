@@ -95,6 +95,7 @@ class _PlotterBase(object):
         self._legend_labels  = {}
         
         self._axes = []
+        self._figs = []
         self._figures_titles_pdf = []
         
         if isinstance(filenames, str):
@@ -277,6 +278,7 @@ class _PlotterBase(object):
         
         fig , ax = plt.subplots()
         self._axes = ax
+        self._figs = fig
         
         for if_, file_ in enumerate(self.import_files):
             
@@ -371,7 +373,7 @@ class _PlotterBase(object):
         
         self.export_figure = True
         self.export_figure_filename = output_filename
-        self._axes.savefig(output_filename)
+        self._figs.savefig(output_filename)
     
     def _getVariableStringForDisplay(self, var):
         """ 
@@ -491,6 +493,7 @@ class _Plotter1D(_PlotterBase):
         self._legend_labels  = {}
         
         self._axes = []
+        self._figs = []
         self._figures_titles_pdf = []
         
         if isinstance(filenames, str):
@@ -639,6 +642,7 @@ class _Plotter1D(_PlotterBase):
         
         fig , ax = plt.subplots()
         self._axes = ax
+        self._figs = fig
         
         for if_, file_ in enumerate(self.import_files):
             

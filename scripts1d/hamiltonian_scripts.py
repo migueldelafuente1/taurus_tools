@@ -187,8 +187,11 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
         ## plot in a file,
         Plotter1D_Axial.FOLDER_PATH = ''
         plot = Plotter1D_Axial(summary_results, attr2plot='E_HFB')
+        
         plot.defaultPlot(attr2plot='E_HFB')
-    
+        plot.EXPORT_PDF_AND_MERGE = True
+        plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
+        
     print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
 
