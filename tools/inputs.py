@@ -10,6 +10,7 @@ import numpy as np
 from copy import deepcopy, copy
 import os
 from tools.Enums import Enum
+from future.builtins.misc import isinstance
 
 class _Input(object):
     '''
@@ -315,7 +316,7 @@ eval full Val.Space (0,1)   = 1
                     assert value in (0,1), f"Value must be 1 or 0 [{value}]"
                 elif arg in (self.ArgsEnum.z_Mphi,   self.ArgsEnum.n_Mphi,
                              self.ArgsEnum.iterations):
-                    assert type(value)==int and value >=0, \
+                    assert isinstance(value, int) and value >=0, \
                         f"Value must be non-negative integer [{value}]"
                 elif arg == self.ArgsEnum.qp_block:
                     assert isinstance(value, (int, list)), \
@@ -323,27 +324,27 @@ eval full Val.Space (0,1)   = 1
                     if value != 0: 
                         # value 0 is accepted as int_ for no blocking
                         val_2 = [value, ] if type(value)==int else value 
-                        assert all([type(x)==int and x>0 for x in val_2]), \
+                        assert all([isinstance(x, int) and x>0 for x in val_2]), \
                             f"All QP block states must be > 0, got:{val_2}"
                 elif arg == self.ArgsEnum.seed:
-                    assert type(value)==int and value >=0 and value < 10, \
+                    assert isinstance(value, int) and value >=0 and value < 10, \
                         f"Value must be in range 0-9 [{value}]"
                 elif arg == self.ArgsEnum.pnt_dens:
-                    assert type(value)==int and value >=0 and value < 4, \
+                    assert isinstance(value, int) and value >=0 and value < 4, \
                         f"Value must be in range 0-3 [{value}]"
                 elif arg in (self.ArgsEnum.grad_type, self.ArgsEnum.beta_schm):
-                    assert type(value)==int and value >=0 and value < 3, \
+                    assert isinstance(value, int) and value >=0 and value < 3, \
                         f"Value must be in range 0-2 [{value}]"
                 elif arg in (self.ArgsEnum.eta_grad,   self.ArgsEnum.mu_grad,
                              self.ArgsEnum.grad_tol):
-                    assert type(value)==float and value >=0.0, \
+                    assert isinstance(value, float) and value >=0.0, \
                         f"Value must be non-negative float [{value}]"
                 elif arg.startswith(self.ArgsEnum.discr_xr[:6]):
                     assert isinstance(value, tuple), \
                         "Argument given to the discretization for density must be tuple"
-                    assert type(value[0])==int and value[0] >=0, \
+                    assert isinstance(value[0],   int) and value[0] >=0, \
                         f"Value must be non-negative integer [{value}]"
-                    assert type(value[1])==float and value[1] >=0.0, \
+                    assert isinstance(value[1], float) and value[1] >=0.0, \
                         f"Value must be non-negative float [{value}]"
                 else:
                     assert type(value)==str, "Interaction hamil must be string"
@@ -722,18 +723,18 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
                     assert value in (0,1,2), f"Value must be in range 0-2 [{value}]"
                 elif arg in (self.ArgsEnum.iterations, 
                              self.ArgsEnum.z, self.ArgsEnum.a):
-                    assert type(value)==int and value >=0, \
+                    assert isinstance(value, int) and value >=0, \
                         f"Value must be non-negative integer [{value}]"
                     if arg == self.ArgsEnum.iterations:
                         value = min(value, 99999) ## to not extend the line in template
                 elif arg == self.ArgsEnum.interaction:
-                    assert type(value)==int and value >=0 and value < 10, \
+                    assert isinstance(value, int) and value >=0 and value < 10,\
                         f"Value must be in range 0-9 [{value}]"
                 elif arg == self.ArgsEnum.grad_tol:
-                    assert type(value)==float and value > 9.9e-7, \
+                    assert isinstance(value, float) and value > 9.9e-7, \
                         f"Value must be non-negative float greater than 1e-6 [{value}]"
                 elif arg == self.ArgsEnum.b_len:
-                    assert type(value)==float and value >= 0.0, \
+                    assert isinstance(value, float) and value >= 0.0, \
                         f"Value must be non-negative float [{value}]"
                 else:
                     raise InputException(f"Unidentified argument to set: [{arg}] val[{value}]")
