@@ -166,18 +166,27 @@ class _PlotterBase(object):
             ind_0 = 0
             ## In case there are no indexing, set the x values and index
             if not self._x_values.get(file_, None):
-                for ind_, res in enumerate(self._results[file_]):
-                    if self.minimum_result[file_].E_HFB > res.E_HFB:
-                        self.minimum_result[file_] = res
-                        ind_0 = ind_
-                ## repeat the loop to set the index of the files
-                self._x_values[file_] = {}
-                for ind_, res in enumerate(self._results[file_]):
-                    self._x_values[file_][ind_-ind_0] = getattr(res, 
-                                                                self.constraints[0])
+                self._findEnergyMinumumResultInResultsList(file_)
             else:
-                ind_0 = list(self._x_values[file_].keys()).index(0)
-                self.minimum_result[file_] = self._results[file_][ind_0]
+                aux_keys = list(self._x_values[file_].keys())
+                if 0 in aux_keys: # there is a minimum (indx < 0 and > 0) 
+                    ind_0 = aux_keys.index(0)
+                    self.minimum_result[file_] = self._results[file_][ind_0]
+                else: # indexes were not shorted, get 1
+                    self._findEnergyMinumumResultInResultsList(file_)
+    
+    def _findEnergyMinumumResultInResultsList(self, file_):
+        """ Search in the result list the state of the lowest energy."""
+        ind_0 = 0
+        for ind_, res in enumerate(self._results[file_]):
+            if self.minimum_result[file_].E_HFB > res.E_HFB:
+                self.minimum_result[file_] = res
+                ind_0 = ind_
+        ## repeat the loop to set the index of the files
+        self._x_values[file_] = {}
+        for ind_, res in enumerate(self._results[file_]):
+            self._x_values[file_][ind_-ind_0] = getattr(res, 
+                                                        self.constraints[0])
     
     def _selectDataObjectAndMainConstraint(self, data):
         """
@@ -691,6 +700,10 @@ class _Plotter1D(_PlotterBase):
 class Plotter1D_Taurus(_Plotter1D):
     
     DTYPE = DataTaurus
+
+class Plotter1D_Axial(_Plotter1D):
+    
+    DTYPE = DataAxial
 
 class Plotter1D_CanonicalBasis(_Plotter1D):
     

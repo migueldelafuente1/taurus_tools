@@ -9,7 +9,9 @@ from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus, InputAxial
 from tools.executors import ExeTaurus0D_EnergyMinimum, ExeAxial1D_DeformB20, \
     ExecutionException, ExeAxial0D_EnergyMinimum
-from tools.data import DataTaurus
+from tools.data import DataTaurus, DataAxial
+from tools.plotter_1d import Plotter1D_Axial, Plotter1D_Taurus
+from tools.helpers import prettyPrintDictionary
 
 def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75, 
                                    Nsteps=6, MZmin=0):
@@ -39,9 +41,10 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
         InputTaurus.ArgsEnum.iterations: 0,
     } # just get the minimum result
     ExeAxial0D_EnergyMinimum.PRINT_CALCULATION_PARAMETERS = False
+    optimal_lengths = {}
     
     for z, n in nucleus:
-        
+        b_Ehfb_min = (0, 999999)
         summary_results = f'export_HO_TES_z{z}n{n}.txt'
         if summary_results in os.listdir():
             head_ = ", ".join([ExeAxial0D_EnergyMinimum.DTYPE.__name__,
@@ -82,11 +85,24 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             
             
             if line not in  ('', '\n'):
+                # register the Optimal length
+                if exe_._1stSeedMinima.E_HFB < b_Ehfb_min[1]:
+                    b_Ehfb_min = (b_len, exe_._1stSeedMinima.E_HFB)
+                
                 with open(summary_results, 'a+') as f:
                     header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
                     f.write(header_+line+'\n')
-            
+        
+        optimal_lengths[(z, n)] = b_Ehfb_min
+        ## plot in a file,
+        Plotter1D_Taurus.FOLDER_PATH = ''
+        plot = Plotter1D_Taurus(summary_results, attr2plot='E_HFB') # no testeado
+        plot.defaultPlot(attr2plot='E_HFB')
+    
+    print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
+    prettyPrintDictionary(optimal_lengths)
+                
 
 
 def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
@@ -118,9 +134,10 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
     if InputAxial.PROGRAM != program:
         InputAxial.PROGRAM = program
     ExeAxial0D_EnergyMinimum.PRINT_CALCULATION_PARAMETERS = False
+    optimal_lengths = {}
     
     for z, n in nucleus:
-        
+        b_Ehfb_min = (0, 999999)
         if z % 2 == 1 or n % 2 == 1:
             print(f"[WARNING] isotope :z{z}, n{n} is not even-even, no blocking applied")
             
@@ -151,18 +168,29 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
                 exe_.force_converg = True 
                 exe_.run()
                 exe_.gobalTearDown(zip_bufolder=False)
-                
+                                
                 line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
                 print(e)
             
             if line not in  ('', '\n'):
+                # register the Optimal length
+                if exe_._1stSeedMinima.E_HFB < b_Ehfb_min[1]:
+                    b_Ehfb_min = (b_len, exe_._1stSeedMinima.E_HFB)
+                
                 with open(summary_results, 'a+') as f:
                     header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"
                     header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
                     f.write(header_+line+'\n')
-
-
+            
+        optimal_lengths[(z, n)] = b_Ehfb_min
+        ## plot in a file,
+        Plotter1D_Axial.FOLDER_PATH = ''
+        plot = Plotter1D_Axial(summary_results, attr2plot='E_HFB')
+        plot.defaultPlot(attr2plot='E_HFB')
+    
+    print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
+    prettyPrintDictionary(optimal_lengths)
 
 if __name__ == '__main__':
     pass

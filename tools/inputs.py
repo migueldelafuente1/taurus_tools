@@ -10,7 +10,6 @@ import numpy as np
 from copy import deepcopy, copy
 import os
 from tools.Enums import Enum
-from future.builtins.misc import isinstance
 
 class _Input(object):
     '''
