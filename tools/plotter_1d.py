@@ -1012,7 +1012,8 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
                     
         
     
-    def defaultPlot(self, attr2plot=None, index_2_print=None,attr2plotExport=None, show_plot=True):
+    def defaultPlot(self, attr2plot=None, index_2_print=None,
+                    attr2plotExport=None, show_plot=True):
         """ 
         If attr2plot (single or list) will print that results before the
         single particle energies/occupations 

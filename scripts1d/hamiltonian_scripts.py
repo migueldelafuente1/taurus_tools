@@ -98,7 +98,11 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
         ## plot in a file,
         Plotter1D_Taurus.FOLDER_PATH = ''
         plot = Plotter1D_Taurus(summary_results, attr2plot='E_HFB') # no testeado
-        plot.defaultPlot(attr2plot='E_HFB')
+        plot.setTitle(f"HO optimization NoCore z{z}n{n} E={b_Ehfb_min[1]:6.3f} MeV b={b_Ehfb_min[0]:4.3f}fm")
+        plot.defaultPlot(attr2plot='E_HFB', show_plot=False)
+        plot.EXPORT_PDF_AND_MERGE = True
+        plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
+        plot.EXPORT_PDF_AND_MERGE = False
     
     print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
@@ -186,11 +190,12 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
         optimal_lengths[(z, n)] = b_Ehfb_min
         ## plot in a file,
         Plotter1D_Axial.FOLDER_PATH = ''
-        plot = Plotter1D_Axial(summary_results, attr2plot='E_HFB')
-        
-        plot.defaultPlot(attr2plot='E_HFB')
+        plot = Plotter1D_Axial(summary_results)
+        plot.setTitle(f"HO optimization NoCore z{z}n{n} E={b_Ehfb_min[1]:6.3f} MeV b={b_Ehfb_min[0]:4.3f}fm")
+        plot.defaultPlot(attr2plot='E_HFB', show_plot=False)
         plot.EXPORT_PDF_AND_MERGE = True
         plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
+        plot.EXPORT_PDF_AND_MERGE = False
         
     print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
