@@ -186,11 +186,9 @@ x0_DD_FACTOR                = {x0_param:8.6e}
 alpha_DD                    = {alpha_param:8.6f}
 * Integration parameters:      ------------
 *  0 trapezoidal, 1 Gauss-Legendre, 2 Gauss-Laguerre(r)/Legendre, 3 Laguerre-Lebedev
-integration_method (0,1,2,3)= 3
-export_density (1, 0)       = {eval_export_h}
 r_dim                       = {r_dim}
 Omega_Order                 = {omega_dim}
-export_density (1, 0)       = 0
+export_density (1, 0)       = {eval_export_h}
 eval QuasiParticle Vs       = 0
 eval/export Valence.Space   = 0 203 205 10001
 * Integration parameters:      ------------"""
