@@ -17,3 +17,4 @@ __pycache__/
 *.dat
 *.OUT
 *.INP
+scripts1d/*.pdf

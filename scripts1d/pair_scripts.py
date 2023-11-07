@@ -16,7 +16,8 @@ from tools.helpers import LINE_2
 
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs, 
                          seed_base=0, ROmega=(13, 13),
-                         p_min=-0.05, p_max=2.0, N_max=41, convergences=None):
+                         p_min=-0.05, p_max=2.0, N_max=41, convergences=None,
+                         **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
     Args:
@@ -30,9 +31,19 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         :p_max
         :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :constr_onrun other constraints to set up the calculation.
     """
     assert all(map(lambda x: x.startswith('P_T'), pair_constrs)), f"invalid pair constraint {pair_constrs}"
     
+    ## Note: modification to exclude the 3d components of the isoscalar channel
+    _3d_PT0JM = {}
+    if not InputTaurus.ConstrEnum.P_T00_J1m1:
+        _3d_PT0JM[InputTaurus.ConstrEnum.P_T00_J1m1] = 0.0
+    if not InputTaurus.ConstrEnum.P_T00_J1p1:
+        _3d_PT0JM[InputTaurus.ConstrEnum.P_T00_J1p1] = 0.0
+    constr_onrun = {**constr_onrun, **_3d_PT0JM}
+    
+    ## Normal execution.
     ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
         ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_SWEEPING
         
@@ -67,6 +78,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
+            **constr_onrun
         }
         
         input_args_onrun = {
@@ -75,6 +87,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
+            **constr_onrun
         }
         
         ExeTaurus1D_PairCoupling.setPairConstraint(pair_constrs[0])

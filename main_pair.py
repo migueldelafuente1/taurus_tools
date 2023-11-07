@@ -21,7 +21,8 @@ if __name__ == '__main__':
     interactions = {
         # ( 6, 7): (1, 0, 1.60), ( 7, 8): (1, 0, 1.77),
         # ( 8, 8): (4, 0, 1.85), ( 8,10): (4, 0, 1.65),
-        # (10,10): (4, 0, 1.80), (10,12): (4, 0, 1.75),
+        (10,10): (4, 0, 1.80), (10,12): (4, 0, 1.75),
+        (12,12): (4, 0, 1.75), (12,14): (4, 0, 1.75),
         # (14,14): (4, 0, 1.65), (14,16): (4, 0, 1.80),
         # (16,16): (4, 0, 1.85), (16,18): (4, 0, 1.75),
         # (17,18): (4, 0, 1.80), (16,17): (4, 0, 1.80),
@@ -44,8 +45,13 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.P_T00_J10,  InputTaurus.ConstrEnum.P_T10_J00,
         InputTaurus.ConstrEnum.P_T1m1_J00, InputTaurus.ConstrEnum.P_T1p1_J00
     ]
+    
+    constr_onrun = {
+        InputTaurus.ConstrEnum.Jx: 0.0}
+    
     run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS, 
-                         ROmega=(16,16), convergences=3,
+                         ROmega=(14,16), convergences=3,
                          seed_base=0, 
-                         p_min=-0.05, p_max=2.0, N_max=41)
+                         p_min=-0.05, p_max=2.0, N_max=41,
+                         )
             
