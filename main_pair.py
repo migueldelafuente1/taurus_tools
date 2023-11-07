@@ -55,4 +55,4 @@ if __name__ == '__main__':
                          p_min=-0.05, p_max=2.0, N_max=41,
                          **constr_onrun
                          )
-            
+    print("I finished!")
