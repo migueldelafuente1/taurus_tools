@@ -190,10 +190,9 @@ integration_method (0,1,2,3)= 3
 export_density (1, 0)       = {eval_export_h}
 r_dim                       = {r_dim}
 Omega_Order                 = {omega_dim}
-THE_grid                    = 10
-PHI_grid                    = 10
-R_MAX                       = 08.500000d+00
-eval full Val.Space (0,1)   = 1
+export_density (1, 0)       = 0
+eval QuasiParticle Vs       = 0
+eval/export Valence.Space   = 0 203 205 10001
 * Integration parameters:      ------------"""
     
     class InpDDEnum(Enum):
