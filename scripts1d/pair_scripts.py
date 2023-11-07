@@ -43,14 +43,6 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         _3d_PT0JM[InputTaurus.ConstrEnum.P_T00_J1p1] = 0.0
     constr_onrun = {**constr_onrun, **_3d_PT0JM}
     
-    print("  Here:")
-    print(nucleus)
-    prettyPrintDictionary(interactions)
-    print(pair_constrs)
-    print(seed_base, ROmega, p_min, p_max, N_max, convergences)
-    prettyPrintDictionary(constr_onrun)
-    print(LINE_2, "start...")
-    
     ## Normal execution.
     ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
         ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_SWEEPING
