@@ -53,5 +53,6 @@ if __name__ == '__main__':
                          ROmega=(14,16), convergences=3,
                          seed_base=0, 
                          p_min=-0.05, p_max=2.0, N_max=41,
+                         **constr_onrun
                          )
             
