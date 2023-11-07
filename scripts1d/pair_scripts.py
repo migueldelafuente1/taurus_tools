@@ -11,7 +11,7 @@ from tools.executors import ExeTaurus1D_PairCoupling, ExecutionException
 from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
-from tools.helpers import LINE_2
+from tools.helpers import LINE_2, prettyPrintDictionary
 
 
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs, 
@@ -42,6 +42,14 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     if not InputTaurus.ConstrEnum.P_T00_J1p1:
         _3d_PT0JM[InputTaurus.ConstrEnum.P_T00_J1p1] = 0.0
     constr_onrun = {**constr_onrun, **_3d_PT0JM}
+    
+    print("  Here:")
+    print(nucleus)
+    prettyPrintDictionary(interactions)
+    print(pair_constrs)
+    print(seed_base, ROmega, p_min, p_max, N_max, convergences)
+    prettyPrintDictionary(constr_onrun)
+    print(LINE_2, "start...")
     
     ## Normal execution.
     ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
