@@ -185,7 +185,6 @@ t3_DD_CONST [real  MeV]     = {t3_param:8.6e}
 x0_DD_FACTOR                = {x0_param:8.6e}
 alpha_DD                    = {alpha_param:8.6f}
 * Integration parameters:      ------------
-*  0 trapezoidal, 1 Gauss-Legendre, 2 Gauss-Laguerre(r)/Legendre, 3 Laguerre-Lebedev
 r_dim                       = {r_dim}
 Omega_Order                 = {omega_dim}
 export_density (1, 0)       = {eval_export_h}
