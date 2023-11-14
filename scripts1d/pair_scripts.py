@@ -95,7 +95,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         
         try:
             exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
-            exe_.setInputCalculationArguments(**input_args_start)
+            exe_.setInputCalculationArguments(axial_calc=True, 
+                                              **input_args_start)
             exe_.defineDeformationRange(p_min,  p_max, N_max)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
@@ -119,7 +120,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
                 # input_args_start = input_args_onrun
                 
                 # exe_.setInputCalculationArguments(**input_args_start)
-                exe_.setInputCalculationArguments(input_args_onrun)
+                exe_.setInputCalculationArguments(axial_calc=True, 
+                                                  **input_args_onrun)
                 exe_.defineDeformationRange(p_min,  p_max, N_max)
                 exe_.setUp()
                 exe_.setUpExecution(**input_args_onrun)
