@@ -195,7 +195,7 @@ eval/export Valence.Space   = 0 203 205 10001
     class InpDDEnum(Enum):
         eval_dd = 'eval_dd'
         eval_rea = 'eval_rea'
-        eval_explicit_dd = 'eval_explicit_dd'
+        #eval_explicit_dd = 'eval_explicit_dd'
         eval_export_h  = 'eval_export_h'
         x0_param = 'x0_param'
         t3_param = 't3_param'
