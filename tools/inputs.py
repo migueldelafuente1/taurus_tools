@@ -195,7 +195,6 @@ eval/export Valence.Space   = 0 203 205 10001
     class InpDDEnum(Enum):
         eval_dd = 'eval_dd'
         eval_rea = 'eval_rea'
-        #eval_explicit_dd = 'eval_explicit_dd'
         eval_export_h  = 'eval_export_h'
         x0_param = 'x0_param'
         t3_param = 't3_param'
@@ -518,8 +517,7 @@ eval/export Valence.Space   = 0 203 205 10001
         if omega_dim and isinstance(omega_dim, int):
             params[self.InpDDEnum.omega_dim] = omega_dim
         
-        if ((params[self.InpDDEnum.eval_export_h] == 1) or 
-            (params[self.InpDDEnum.eval_explicit_dd] == 1)):
+        if (params[self.InpDDEnum.eval_export_h] == 1):
             print("[WARNING] eval_calculations will use explicit evaluation of "
                   "the matrix elements and the time required will grow exponentially.")
         
@@ -859,7 +857,6 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
 # t_input = InputTaurus(2,4, 'hamil')
 # t_input.setParameters(**{InputTaurus.ArgsEnum.beta_schm : 2,})
 # InputTaurus.set_inputDDparamsFile(**{
-#     InputTaurus.InpDDEnum.eval_explicit_dd : 1,
 #     InputTaurus.InpDDEnum.t3_param         : 100.0,
 #     InputTaurus.InpDDEnum.x0_param         : 0.0000000001})
 # # print(t_input.get_inputDDparamsFile(11, 20))
