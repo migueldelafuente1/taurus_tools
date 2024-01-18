@@ -180,7 +180,7 @@ Constraint field Delta        0   0.000"""
     _TEMPLATE_INPUT_DD = """* Density dep. Interaction:    ------------
 eval_density_dependent (1,0)= {eval_dd}
 eval_rearrangement (1,0)    = {eval_rea}
-eval_explicit_fieldsDD (1,0)= {eval_explicit_dd}
+eval_explicit_fieldsDD (1,0)= 0
 t3_DD_CONST [real  MeV]     = {t3_param:8.6e}
 x0_DD_FACTOR                = {x0_param:8.6e}
 alpha_DD                    = {alpha_param:8.6f}
@@ -207,7 +207,6 @@ eval/export Valence.Space   = 0 203 205 10001
     _DEFAULT_DD_PARAMS = { 
         InpDDEnum.eval_dd     : 1,
         InpDDEnum.eval_rea    : 1, 
-        InpDDEnum.eval_explicit_dd : 0,
         InpDDEnum.eval_export_h    : 0, 
         InpDDEnum.x0_param    : 1.0,
         InpDDEnum.t3_param    : 1390.6,
@@ -219,7 +218,6 @@ eval/export Valence.Space   = 0 203 205 10001
     _DD_PARAMS = {
         InpDDEnum.eval_dd     : 1,
         InpDDEnum.eval_rea    : 1, 
-        InpDDEnum.eval_explicit_dd : 0,
         InpDDEnum.eval_export_h    : 0, 
         InpDDEnum.x0_param    : 1.0,
         InpDDEnum.t3_param    : 1390.6,

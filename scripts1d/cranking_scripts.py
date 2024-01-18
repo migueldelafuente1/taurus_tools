@@ -88,6 +88,6 @@ def run_J_surface(nucleus, interactions, J_i,
         except ExecutionException as e:
             print(e)
         
-    print("End run_b20_surface: ", datetime.now().time())
+    print("End run_J_surface: ", datetime.now().time())
 
 

@@ -58,7 +58,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             hamil_exe = TBME_HamiltonianManager(b_len, MZmax, MZmin=MZmin)
             hamil_fn_new = f'D1S_t0_z{z}n{n}_MZ{MZmax}_b{1000*b_len:4.0f}'
             hamil_exe.hamil_filename = hamil_fn_new
-            hamil_exe.setAndRun_D1Sxml()
+            hamil_exe.setAndRun_Gogny_xml(TBME_HamiltonianManager.GognyEnum.D1S)
         
             ## input args_for must change seeed=1 after the right minimum
             if step_ > 0:

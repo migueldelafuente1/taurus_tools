@@ -72,14 +72,15 @@ def run_q20_surface(nucleus, interactions,
     print("End run_q20_surface: ", datetime.now().time())
 
 
-def run_b20_surface(nucleus, interactions, 
-                    seed_base=0, ROmega=(13, 13),
-                    q_min=-2.0, q_max=2.0, N_max=41, convergences=None):
+def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
+                          seed_base=0, ROmega=(13, 13),
+                          q_min=-2.0, q_max=2.0, N_max=41, convergences=None):
     """
     Reqire:
     Args:
         :nucleus: <list>: (z1,n1), (z2,n2), ..
         :interactions: <dict> [Nucleus (z, n)]: (MZm_max, Mz_min, b_length)
+        :gogny_interaction: str from GognyEnum
     Optional:
         :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
         :ROmega: <tuple>=(R, Omega) grid of Integration (Default is 10, 10)
@@ -103,7 +104,7 @@ def run_b20_surface(nucleus, interactions,
         ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = True
     
     for z, n in nucleus:
-        interaction = getInteractionFile4D1S(interactions, z, n)
+        interaction = getInteractionFile4D1S(interactions, z, n, gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue

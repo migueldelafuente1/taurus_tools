@@ -21,7 +21,8 @@ from tools.helpers import GITHUB_2BME_HTTP, ValenceSpacesDict_l_ge10_byM,\
     TBME_SUITE, TBME_RESULT_FOLDER
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters, Constants,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
-    BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes
+    BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes, Enum,\
+    GognyEnum
 from tools.data import DataTaurus
 
 class TBME_HamiltonianManager(object):
@@ -35,11 +36,11 @@ class TBME_HamiltonianManager(object):
         # ##(NOTE) can change the hamiltonian_name: 
         # hamil_exe.hamil_filename = 'hamil'
         
-        hamil_exe.setAndRun_D1Sxml()
+        hamil_exe.setAndRun_Gogny_xml(gogny_interaction)
         >> hamil_MZ{MZmax} (default)
     
-    '''
-
+    '''        
+    
     def __init__(self, b_length, MZmax, MZmin=0, set_com2=True):
         '''
         Constructor
@@ -48,7 +49,7 @@ class TBME_HamiltonianManager(object):
             change title com or other auxiliar
             set b
             set the valence space
-        run using setAndRun_D1Sxml()
+        run using setAndRun_Gogny_xml(gogny_interaction)
         '''
         self.b_length = float(b_length)
         self.MZmax    = int  (MZmax)
@@ -106,24 +107,46 @@ class TBME_HamiltonianManager(object):
             _.tail = '\n\t\t'
         return elem            
     
-    def _set_D1SParameters(self, forces):
+    def _set_GognyParameters(self, forces, gogny_interaction):
         
         ## Clear the Forces element file
         for s_elem in list(forces):
             forces.remove(s_elem)
             
         ## D1S PARAMS: *********************************************************
-        W_ls = 130.0
-        
-        muGL = dict( part_1='0.7',      part_2='1.2',       units='fm')
-        Wign = dict( part_1='-1720.3',  part_2='103.639',   units='MeV')
-        Bart = dict( part_1='1300',     part_2='-163.483',  units='MeV')
-        Heis = dict( part_1='-1813.53', part_2='162.812',   units='MeV')
-        Majo = dict( part_1='1397.6',   part_2='-223.934',  units='MeV')
-        
         t3_  = dict( value='1390.6',    units='MeV*fm^-4')
         alp_ = dict( value='0.333333')
-        x0_  = dict( value='1') 
+        x0_  = dict( value='1')
+        if gogny_interaction == GognyEnum.D1S:
+            W_ls = 130.0
+            
+            muGL = dict( part_1='0.7',      part_2='1.2',       units='fm')
+            Wign = dict( part_1='-1720.3',  part_2='103.639',   units='MeV')
+            Bart = dict( part_1='1300',     part_2='-163.483',  units='MeV')
+            Heis = dict( part_1='-1813.53', part_2='162.812',   units='MeV')
+            Majo = dict( part_1='1397.6',   part_2='-223.934',  units='MeV')
+            
+        elif gogny_interaction == GognyEnum.D1:
+            W_ls = 115.0
+            
+            muGL = dict( part_1='0.7',      part_2='1.2',       units='fm')
+            Wign = dict( part_1='-402.4',   part_2='-21.30',    units='MeV')
+            Bart = dict( part_1='-100.0',   part_2='-11.77',    units='MeV')
+            Heis = dict( part_1='-496.20',  part_2='37.27',     units='MeV')
+            Majo = dict( part_1='-23.56',   part_2='-68.81',    units='MeV')
+            
+            t3_['value'] = '1350.0'
+        elif gogny_interaction == GognyEnum.B1:
+            W_ls = 115.0
+            
+            muGL = dict( part_1='0.7',      part_2='1.4',       units='fm')
+            Wign = dict( part_1='595.55',   part_2='-72.21',    units='MeV')
+            Bart = dict( part_1='0.0',      part_2='0.0',       units='MeV')
+            Heis = dict( part_1='0.0',      part_2='0.0',       units='MeV')
+            Majo = dict( part_1='-206.05',  part_2='-68.39',     units='MeV')
+            self.do_DD = False
+        else:
+            raise Exception("Invalid Gogny interaction", gogny_interaction)
         _TT = '\n\t\t'
         
         ## *********************************************************************    
@@ -259,7 +282,7 @@ class TBME_HamiltonianManager(object):
         
         self.hamil_filename = name       
     
-    def setAndRun_D1Sxml(self, title=''):
+    def setAndRun_Gogny_xml(self, gogny_interaction, title=''):
         """
         Import the file from template and set up forces and valence space
             (NOTE): method called from CWD=taurus_tools/ to import its resources
@@ -303,15 +326,14 @@ class TBME_HamiltonianManager(object):
         valenSp = self._set_valenceSpace_Subelement(valenSp)
         
         forces = root.find(InputParts.Force_Parameters)
-        forces = self._set_D1SParameters(forces)
+        forces = self._set_GognyParameters(forces, gogny_interaction)
         
         
         self.xml_input_filename = 'final_input.xml'
         tree.write(self.xml_input_filename)
         
         self.runTBMERunnerSuite()
-        
-    
+                
     def runTBMERunnerSuite(self, specific_xml_file=None):
         """ 
         Run the TBME suite (TBMESpeedRunner) from an input.xml file, 

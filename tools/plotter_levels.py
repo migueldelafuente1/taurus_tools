@@ -5,14 +5,16 @@ Created on 13 sept 2023
 '''
 from tools.plotter_1d import PlotException, _taurus_object_test,\
     MATPLOTLIB_INSTALLED
-import os
-from copy import copy
+
 if MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt
 else:
     MATPLOTLIB_INSTALLED = False
     print("WARNING :: Matplotlib not installed. Do not evaluate plot modules.")
 
+import os
+from copy import copy
+import collections
 
 class _BaseLevelGraph(object):
     
@@ -137,7 +139,7 @@ class EnergyLevelGraph(_BaseLevelGraph):
     
     def render_box(self, plt_ax, print_excit_energies=False):
         """
-        TODO: Takes an pyplot_axes object and append the values for the data
+        Takes an pyplot_axes object and append the values for the data
         """
         if print_excit_energies:
             ener_list_selected = self._data_exc_energy
@@ -180,6 +182,90 @@ class EnergyLevelGraph(_BaseLevelGraph):
         self._graph_y.append([*y_tuple, ])
 
 
+
+class EnergyByJGraph(EnergyLevelGraph):
+    
+    """ 
+    Import and organize the results by energy, J and excitation collections
+    """
+    def __init__(self, title='', *args, **kwargs):
+        super(EnergyByJGraph, self).__init__(title=title, *args, **kwargs)
+        
+        self._surface_bypar : dict = None
+        
+    def setData(self, levels_data, program=None):
+        
+        ## Import and sort the data
+        EnergyLevelGraph.setData(self, levels_data, program=program)
+        
+        ## Organize by J and P
+        surface_bypar= {'+': [], '-': [],}
+        
+        for i, e_i in enumerate(self._data_energy):
+            j_i = self._data_angMom[i]
+            p_i = self._data_parity[i]
+            element_ = (j_i, e_i)
+            
+            if surface_bypar[p_i].__len__() == 0:
+                surface_bypar[p_i].append( [element_, ] )
+            else:
+                ## Append to a previous excitation collection, or create one.
+                found_, skip_ = False, False
+                for jj in range(len(surface_bypar[p_i])):
+                    if skip_: continue
+                    
+                    if j_i in list(zip(*surface_bypar[p_i][jj]))[0]:
+                        found_ = True
+                    else:
+                        surface_bypar[p_i][jj].append( element_ )
+                        skip_ = True      ## jj might not be the last collection 
+                
+                if found_ and (not skip_):
+                    surface_bypar[p_i].append( [element_ , ] )
+        
+        for p in '+-':
+            if len(surface_bypar[p]) == 0:
+                del surface_bypar[p]
+        self._surface_bypar = surface_bypar
+    
+
+    def render_box(self, plt_ax, color=''):
+        
+        _LS_MK = 'o*vx+d^>s<hDPX'
+        for par, values_ in self._surface_bypar.items():
+            for i, exc_col in enumerate(values_):
+                # NOTE:: This is to align the branch from left to right
+                exc_col = dict(exc_col)
+                exc_col = collections.OrderedDict(sorted(exc_col.items()))
+                exc_col = [(x,y) for x, y  in exc_col.items()]
+                
+                x, y = list(zip(*exc_col))
+                
+                if i == 0:
+                    label_ = '{}: ({}){}={:4.2f} MeV'.format(self.title, i, par,
+                                                            self.Emin)
+                else:
+                    label_ = '{}: ({}){}'.format(self.title, i, par)
+                    
+                
+                plt_ax.plot(x, y, '{}{}'.format(color, _LS_MK[i]),
+                            linestyle='dashed' if i>0 else '-',
+                            label = label_)
+                # plt_ax.annotate(en_str, xy=(x4, y4))
+        
+        #print the title beneath
+        title_str = self.title
+        # plt_ax.annotate(title_str, xy=self._coords_subtitle, 
+        #                 fontsize=self.FONTSIZE_SUBTITLES,
+        #                 horizontalalignment='center')
+        
+    def add_graph_x(self, x_tuple):
+        raise Exception("This method cannot be used for this class .")
+    
+    def add_graph_y(self, y_tuple):
+        # self._graph_y.append(*y_tuple )
+        raise Exception("This method cannot be used for this class .")
+        
 class TransitionalLevelGraph(_BaseLevelGraph):
     pass
 
@@ -374,6 +460,93 @@ class BaseLevelContainer(object):
 #===============================================================================
 
 
+
+class JLevelContainer(BaseLevelContainer):
+    
+    """ 
+    Plot to present the levels by the J in the x axis, (representing rotational 
+    bands).
+    """
+    
+    def _setLevelBoundsAndCoordinates(self):
+        
+        """
+        From the levels in the data, calculate the box size to put the energy
+        and J-p value considering the stacking.
+        Also the global tops for the margins
+        """
+        y_max = self._maxHeight
+        y_min = self._minHeight
+        
+        ## conversion fontsize = 10 / MeV range
+        if not self.VERT_TEXT_CONV:
+            self.VERT_TEXT_CONV = (self._maxEner - self._minEner) * 0.05
+        
+        lev_obj : EnergyByJGraph = None
+        
+        if self.RELATIVE_PLOT:
+            y_max = self._maxEner - self._minEner
+            y_min = 0.0
+        else:
+            for i, lev_obj in enumerate(self._levelGraphs):
+                y_max = max(y_max, lev_obj.Emax)
+                y_min = min(y_min, lev_obj.Emin)
+        
+        self._maxHeight = y_max
+        self._minHeight = y_min
+        
+        ## Arange
+        if not self.RELATIVE_PLOT: 
+            return 
+        
+        for i, lev_obj in enumerate(self._levelGraphs):
+            for par, jener in lev_obj._surface_bypar.items():
+                for i in range(len(jener)):
+                    
+                    if not self.RELATIVE_PLOT:
+                        new_ = [(vls[0], vls[1] - self._minEner) for vls in jener[i]]
+                    else:
+                        new_ = [(vls[0], vls[1] - lev_obj.Emin) for vls in jener[i]]
+                    
+                    lev_obj._surface_bypar[par][i] = new_
+    
+    def _renderLevelGraphs(self):
+        
+        ax_ : plt.Axes = plt.subplot()
+        
+        ## TODO: Iterate for render all the level positions
+        level_obj : _BaseLevelGraph = None
+        COLORS_ = 'rbgkcmpy'
+        x_range = 0
+        for indx_, level_obj in enumerate(self._levelGraphs):
+            level_obj.render_box(ax_, color=COLORS_[indx_])
+            
+            x_r = max(level_obj._data_angMom) - min(level_obj._data_angMom)
+            x_range = max(x_r, x_range) if indx_>0 else x_r
+        
+        ax_.tick_params(axis="y",direction="in")
+        ax_.tick_params(axis="x",direction="in")
+        
+        
+        # Set tops and units for the x axis
+        
+        
+        plt.title(self.global_title, fontdict={'fontfamily' : 'sans-serif',
+                                               'fontsize' : 20,})
+        plt.ylabel('Energy (MeV)')
+        plt.xlabel('J')
+        plt.legend()
+        if self.RELATIVE_PLOT:
+            plt.ylabel('Excitation Energy (MeV)')
+            ax_.annotate(r"Emin={:9.3f} MeV".format(self._minEner), 
+                         xy=(0.75 * x_range, - 0.075 * self._maxHeight), 
+                         fontsize=level_obj.FONTSIZE_SUBTITLES,
+                         horizontalalignment='center')
+            ax_.set_ylim([self._minHeight - 0.1 * self._maxHeight, 
+                          self._maxHeight + 1])
+        
+        plt.show()
+    
 if __name__ == '__main__':
     
     example_levels = """
@@ -415,22 +588,40 @@ if __name__ == '__main__':
     6  +   4   -212.160   13.385    0.000    0.000   2.6337   2.6249   2.6293   2.7498    1.000000   11.999985   11.999894   23.999879   5.99995   0.14448
 """
     
+    with open("all_spectra_A30_Fermi.txt", 'r') as f:
+        example_levels_2 = f.read()
+    levels_1 = EnergyByJGraph(title='Fermi')
+    levels_1.setData(example_levels_2, program='taurus_hwg')   
+    #
+    # levels_2 = EnergyLevelGraph(title='HFB sph')
+    # levels_2.setData(example_levels_2, program='taurus_hwg')  
     
-    levels_1 = EnergyLevelGraph(title='Fermi')
-    levels_1.setData(example_levels, program='taurus_hwg')   
-    
-    levels_2 = EnergyLevelGraph(title='HFB sph')
-    levels_2.setData(example_levels_2, program='taurus_hwg')  
-    
-    levels_3 = EnergyLevelGraph(title='HFB sph (2)')
+    levels_3 = EnergyByJGraph(title='HFB sph')
     levels_3.setData(example_levels_3, program='taurus_hwg')  
     
     BaseLevelContainer.RELATIVE_PLOT = True
-    _graph = BaseLevelContainer()
+    _graph = JLevelContainer()
     _graph.global_title = "Comparison HWG D1S from densities"
     _graph.add_LevelGraph(levels_1)
     # _graph.add_LevelGraph(levels_2)
     _graph.add_LevelGraph(levels_3)
     _graph.plot()
+    
+    ## ##  EXAMPLE FOR LEVEL GRAPHS ## ##
+    
+    # levels_2 = EnergyLevelGraph(title='Fermi')
+    # levels_2.setData(example_levels_2, program='taurus_hwg') 
+    # #
+    # levels_3 = EnergyLevelGraph(title='HFB sph')
+    # levels_3.setData(example_levels_3, program='taurus_hwg')  
+    #
+    # BaseLevelContainer.RELATIVE_PLOT = True
+    # _graph = BaseLevelContainer()
+    # _graph.global_title = "Comparison HWG D1S from densities"
+    # _graph.add_LevelGraph(levels_2)
+    # # _graph.add_LevelGraph(levels_2)
+    # _graph.add_LevelGraph(levels_3)
+    # _graph.plot()
+    
     
     

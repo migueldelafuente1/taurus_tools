@@ -5,12 +5,13 @@ Created on Jan 23, 2023
 '''
 import os
 import shutil
-from tools.Enums import OutputFileTypes
+from tools.Enums import OutputFileTypes, GognyEnum
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 
 
 
-def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True):
+def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
+                           gogny_interaction = GognyEnum.D1S):
     """
     This function import a certain hamil file for the calculations to run:
     
@@ -64,7 +65,8 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True):
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
             exe_.do_coulomb = do_Coulomb
             exe_.do_LS      = do_LS
-            exe_.setAndRun_D1Sxml()
+            
+            exe_.setAndRun_Gogny_xml(gogny_interaction)
             interaction = exe_.hamil_filename
             print(f" ** [DONE] Interaction: [{interaction}]")
             
