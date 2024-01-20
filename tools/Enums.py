@@ -74,13 +74,17 @@ class ForceEnum(Enum):
     Coulomb = 'Coulomb'
     Tensor  = 'Tensor'
     SpinOrbit = 'SpinOrbit'
-    SpinOrbitShortRange = 'SpinOrbitShortRange'
+    SpinOrbitFiniteRange = 'SpinOrbitFiniteRange'
+    SpinOrbitShortRange  = 'SpinOrbitShortRange'
     Brink_Boeker  = 'Brink_Boeker'
     PotentialSeries = 'PotentialSeries'
     Density_Dependent = 'Density_Dependent'
-    Kinetic_2Body = 'Kinetic_2Body'
-    Multipole_Delta = 'Multipole_Delta'
+    Density_Dependent_From_File = 'Density_From_File'
+    Kinetic_2Body  = 'Kinetic_2Body'
+    Multipole_Delta  = 'Multipole_Delta'
+    Multipole_Moment = 'Multipole_Moment'
     SkyrmeBulk = 'SkyrmeBulk'
+    TensorS12  = 'TensorS12'
     Force_From_File = 'Force_From_File'
 
 class PotentialForms(Enum):
@@ -108,6 +112,16 @@ class BrinkBoekerParameters(Enum):
     Bartlett    = 'Bartlett'
     Heisenberg  = 'Heisenberg'
 
+class CentralWithExchangeParameters(Enum):
+    potential = 'potential'
+    constant  = 'constant'
+    mu_length = 'mu_length'
+    n_power   = 'n_power'
+    Wigner    = 'Wigner'
+    Majorana  = 'Majorana'
+    Bartlett  = 'Bartlett'
+    Heisenberg= 'Heisenberg'
+    
 class PotentialSeriesParameters(Enum):
     part    = 'part'
 
@@ -116,6 +130,8 @@ class DensityDependentParameters(Enum):
     x0    = 'x0'
     alpha = 'alpha'
     core  = 'core'
+    file  = 'file'
+    integration = 'integration'
     
 class SkyrmeBulkParameters(Enum):
     t0 = 't0'
@@ -144,14 +160,18 @@ ForceVariablesDict = {
     ForceEnum.Central : CentralMEParameters,
     ForceEnum.Coulomb : Enum,
     ForceEnum.Tensor  : CentralMEParameters,
+    ForceEnum.TensorS12 : CentralWithExchangeParameters,
     ForceEnum.SpinOrbit : CentralMEParameters,
     ForceEnum.SpinOrbitShortRange : CentralMEParameters,
+    ForceEnum.SpinOrbitFiniteRange: CentralWithExchangeParameters,
     ForceEnum.Density_Dependent   : DensityDependentParameters,
+    ForceEnum.Density_Dependent_From_File   : DensityDependentParameters, 
     ForceEnum.SkyrmeBulk    : SkyrmeBulkParameters, 
     ForceEnum.Kinetic_2Body : Enum,
     ForceEnum.SDI           : SDIParameters,
-    ForceEnum.Multipole_Delta: MultipoleParameters,
-    ForceEnum.Force_From_File: ForceFromFileParameters
+    ForceEnum.Multipole_Delta : MultipoleParameters,
+    ForceEnum.Multipole_Moment: CentralMEParameters, 
+    ForceEnum.Force_From_File : ForceFromFileParameters,
 }
 
 ForcesWithRepeatedParametersList = [
@@ -198,6 +218,8 @@ class AttributeArgs(Enum):
             protons  = 'protons'
             neutrons = 'neutrons'
             core_b_len = 'core_b_len'
+            r_dim      = 'r_dim'
+            omega_ord  = 'omega_ord'
         
     class FileReader(Enum):
         ignorelines = 'ignorelines'
@@ -222,7 +244,6 @@ class OutputFileTypes(Enum):
     oneBody = '.01b'
     twoBody = '.2b'
     centerOfMass = '.com'
-
 
 
 #===============================================================================

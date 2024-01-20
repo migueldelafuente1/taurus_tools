@@ -4,15 +4,16 @@ Created on Jan 10, 2023
 @author: Miguel
 '''
 import os
-from scripts1d.beta_scripts import run_q20_surface, run_b20_Gogny_surface
+from scripts1d.beta_scripts import run_q20_surface, run_b20_Gogny_surface,\
+    run_b20_composedInteraction
 from tools.helpers import importAndCompile_taurus, TBME_SUITE
 
-from tools.hamiltonianMaker import TBME_HamiltonianManager
+from tools.hamiltonianMaker import TBME_HamiltonianManager, TBMEXML_Setter
 from tools.inputs import InputTaurus
 from scripts1d.pair_scripts import run_pair_surface_D1S
 from scripts1d.cranking_scripts import run_J_surface
 from scripts0d.unconstrained_scripts import run_symmetry_restricted_for_hamiltonian
-from tools.Enums import GognyEnum
+from tools.Enums import GognyEnum, CentralMEParameters, PotentialForms
 
 if not (InputTaurus.PROGRAM in os.listdir()):
     importAndCompile_taurus()
@@ -33,11 +34,32 @@ if __name__ == '__main__':
         ( 12, 12): (3, 0, 1.92),
         ( 12, 14): (3, 0, 1.95),
     }
-    nucleus = sorted(list(interactions.keys()))
-    run_b20_Gogny_surface(nucleus, interactions, GognyEnum.B1,
-                          seed_base=3, ROmega=(12,12), 
-                          q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
+    # nucleus = sorted(list(interactions.keys()))
+    # run_b20_Gogny_surface(nucleus, interactions, GognyEnum.B1,
+    #                       seed_base=3, ROmega=(12,12), 
+    #                       q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
     # raise Exception("STOP HERE.")
+    
+    
+    
+    
+    nucleus = sorted(list(interactions.keys()))
+    
+    interaction_combination = []
+    kwargs = {CentralMEParameters.potential: PotentialForms.Gaussian,
+              CentralMEParameters.constant : -100.,
+              CentralMEParameters.mu_length: 1.4,}
+    interaction_combination.append((TBMEXML_Setter.set_central_force, kwargs ))
+    
+    kwargs = {CentralMEParameters.constant: 50.3,
+              CentralMEParameters.n_power:  2,}
+    interaction_combination.append((TBMEXML_Setter.set_quadrupole_force, kwargs ))
+    
+    run_b20_composedInteraction(nucleus, interactions, interaction_combination,
+                                seed_base=3,
+                                q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
+    raise Exception("STOP HERE.")
+    
     #
     # ## MZ4 lengths
     # interactions = {

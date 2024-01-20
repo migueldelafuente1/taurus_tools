@@ -22,8 +22,222 @@ from tools.helpers import GITHUB_2BME_HTTP, ValenceSpacesDict_l_ge10_byM,\
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters, Constants,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes, Enum,\
-    GognyEnum
+    GognyEnum, PotentialSeriesParameters, CentralMEParameters, PotentialForms
 from tools.data import DataTaurus
+
+#===============================================================================
+# # TODO: Interaction XML manager 
+#===============================================================================
+
+class TBMEXML_Setter(object):
+    """
+    Acts to store the different forces available from the TBME suite.
+    
+    given a subelement of force and the parameters to set, from the Enums 
+    TODO: (Actualize it)
+    """
+    
+    @staticmethod
+    def __checkPotentialArguments(args):
+        """
+        Check if the  parameters are OK and transform numbers to <str>
+        """
+        assert CentralMEParameters.constant in args, "constant required"
+        assert CentralMEParameters.potential in args, "potential required"
+        assert CentralMEParameters.mu_length in args, "mu_length required"
+        
+        assert args[CentralMEParameters.potential] in PotentialForms.members(), \
+            "Only potential forms are accepted."
+        if args[CentralMEParameters.potential] in (PotentialForms.Power,
+                                                   PotentialForms.Gaussian_power,):
+            assert CentralMEParameters.n_power in args, \
+                "This potential requires the use of a n_power"
+            assert type(args[CentralMEParameters.n_power]) is int or \
+                args[CentralMEParameters.n_power].isdigit(), "n_power must be digit"
+            args[CentralMEParameters.n_power] = str(args[CentralMEParameters.n_power])
+
+        args[CentralMEParameters.constant] = "{:>10.5f}".format(
+            float(args[CentralMEParameters.constant]))
+        args[CentralMEParameters.mu_length] = "{:6.4f}".format(
+            float(args[CentralMEParameters.mu_length]))
+        return args
+    
+    @staticmethod
+    def __checkExchangeArguments(args, isBrinkBoeker=False):
+        """
+        Check if the  parameters are OK and transform numbers to <str>
+        """
+        assert BrinkBoekerParameters.Wigner in args,  "Wigner required"
+        assert BrinkBoekerParameters.Majorana in args, "Majorana required"
+        assert BrinkBoekerParameters.Bartlett in args, "Bartlett required"
+        assert BrinkBoekerParameters.Heisenberg in args, "Heisenberg required"
+        assert BrinkBoekerParameters.mu_length in args, "mu_length required"
+        
+        for k in BrinkBoekerParameters.members():
+            args[k] = "{:>10.5f}".format(float(args[k]))
+        if isBrinkBoeker:
+            k = BrinkBoekerParameters.mu_length
+            args[k] = "{:3.1f}".format(float(args[k]))
+        return args
+    
+    @staticmethod
+    def set_central_force(elem_, **kwargs):
+        """ 
+        <Central active='False'>
+            <potential   name='gaussian'/>
+            <constant    value='115.0'   units='MeV'/>
+            <mu_length   value='1.2'     units='fm'/>
+            <n_power     value='0'/>
+        </Central>
+        """
+        kwargs = TBMEXML_Setter.__checkPotentialArguments(kwargs)
+        _TT = '\n\t\t'
+        f2  = et.SubElement(elem_, ForceEnum.Central,  
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f2.text = _TT
+        
+        for k, val in kwargs.items():
+            _ = et.SubElement(f2, k, attrib={AttributeArgs.value : str(val)})
+            _.tail=_TT
+        f2.tail = '\n\t'
+        return elem_
+    
+    @staticmethod
+    def set_spinorbitFR_force(elem_, **kwargs):
+        """
+        <SpinOrbitFiniteRange active='False'>
+            <potential   name='gaussian'/>
+            <Wigner      value='134.0'  units='MeV'/>
+            <Majorana    value='10.0'   units='MeV'/>
+            <Bartlett    value='115.0'  units='MeV'/>
+            <Heisenberg  value='10.0'   units='MeV'/>
+            <mu_length   value='1.2'    units='fm'/>
+            <n_power     value='0'/>
+        </SpinOrbitFiniteRange>
+        """
+        kwargs[CentralMEParameters.constant] = 0
+        kwargs = TBMEXML_Setter.__checkPotentialArguments(kwargs)
+        del kwargs[CentralMEParameters.constant]
+        kwargs = TBMEXML_Setter.__checkExchangeArguments(kwargs)
+        
+        _TT = '\n\t\t'
+        f2  = et.SubElement(elem_, ForceEnum.SpinOrbitFiniteRange,  
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f2.text = _TT
+        
+        for k, val in kwargs.items():
+            _ = et.SubElement(f2, k, attrib={AttributeArgs.value : str(val)})
+            _.tail=_TT
+        f2.tail = '\n\t'
+        return elem_
+    
+    @staticmethod
+    def set_tensor_force(elem_, **kwargs):
+        """
+        <TensorS12 active='False'>
+            <potential  name='gaussian'/>
+            <Wigner     value='-135.0'  units='MeV'/>
+            <Majorana   value='0.0'     units='MeV'/>
+            <Bartlett   value='0.0'     units='MeV'/>
+            <Heisenberg value='-115.0'  units='MeV'/>
+            <mu_length  value='1.2'     units='fm'/>
+            <n_power    value='0'/>
+        </TensorS12>
+        """
+        kwargs[CentralMEParameters.constant] = 0
+        kwargs = TBMEXML_Setter.__checkPotentialArguments(kwargs)
+        del kwargs[CentralMEParameters.constant]
+        kwargs = TBMEXML_Setter.__checkExchangeArguments(kwargs)
+        
+        _TT = '\n\t\t'
+        f2  = et.SubElement(elem_, ForceEnum.TensorS12,  
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f2.text = _TT
+        for k, val in kwargs.items():
+            _ = et.SubElement(f2, k, attrib={AttributeArgs.value : str(val)})
+            _.tail=_TT
+        f2.tail = '\n\t'
+        return elem_
+    
+    @staticmethod
+    def set_quadrupole_force(elem_, constant=1.0, n_power=2):
+        """
+        <Multipole_Moment active='False'>
+            <constant   value='0.30'     units='MeV*fm^-n_power'/>
+            <n_power    value='2'/>
+        </Multipole_Moment>
+        """
+        _TT = '\n\t\t'
+        f2  = et.SubElement(elem_, ForceEnum.Multipole_Moment,  
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f2.text = _TT
+        _ = et.SubElement(f2, CentralMEParameters.constant, 
+                          attrib={AttributeArgs.value : str(constant)})
+        _.tail=_TT
+        _ = et.SubElement(f2, CentralMEParameters.n_power, 
+                          attrib={AttributeArgs.value : str(n_power)})
+        _.tail=_TT
+        f2.tail = '\n\t'
+        return elem_
+    
+    @staticmethod
+    def set_potentialseries_force(elem_, force_part_list):
+        """
+        :force_part_list <list of dicts>, attributes in each part must have the 
+                            central part arguments.
+        <PotentialSeries active='True'>
+            <part potential='gaussian' constant='-13776.9629'  mu_length='0.0002'/>
+            <part potential='gaussian' constant='-4181.3616'  mu_length='0.0004'/>
+        <PotentialSeries/>
+        """
+        _TT = '\n\t\t'
+        f2  = et.SubElement(elem_, ForceEnum.PotentialSeries,  
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f2.text = _TT
+        for part_dict in force_part_list:
+            attr_dict = TBMEXML_Setter.__checkPotentialArguments(part_dict)
+            print(' *** part dict i')
+            print(attr_dict)
+            _ = et.SubElement(f2, PotentialSeriesParameters.part, attrib=attr_dict)
+            _.tail=_TT
+        f2.tail = '\n\t'
+        return elem_
+    
+    @staticmethod
+    def set_file_force(elem_, filename=None, constant=1.0, l_ge_10=True):
+        """
+        <Force_From_File active='True'>
+            <file name='results/D1S_vs_scalar_import.2b'/>
+            <options   ignorelines='1'   constant='-1.0'   l_ge_10='True'/>
+            <scheme    name='J'/>
+        </Force_From_File>
+        
+        
+        """
+        assert filename!=None, "Required path to the file"
+        assert os.path.exists(filename), f"Unfound file to import [{filename}]"
+        
+        _TT = '\n\t\t'
+        f2  = et.SubElement(elem_, ForceEnum.Force_From_File,  
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f2.text = _TT
+        _ = et.SubElement(f2, ForceFromFileParameters.file, 
+                          attrib={AttributeArgs.name : filename})
+        _.tail=_TT
+        _ = et.SubElement(f2, ForceFromFileParameters.options,
+                          attrib={AttributeArgs.FileReader.ignorelines : '1',
+                                  AttributeArgs.FileReader.constant: str(constant),
+                                  AttributeArgs.FileReader.l_ge_10: str(l_ge_10)})
+        _.tail='\n\t'
+        ## scheme is for default J, and not implemented
+        _ = et.SubElement(f2, 'scheme', attrib={AttributeArgs.name : 'J'})
+        _.tail=_TT
+        f2.tail = '\n\t'
+        return elem_
+
+#===============================================================================
+# # HAMILTONIAN MAKER. - Manages 2bME suite
+#===============================================================================
 
 class TBME_HamiltonianManager(object):
     '''
@@ -282,6 +496,34 @@ class TBME_HamiltonianManager(object):
         
         self.hamil_filename = name       
     
+    def __setXMLforCommonArguments(self, root):
+        """ 
+        Set the parts for <Output_Parameters>, <SHO_Parameters>, <Valence_Space>
+        """
+        out_   = root.find(InputParts.Output_Parameters)
+        outfn_ = out_.find(Output_Parameters.Output_Filename)
+        self._set_defaultHamilName()
+        outfn_.text = self.hamil_filename
+        docom_ = out_.find(Output_Parameters.COM_correction)
+        docom_.text = '0' ## set to 0 and import directly the matrix element
+        self._generateCOMFileFromFile(self.hamil_filename)
+        
+        # htype_ = out_.find(Output_Parameters.Hamil_Type)
+        # core_  = root.find(InputParts.Core)
+        
+        sho_ = root.find(InputParts.SHO_Parameters)
+        hbo_ = sho_.find(SHO_Parameters.hbar_omega)
+        b_   = sho_.find(SHO_Parameters.b_length)
+        
+        hbaromega = ((Constants.HBAR_C / self.b_length)**2) / Constants.M_MEAN
+        b_.text   = str(self.b_length)
+        hbo_.text = str(hbaromega)
+        
+        valenSp = root.find(InputParts.Valence_Space)
+        valenSp = self._set_valenceSpace_Subelement(valenSp)
+        
+        return root
+    
     def setAndRun_Gogny_xml(self, gogny_interaction, title=''):
         """
         Import the file from template and set up forces and valence space
@@ -303,31 +545,51 @@ class TBME_HamiltonianManager(object):
         title_ = root.find(InputParts.Interaction_Title)
         title_.text = aux_tit if title == "" else title
         
-        out_   = root.find(InputParts.Output_Parameters)
-        outfn_ = out_.find(Output_Parameters.Output_Filename)
-        self._set_defaultHamilName()
-        outfn_.text = self.hamil_filename
-        docom_ = out_.find(Output_Parameters.COM_correction)
-        docom_.text = '0' ## set to 0 and import directly the matrix element
-        self._generateCOMFileFromFile(self.hamil_filename)
-        
-        # htype_ = out_.find(Output_Parameters.Hamil_Type)
-        # core_  = root.find(InputParts.Core)
-        
-        sho_ = root.find(InputParts.SHO_Parameters)
-        hbo_ = sho_.find(SHO_Parameters.hbar_omega)
-        b_   = sho_.find(SHO_Parameters.b_length)
-        
-        hbaromega = ((Constants.HBAR_C / self.b_length)**2) / Constants.M_MEAN
-        b_.text  = str(self.b_length)
-        hbo_.text = str(hbaromega)
-        
-        valenSp = root.find(InputParts.Valence_Space)
-        valenSp = self._set_valenceSpace_Subelement(valenSp)
+        root =  self.__setXMLforCommonArguments(root)
         
         forces = root.find(InputParts.Force_Parameters)
         forces = self._set_GognyParameters(forces, gogny_interaction)
         
+        self.xml_input_filename = 'final_input.xml'
+        tree.write(self.xml_input_filename)
+        
+        self.runTBMERunnerSuite()
+        
+    def setAndRun_ComposeInteractions(self, interactions_TBMEXML, title=''):
+        """
+        :interactions_TBMEXML must be composed as functions and arguments for
+                              the TBMEXML_Setter
+            [ 
+                (
+                function method, from TBMEXML_Setter @staticmethods,
+                arguments as dictionary or as list of dicts (for PotentialSeries)
+                ) <tuple>
+            ]<list>
+        """
+        self._path_xml = 'data_resources/template.xml'
+        if (os.getcwd().endswith(TBME_SUITE) 
+            or os.getcwd().endswith('tools') ): ## testing
+            self._path_xml = '../'+self._path_xml
+        print("Evaluating hamiltonian from:\n", os.getcwd())
+        tree = et.parse(self._path_xml)
+        root = tree.getroot()
+        
+        titl_str = ", ".join([fc[0].__name__.split('_')[1] 
+                                for fc in interactions_TBMEXML])
+        aux_tit = f"Composed force: {titl_str} MZ={self.MZmax}"
+        title_ = root.find(InputParts.Interaction_Title)
+        title_.text = aux_tit if title == "" else title
+        
+        root =  self.__setXMLforCommonArguments(root)
+        
+        forces = root.find(InputParts.Force_Parameters)
+        
+        xml_setter_method_ : TBMEXML_Setter = None ## staticmethods
+        for xml_setter_method_, inter_args in interactions_TBMEXML:
+            if isinstance(inter_args, dict):
+                forces = xml_setter_method_(forces, **inter_args)
+            else:
+                forces = xml_setter_method_(forces, inter_args)
         
         self.xml_input_filename = 'final_input.xml'
         tree.write(self.xml_input_filename)
@@ -376,7 +638,63 @@ class TBME_HamiltonianManager(object):
         
         
         
-        
-        
-        
+if __name__ == "__main__":
+    
+    #--------------------------------------------------------------------------
+    # # INTERACTION DEFINITION TEST # #
+    
+    interaction_runable = []
+    kwargs = {CentralMEParameters.potential: PotentialForms.Gaussian,
+              CentralMEParameters.constant : 100.6,
+              CentralMEParameters.mu_length: 1.33,}
+    interaction_runable.append((TBMEXML_Setter.set_central_force, kwargs ))
+    
+    kwargs = {CentralMEParameters.potential: PotentialForms.Gaussian,
+              BrinkBoekerParameters.Wigner : -100.6,
+              BrinkBoekerParameters.Bartlett : 10.6,
+              BrinkBoekerParameters.Heisenberg : 0.6,
+              BrinkBoekerParameters.Majorana : -30.6,
+              CentralMEParameters.mu_length: 1.33,}
+    interaction_runable.append((TBMEXML_Setter.set_tensor_force, kwargs ))
+    
+    kwargs = {CentralMEParameters.potential: PotentialForms.Power,
+              BrinkBoekerParameters.Wigner : -100.6,
+              BrinkBoekerParameters.Bartlett : 10.6,
+              BrinkBoekerParameters.Heisenberg : 0.6,
+              BrinkBoekerParameters.Majorana : -30.6,
+              CentralMEParameters.mu_length: 0.33,
+              CentralMEParameters.n_power  : 2}
+    interaction_runable.append((TBMEXML_Setter.set_spinorbitFR_force, kwargs ))
+    
+    kwargs = {CentralMEParameters.constant: 150.3,
+              CentralMEParameters.n_power:  2,}
+    interaction_runable.append((TBMEXML_Setter.set_quadrupole_force, kwargs ))
+    
+    kwargs = [
+        {CentralMEParameters.potential: PotentialForms.Gaussian,
+         CentralMEParameters.constant : 10.6,
+         CentralMEParameters.mu_length: 0.33,},
+        {CentralMEParameters.potential: PotentialForms.Coulomb,
+         CentralMEParameters.constant : -20.6,
+         CentralMEParameters.mu_length: 1.33,},
+        {CentralMEParameters.potential: PotentialForms.Exponential,
+         CentralMEParameters.constant : 0.6,
+         CentralMEParameters.mu_length: 2.5,},
+        {CentralMEParameters.potential: PotentialForms.Power,
+         CentralMEParameters.constant : 0.6,
+         CentralMEParameters.mu_length: 2.5,
+         CentralMEParameters.n_power  : 2,},
+    ]
+    interaction_runable.append((TBMEXML_Setter.set_potentialseries_force, kwargs ))
+    
+    kwargs = {'filename': f"../{TBME_SUITE}/results/D1S_MZ2.2b",}
+    interaction_runable.append((TBMEXML_Setter.set_file_force, kwargs ))
+    
+    
+    
+    exe_ = TBME_HamiltonianManager(1.253, 2, 0, set_com2=False)
+    exe_.setAndRun_ComposeInteractions(interaction_runable)
+    interaction = exe_.hamil_filename
+    
+    #--------------------------------------------------------------------------
     

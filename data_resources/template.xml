@@ -1,0 +1,19 @@
+<input>
+	<Interaction_Title name="D1S no density " details=""/>
+	<Output_Parameters>
+		<Output_Filename></Output_Filename>
+		<Hamil_Type>4</Hamil_Type>
+		<COM_correction>0</COM_correction>
+	</Output_Parameters>
+	<SHO_Parameters>
+		<A_mass></A_mass>
+		<Z></Z>
+		<b_length units='fm'></b_length>
+		<hbar_omega units='MeV'/>
+	</SHO_Parameters>
+	<Valence_Space l_great_than_10='True'>
+	</Valence_Space>
+	<Core/>
+	<Force_Parameters>
+	</Force_Parameters>
+</input>
