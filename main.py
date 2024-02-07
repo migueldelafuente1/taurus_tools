@@ -50,7 +50,8 @@ if __name__ == '__main__':
         interactions = {(12, 12): curr_hamil, }
                         
         run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
-                        seed_base=3, ROmega= (0, 0), convergences=5)
+                        seed_base=3, ROmega= (0, 0), convergences=5,
+                        fomenko_points=(9, 9))
     
     
     

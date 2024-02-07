@@ -17,7 +17,8 @@ from tools.Enums import CentralMEParameters, PotentialForms,\
 
 def run_q20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
-                    q_min=-10, q_max=10, N_max=50, convergences=None):
+                    q_min=-10, q_max=10, N_max=50, convergences=None,
+                    fomenko_points=(1, 1)):
     
     ExeTaurus1D_DeformQ20.ITERATIVE_METHOD = \
         ExeTaurus1D_DeformQ20.IterativeEnum.EVEN_STEP_SWEEPING
@@ -43,6 +44,8 @@ def run_q20_surface(nucleus, interactions,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -53,6 +56,8 @@ def run_q20_surface(nucleus, interactions,
         
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -78,7 +83,8 @@ def run_q20_surface(nucleus, interactions,
 
 def run_b20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
-                    q_min=-1., q_max=1., N_max=50, convergences=None):
+                    q_min=-1., q_max=1., N_max=50, convergences=None,
+                    fomenko_points=(1, 1)):
     
     ExeTaurus1D_DeformB20.ITERATIVE_METHOD = \
         ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_SWEEPING
@@ -108,6 +114,8 @@ def run_b20_surface(nucleus, interactions,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -119,6 +127,8 @@ def run_b20_surface(nucleus, interactions,
         
         input_args_onrun = {
             InputTaurus.ArgsEnum.seed: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
@@ -144,7 +154,8 @@ def run_b20_surface(nucleus, interactions,
 
 def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
-                          q_min=-2.0, q_max=2.0, N_max=41, convergences=None):
+                          q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                          fomenko_points=(1, 1)):
     """
     Reqire:
     Args:
@@ -186,6 +197,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -197,6 +210,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -223,7 +238,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
 
 def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
                                 seed_base=0,
-                                q_min=-2.0, q_max=2.0, N_max=41, convergences=None):
+                                q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                                fomenko_points=(1, 1)):
     """
     Reqire:
     Args:
@@ -278,6 +294,8 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -289,6 +307,8 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
