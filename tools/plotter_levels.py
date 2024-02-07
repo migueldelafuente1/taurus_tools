@@ -3,18 +3,31 @@ Created on 13 sept 2023
 
 @author: delafuente
 '''
-from tools.plotter_1d import PlotException, _taurus_object_test,\
-    MATPLOTLIB_INSTALLED
 
-if MATPLOTLIB_INSTALLED:
+try:
     import matplotlib.pyplot as plt
-else:
+    MATPLOTLIB_INSTALLED = True
+except Exception:
     MATPLOTLIB_INSTALLED = False
     print("WARNING :: Matplotlib not installed. Do not evaluate plot modules.")
 
 import os
-from copy import copy
+from copy import copy, deepcopy
 import collections
+
+_BASE_CLS_ATTRS = {
+    '_horizontal_margin' : -0.07,
+    '_vertical_margin'   : -0.07,
+    'title_size'    : 0.1,
+    'subtitle_size' : 0.05,
+    'LINE_SIZE'     : 10,
+    'DECIMALS_ENER' : 3,
+    'FONTSIZE_SUBTITLES' : 'x-large',
+    'line_box_size'         : 0.6,
+    'energy_value_size'     : 0.35,
+    'j_pi_label_size'       : 0.15,
+    'neck_horizontal_size'  : 0.2, ## of the level_line box
+    }
 
 class _BaseLevelGraph(object):
     
@@ -38,7 +51,11 @@ class _BaseLevelGraph(object):
     
     neck_horizontal_size = 0.2 ## of the level_line box
     
-    
+    @classmethod
+    def resetClassAttributes(cls):
+        for attr_, default_ in _BASE_CLS_ATTRS.items():
+            setattr(cls, attr_, default_)
+        
     
     def __init__(self, title='', *args, **kwargs):
         
@@ -49,6 +66,7 @@ class _BaseLevelGraph(object):
         self._graph_x = []       # coordinate x for the level segment for each E
         self._graph_y = []       # coordinate y for the level segment for each E
         
+        self._scopeJbypar = {'+': [], '-': []}
         self.Emin = None
         self.Emax = None
         
@@ -57,6 +75,10 @@ class _BaseLevelGraph(object):
         
         if title:
             self.title = str(title)
+    
+    @property 
+    def n_levels(self):
+        return len(self._data_energy)
     
     def setData(self):
         """ 
@@ -68,6 +90,16 @@ class _BaseLevelGraph(object):
         """ Define what to plot and matplotlib orders (legends, grids ...)"""
         raise BaseException("Abstract Method, implement me!")
     
+    def _update_Jpar_scope(self):
+        """  Update the range of states 
+        example :: par = { +:[0, 2 ,4 ,6], -:[1, 3, 5]}"""
+        
+        for i, j in enumerate(self._data_angMom):
+            par = self._data_parity[i]
+            if not j in self._scopeJbypar[par]:
+                self._scopeJbypar[par].append(j)
+                self._scopeJbypar[par] = sorted(self._scopeJbypar[par])
+            
 
 class EnergyLevelGraph(_BaseLevelGraph):
     
@@ -136,6 +168,7 @@ class EnergyLevelGraph(_BaseLevelGraph):
                     self._data_parity[j] = p_i
                     self._data_exc_energy[j] = eei
         
+        self._update_Jpar_scope()
     
     def render_box(self, plt_ax, print_excit_energies=False):
         """
@@ -146,9 +179,9 @@ class EnergyLevelGraph(_BaseLevelGraph):
         else:
             ener_list_selected = self._data_energy
         
-        format_e = " {:+4.%df}" % self.DECIMALS_ENER
+        format_e = " {:>+6.%df}" % self.DECIMALS_ENER
         if print_excit_energies:
-            format_e = " {:4.%df}" % self.DECIMALS_ENER
+            format_e = " {:>8.%df}" % self.DECIMALS_ENER
             
         for i, ener_i in enumerate(ener_list_selected):
             
@@ -227,6 +260,7 @@ class EnergyByJGraph(EnergyLevelGraph):
             if len(surface_bypar[p]) == 0:
                 del surface_bypar[p]
         self._surface_bypar = surface_bypar
+        self._update_Jpar_scope()
     
 
     def render_box(self, plt_ax, color=''):
@@ -280,7 +314,10 @@ class BaseLevelContainer(object):
     '''
     RELATIVE_PLOT  = False  ## Plots the difference, with respect to the min.
     VERT_TEXT_CONV = None   ## Parameter to define the proper stack E value boxes
+    E_BOX_UNIT_HEIGHT = None
     
+    ONLY_PAIRED_STATES = False  ## Only show groups of states linked for the sigma
+    MAX_NUM_OF_SIGMAS  = 99     ## Limit the number of sigma-excitations to show. 
 
     def __init__(self):
         '''
@@ -324,10 +361,10 @@ class BaseLevelContainer(object):
         self._fundamental_energies.append(fund_ener)
         
         if len(self._levelGraphs) > 1:
-            self._LXmax += self._LX_box        
+            self._LXmax += self._LX_box
         
 
-    def plot(self,export_filename=False):
+    def plot(self,export_filename=False, figaspect=None):
         
         ## TODO: set the top and lower bounds of X and Y, 
         ## (in case of overlaping levels)
@@ -340,11 +377,53 @@ class BaseLevelContainer(object):
             
         self._setLevelBoundsAndCoordinates()
         
-        self._renderLevelGraphs()
+        self._renderLevelGraphs(figaspect=figaspect)
         
         if export_filename:
             self._fig.savefig(export_filename + '.pdf')
+    
+    def _filterStatesForThisLevelObject(self, lev_obj : _BaseLevelGraph):
+        """
+        Conditions to count and append states in the plot
+        """
+        indx_groups = {'+': [], '-': []}
+        indx_j_stored = []
         
+        for par1 in ('+', '-'):
+            for jj in lev_obj._scopeJbypar[par1]:
+                k = 0
+                for i, j in enumerate(lev_obj._data_angMom):
+                    par = lev_obj._data_parity[i]
+                    if (j!=jj) or (i in indx_j_stored) or (par!=par1): continue
+                    
+                    indx_j_stored.append(i)
+                    if ((j == lev_obj._scopeJbypar[par1][0]) 
+                        or (k >= len(indx_groups[par]))):
+                        indx_groups[par].append([])
+                    indx_groups[par][k].append(i)
+                    k += 1
+        ## FILTERS for the number and set of E(J) curves
+        count_sigmas_par = {'+': 0, '-': 0}
+        sigmas_to_rm = []
+        for par, sigma_indx in indx_groups.items():
+            
+            for i in range(len(sigma_indx)):
+                if self.ONLY_PAIRED_STATES:
+                    if len(sigma_indx[i]) != len(lev_obj._scopeJbypar[par]):
+                        sigmas_to_rm += sigma_indx[i]
+                        continue
+                
+                count_sigmas_par[par] += 1  
+                if count_sigmas_par[par] > self.MAX_NUM_OF_SIGMAS:
+                    sigmas_to_rm += sigma_indx[i]
+            
+        for i in sorted(sigmas_to_rm, reverse=True):
+            _ = lev_obj._data_angMom.pop(i)
+            _ = lev_obj._data_energy.pop(i)
+            _ = lev_obj._data_parity.pop(i)
+            _ = lev_obj._data_exc_energy.pop(i)
+        
+    
     def _setLevelBoundsAndCoordinates(self):
         """
         From the levels in the data, calculate the box size to put the energy
@@ -356,11 +435,19 @@ class BaseLevelContainer(object):
         
         ## conversion fontsize = 10 / MeV range
         if not self.VERT_TEXT_CONV:
-            self.VERT_TEXT_CONV = (self._maxEner - self._minEner) * 0.05
+            if not self.E_BOX_UNIT_HEIGHT:
+                n = min([lev_obj.n_levels for lev_obj in self._levelGraphs])
+                self.E_BOX_UNIT_HEIGHT = min(0.03, 
+                                             (self._maxEner - self._minEner)/n)
+            
+            self.VERT_TEXT_CONV = (self._maxEner - self._minEner)\
+                                         * self.E_BOX_UNIT_HEIGHT    #0.05
         
         lev_obj : _BaseLevelGraph = None
         
         for i, lev_obj in enumerate(self._levelGraphs):
+            self._filterStatesForThisLevelObject(lev_obj)
+            
             lev_box_x = self._LX_box * (1 + 2*lev_obj._horizontal_margin)
             # NOTE: (horizontal margin is negative)
             lev_e_x = lev_box_x * (1 - lev_obj.j_pi_label_size
@@ -418,9 +505,9 @@ class BaseLevelContainer(object):
             #self._levelGraphs[i] = lev_obj
         
     
-    def _renderLevelGraphs(self):
-        
-        ax_ : plt.Axes = plt.subplot()
+    def _renderLevelGraphs(self, figaspect=(6.4, 4.8)):
+        ax_ : plt.Axes = None
+        _fig, ax_ = plt.subplots(figsize=figaspect)
         
         ## TODO: Iterate for render all the level positions
         level_obj : _BaseLevelGraph = None
@@ -447,12 +534,13 @@ class BaseLevelContainer(object):
         x_range *= 2 * self._levelGraphs[0]._horizontal_margin
         ax_.set_xlim(x_lims[0] + x_range,  x_lims[1])
         
-        plt.title(self.global_title, fontdict={'fontfamily' : 'sans-serif',
-                                               'fontsize' : 20,})
-        plt.ylabel('Energy (MeV)')
+        ax_.set_title(self.global_title, fontdict={'fontfamily' : 'sans-serif',
+                                                   'fontsize' : 20,})
+        ax_.set_ylabel('Energy (MeV)')
         if self.RELATIVE_PLOT:
             plt.ylabel('Excitation Energy (MeV)')
         
+        self._fig = _fig
         plt.show()
         
 #===============================================================================
@@ -500,7 +588,11 @@ class JLevelContainer(BaseLevelContainer):
             return 
         
         for i, lev_obj in enumerate(self._levelGraphs):
+            
+            count_sigmas_par = {'+': 0, '-': 0}
             for par, jener in lev_obj._surface_bypar.items():
+                
+                sigmas_to_rm = []
                 for i in range(len(jener)):
                     
                     if not self.RELATIVE_PLOT:
@@ -508,9 +600,23 @@ class JLevelContainer(BaseLevelContainer):
                     else:
                         new_ = [(vls[0], vls[1] - lev_obj.Emin) for vls in jener[i]]
                     
-                    lev_obj._surface_bypar[par][i] = new_
+                    ## FILTERS for the number and set of E(J) curves
+                    if self.ONLY_PAIRED_STATES:
+                        if len(jener[i]) != len(lev_obj._scopeJbypar[par]):
+                            sigmas_to_rm.append(i)
+                            continue
+                    count_sigmas_par[par] += 1  
+                    if count_sigmas_par[par] > self.MAX_NUM_OF_SIGMAS:
+                        sigmas_to_rm.append(i)
+                        continue
+                    
+                    lev_obj._surface_bypar[par][i] = deepcopy(new_)
+                
+                for i in sorted(sigmas_to_rm, reverse=True):
+                    _ = lev_obj._surface_bypar[par].pop(i)
+                
     
-    def _renderLevelGraphs(self):
+    def _renderLevelGraphs(self, figaspect= plt.rcParams["figure.figsize"]):
         
         ax_ : plt.Axes = plt.subplot()
         
@@ -545,7 +651,7 @@ class JLevelContainer(BaseLevelContainer):
             ax_.set_ylim([self._minHeight - 0.1 * self._maxHeight, 
                           self._maxHeight + 1])
         
-        plt.show()
+        #plt.show()
     
 if __name__ == '__main__':
     
@@ -588,18 +694,21 @@ if __name__ == '__main__':
     6  +   4   -212.160   13.385    0.000    0.000   2.6337   2.6249   2.6293   2.7498    1.000000   11.999985   11.999894   23.999879   5.99995   0.14448
 """
     
-    with open("all_spectra_A30_Fermi.txt", 'r') as f:
-        example_levels_2 = f.read()
+    # with open("all_spectra_A30_Fermi.txt", 'r') as f:
+    #     example_levels_2 = f.read()
     levels_1 = EnergyByJGraph(title='Fermi')
     levels_1.setData(example_levels_2, program='taurus_hwg')   
-    #
+    # #
     # levels_2 = EnergyLevelGraph(title='HFB sph')
     # levels_2.setData(example_levels_2, program='taurus_hwg')  
     
-    levels_3 = EnergyByJGraph(title='HFB sph')
+    levels_3 = EnergyByJGraph(title='chiral')
     levels_3.setData(example_levels_3, program='taurus_hwg')  
     
     BaseLevelContainer.RELATIVE_PLOT = True
+    BaseLevelContainer.ONLY_PAIRED_STATES = True
+    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 1
+    
     _graph = JLevelContainer()
     _graph.global_title = "Comparison HWG D1S from densities"
     _graph.add_LevelGraph(levels_1)
@@ -608,20 +717,25 @@ if __name__ == '__main__':
     _graph.plot()
     
     ## ##  EXAMPLE FOR LEVEL GRAPHS ## ##
+    levels_1 = EnergyLevelGraph(title='Chiral')
+    levels_1.setData(example_levels, program='taurus_hwg') 
     
-    # levels_2 = EnergyLevelGraph(title='Fermi')
-    # levels_2.setData(example_levels_2, program='taurus_hwg') 
-    # #
-    # levels_3 = EnergyLevelGraph(title='HFB sph')
-    # levels_3.setData(example_levels_3, program='taurus_hwg')  
+    levels_2 = EnergyLevelGraph(title='Fermi')
+    levels_2.setData(example_levels_2, program='taurus_hwg') 
     #
-    # BaseLevelContainer.RELATIVE_PLOT = True
-    # _graph = BaseLevelContainer()
-    # _graph.global_title = "Comparison HWG D1S from densities"
-    # _graph.add_LevelGraph(levels_2)
-    # # _graph.add_LevelGraph(levels_2)
-    # _graph.add_LevelGraph(levels_3)
-    # _graph.plot()
+    levels_3 = EnergyLevelGraph(title='HFB sph')
+    levels_3.setData(example_levels_3, program='taurus_hwg')  
+    
+    BaseLevelContainer.RELATIVE_PLOT = True
+    BaseLevelContainer.ONLY_PAIRED_STATES = True
+    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 1
+    
+    _graph = BaseLevelContainer()
+    _graph.global_title = "Comparison HWG D1S from densities"
+    _graph.add_LevelGraph(levels_1)
+    _graph.add_LevelGraph(levels_2)
+    _graph.add_LevelGraph(levels_3)
+    _graph.plot()
     
     
     

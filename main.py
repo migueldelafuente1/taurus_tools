@@ -3,9 +3,9 @@ Created on Jan 10, 2023
 
 @author: Miguel
 '''
-import os
+import os, shutil
 from scripts1d.beta_scripts import run_q20_surface, run_b20_Gogny_surface,\
-    run_b20_composedInteraction
+    run_b20_composedInteraction, run_b20_surface
 from tools.helpers import importAndCompile_taurus, TBME_SUITE
 
 from tools.hamiltonianMaker import TBME_HamiltonianManager, TBMEXML_Setter
@@ -13,7 +13,8 @@ from tools.inputs import InputTaurus
 from scripts1d.pair_scripts import run_pair_surface_D1S
 from scripts1d.cranking_scripts import run_J_surface
 from scripts0d.unconstrained_scripts import run_symmetry_restricted_for_hamiltonian
-from tools.Enums import GognyEnum, CentralMEParameters, PotentialForms
+from tools.Enums import GognyEnum, CentralMEParameters, PotentialForms,\
+    OutputFileTypes
 
 if not (InputTaurus.PROGRAM in os.listdir()):
     importAndCompile_taurus()
@@ -23,17 +24,40 @@ if __name__ == '__main__':
     # # exe_ = TBME_HamiltonianManager(1.75, 1, set_com2=True)
     # # exe_.setAndRun_Gogny_xml(TBME_HamiltonianManager.GognyEnum.D1S)
     #
-    # # importAndCompile_taurus()
-    #
-    # # nucleus = [(2, 4), (4, 4)]
-    # # interactions = {(2, 4): (2,0, 2.0), 
-    # #                 (4, 4): 'hamil_2'}
-    # # run_b20_surface(nucleus, interactions, q_min=-1., q_max=1., N_max=10)
-    interactions = {
-        ( 12, 10): (3, 0, 1.94),
-        ( 12, 12): (3, 0, 1.92),
-        ( 12, 14): (3, 0, 1.95),
-    }
+    # importAndCompile_taurus()
+    
+    
+    """
+    This executable, with some modifications in run_b20 to do an axial calculation
+    is to copy and read hamiltonians from a folder and perform, without DD components
+    the minimization.
+    """
+    for trf in range(75, 131, 5):
+        
+        MAIN_HAMIL_FOLDER = 'FOLDER_GDD/'
+        curr_hamil = f'hamil_gdd_{trf:03}'
+        if os.path.exists(MAIN_HAMIL_FOLDER+curr_hamil):
+            for extension in OutputFileTypes.members():
+                file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
+                if os.path.exists(file_): 
+                    shutil.copy(file_, curr_hamil+extension)
+        else:
+            continue
+        
+        nucleus = [(12, 12), ]
+        interactions = {(12, 12): curr_hamil, }
+                        
+        run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
+                        seed_base=3, ROmega= (0, 0), convergences=5)
+    
+    
+    
+    
+    # interactions = {
+    #     ( 12, 10): (3, 0, 1.94),
+    #     ( 12, 12): (3, 0, 1.92),
+    #     ( 12, 14): (3, 0, 1.95),
+    # }
     # nucleus = sorted(list(interactions.keys()))
     # run_b20_Gogny_surface(nucleus, interactions, GognyEnum.B1,
     #                       seed_base=3, ROmega=(12,12), 
@@ -42,23 +66,27 @@ if __name__ == '__main__':
     
     
     
-    
-    nucleus = sorted(list(interactions.keys()))
-    
-    interaction_combination = []
-    kwargs = {CentralMEParameters.potential: PotentialForms.Gaussian,
-              CentralMEParameters.constant : -100.,
-              CentralMEParameters.mu_length: 1.4,}
-    interaction_combination.append((TBMEXML_Setter.set_central_force, kwargs ))
-    
-    kwargs = {CentralMEParameters.constant: 50.3,
-              CentralMEParameters.n_power:  2,}
-    interaction_combination.append((TBMEXML_Setter.set_quadrupole_force, kwargs ))
-    
-    run_b20_composedInteraction(nucleus, interactions, interaction_combination,
-                                seed_base=3,
-                                q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
-    raise Exception("STOP HERE.")
+    # interactions = {
+    #     ( 12, 10): (3, 0, 1.94),
+    #     ( 12, 12): (3, 0, 1.92),
+    #     ( 12, 14): (3, 0, 1.95),
+    # }
+    # nucleus = sorted(list(interactions.keys()))
+    #
+    # interaction_combination = []
+    # kwargs = {CentralMEParameters.potential: PotentialForms.Gaussian,
+    #           CentralMEParameters.constant : -100.,
+    #           CentralMEParameters.mu_length: 1.4,}
+    # interaction_combination.append((TBMEXML_Setter.set_central_force, kwargs ))
+    #
+    # kwargs = {CentralMEParameters.constant: 50.3,
+    #           CentralMEParameters.n_power:  2,}
+    # interaction_combination.append((TBMEXML_Setter.set_quadrupole_force, kwargs ))
+    #
+    # run_b20_composedInteraction(nucleus, interactions, interaction_combination,
+    #                             seed_base=3,
+    #                             q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
+    # raise Exception("STOP HERE.")
     
     #
     # ## MZ4 lengths

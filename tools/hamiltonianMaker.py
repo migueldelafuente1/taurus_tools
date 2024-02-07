@@ -253,7 +253,7 @@ class TBME_HamiltonianManager(object):
         hamil_exe.setAndRun_Gogny_xml(gogny_interaction)
         >> hamil_MZ{MZmax} (default)
     
-    '''        
+    '''
     
     def __init__(self, b_length, MZmax, MZmin=0, set_com2=True):
         '''
