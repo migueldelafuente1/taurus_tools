@@ -36,12 +36,14 @@ if __name__ == '__main__':
         
         MAIN_HAMIL_FOLDER = 'FOLDER_GDD/'
         curr_hamil = f'hamil_gdd_{trf:03}'
+        print(" Execute for Hamil:", curr_hamil)
         if os.path.exists(MAIN_HAMIL_FOLDER+curr_hamil):
             for extension in OutputFileTypes.members():
                 file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
                 if os.path.exists(file_): 
                     shutil.copy(file_, curr_hamil+extension)
         else:
+            print(" [ERROR] could not find it:")
             continue
         
         nucleus = [(12, 12), ]
