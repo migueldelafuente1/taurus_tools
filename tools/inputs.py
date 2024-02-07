@@ -503,6 +503,7 @@ eval/export Valence.Space   = 0 203 205 10001
             if arg.endswith('_dim'):
                 assert type(val) == int, \
                     f"R/Omega dim must be positive integers. Got[{val}]"
+            if isinstance(val, bool): val = int(val)
             
             cls._DD_PARAMS[arg] = val
             
