@@ -36,13 +36,10 @@ def run_q20_surface(nucleus, interactions,
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
-        if ROmega != (0, 0):
-            InputTaurus.set_inputDDparamsFile(
-                **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
-                   InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
-        else:
-            if os.path.exists(InputTaurus.INPUT_DD_FILENAME):
-                os.remove(InputTaurus.INPUT_DD_FILENAME)
+        InputTaurus.set_inputDDparamsFile(
+            **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim     : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
@@ -101,13 +98,11 @@ def run_b20_surface(nucleus, interactions,
         if interaction == None or not os.path.exists(interaction+'.sho'):
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
-        if ROmega != (0, 0):
-            InputTaurus.set_inputDDparamsFile(
-                **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
-                   InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
-        else:
-            if os.path.exists(InputTaurus.INPUT_DD_FILENAME):
-                os.remove(InputTaurus.INPUT_DD_FILENAME)
+        
+        InputTaurus.set_inputDDparamsFile(
+            **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim     : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         axial_calc = seed_base in (2, 3, 9)
         
@@ -184,13 +179,10 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
-        if ROmega != (0, 0):
-            InputTaurus.set_inputDDparamsFile(
-                **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
-                   InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
-        else:
-            if os.path.exists(InputTaurus.INPUT_DD_FILENAME):
-                os.remove(InputTaurus.INPUT_DD_FILENAME)
+        InputTaurus.set_inputDDparamsFile(
+            **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim     : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
