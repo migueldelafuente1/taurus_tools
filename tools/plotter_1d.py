@@ -10,11 +10,10 @@ from tools.data import DataTaurus, DataAxial, _DataObjectBase, EigenbasisData,\
 from tools.Enums import Enum
 from tools.executors import _Base1DAxialExecutor
 from tools.helpers import OUTPUT_HEADER_SEPARATOR
-from copy import copy
+from copy import copy, deepcopy
 import zipfile
 import shutil
 from tools.inputs import InputTaurus
-
 
 MATPLOTLIB_INSTALLED   = True
 
@@ -563,7 +562,23 @@ class _Plotter1D(_PlotterBase):
             self.constraints = constrs
         self._executor_program = exe_progr
         self._setMinimumAndSetXValuesForTheResults()
-                
+    
+    def setLabelsForLegendByFileData(self, labels_by_files):
+        """
+        To set precise labels for the plot, introduce:
+            1. dict: file_ : <str>
+            2. dict: file_ : <lambda> to process (NOT IMPLEMENTED)
+        """
+        assert isinstance(labels_by_files, dict), "invalid input, check doc."
+        for file_, label in labels_by_files.items():
+            assert isinstance(label, str), "Labels must be strings."
+            if file_ not in self._results:
+                print("[WARNING] file [", file_, 
+                      "] is not in results data, skipping label")
+                continue
+            self._legend_labels[file_] = label
+             
+         
     def _selectDataObjectAndMainConstraint(self, data):
         """
         read the header from the 1D file, introduced by the constraint and dype: 
@@ -655,12 +670,12 @@ class _Plotter1D(_PlotterBase):
                     y_values.append(getattr(res, self.attr2plot))
             
             constr_  = self.constraints[if_]
+            lab_ = self._legend_labels[file_]
             if len(self.constraints) == 1: # just set the program
                 lab_ = self._executor_program[if_]
                 if lab_ == "DataTaurus": 
                     lab_ = "Taurus"
-            else:
-                lab_ = self.constraints_str[constr_]
+                
             self._axes.plot(self._x_values[file_].values(), y_values, '.-', label=lab_)
             self._set_axisLimits(y_values)
             
@@ -670,7 +685,7 @@ class _Plotter1D(_PlotterBase):
                 self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
                                    zorder=2.5, )
             x0_indx = abs(min( list(self._x_values[file_].keys()) ))
-            self._axes.scatter(self._x_values[file_][0], y_values[x0_indx], marker='o')
+            self._axes.scatter(self._x_values[file_][0], y_values[x0_indx], marker='d')
         
         if len(self.import_files) == 0:
             print("[WARNING] Not founded any file to plot, Exiting")
@@ -701,10 +716,100 @@ class _Plotter1D(_PlotterBase):
             fig.savefig(self._figures_titles_pdf[-1])
             print(f"   [DONE] Image for attr [{self.attr2plot}] saved in [{exp_file}]")
         
-
+    
+    
 class Plotter1D_Taurus(_Plotter1D):
     
     DTYPE = DataTaurus
+    
+    def shift2topValue_plot(self, attr2plot=None, show_plot=True):
+        """
+        For all the surfaces, shift to the minimum value in the group and indicate
+        in the plot the difference.
+        """        
+        if hasattr(self, '_ylim_tops'): delattr(self, '_ylim_tops')
+        if attr2plot:
+            self.attr2plot = attr2plot
+            self.attr2plot_str = {attr2plot : self._getVariableStringForDisplay(attr2plot)}
+            self._y_label = self.attr2plot_str[attr2plot]
+        
+        if self.LATEX_FORMAT:
+            plt.rcParams.update({"text.usetex": True,  "font.family": "Helvetica",
+                                 "font.size": 20, "font.weight": 'bold'})
+        else:
+            plt.rcParams.update({"text.usetex": False, "font.family": 'DejaVu Sans',
+                                 "font.size"  : 12}) 
+        
+        self.constraints_str = {}
+        for constr_ in self.constraints:
+            self.constraints_str[constr_] = self._getVariableStringForDisplay(constr_)        
+        
+        fig , ax = plt.subplots()
+        self._axes = ax
+        self._figs = fig
+        
+        all_xy_values = [{}, {}, {}] ## x, y, labels
+        all_xy_failed = [{}, {}]
+        for file_ in self.import_files:
+            y_values = []
+            for res in self._results[file_]:
+                if isinstance(self.attr2plot, DataAttributeHandler):
+                    y_values.append(self.attr2plot.getValue(res))
+                else:
+                    y_values.append(getattr(res, self.attr2plot))
+            y_min = min(y_values)
+            all_xy_values[0][file_] = list(self._x_values[file_].values())
+            all_xy_values[1][file_] = [y - y_min for y in y_values]
+            all_xy_values[2][file_] = self._legend_labels[file_] + f" {y_min:5.2f}"
+            
+            x_npf, y_npf = self._getListOfDataNonProperlyFinished(file_)
+            all_xy_failed[0][file_] = x_npf
+            all_xy_failed[1][file_] = [y - y_min for y in y_npf]
+        
+        for file_ in self.import_files:
+            x_values, y_values = all_xy_values[0][file_], all_xy_values[1][file_]
+            
+            self._axes.plot(x_values, y_values, '.-', label=all_xy_values[2][file_])
+            # self._set_axisLimits(y_values)
+            
+            ## Print Un-converged results marked different
+            x_npf, y_npf = all_xy_failed[0][file_], all_xy_failed[1][file_]
+            if len(y_npf)>0:
+                self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
+                                   zorder=2.5, )
+            _ = x_values[0]
+            self._axes.scatter(x_values[0], y_values[0], marker='d')
+        
+        if len(self.import_files) == 0:
+            print("[WARNING] Not founded any file to plot, Exiting")
+            return
+        # Global Labels.
+        if self._title   == '':
+            lab_ = self.import_files[0].replace("export", '').replace(".txt", "")
+            self._title = self._getVariableStringForDisplay(lab_.replace("_", " "))        
+        if self._x_label == '':
+            print("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
+            lab_ = self.constraints_str[self.constraints[0]]
+            self._x_label = lab_
+        if self._y_label == '':
+            self._y_label = self._getVariableStringForDisplay(self.attr2plot)
+            
+        self._axes.set_title (self._title)
+        self._axes.set_xlabel(self._x_label)
+        self._axes.set_ylabel(self._y_label)
+        
+        self._axes.legend()
+        plt.tight_layout()
+        if show_plot:
+            plt.show()
+        
+        if self.EXPORT_PDF_AND_MERGE:
+            exp_file = f'{self.FOLDER_PATH}{self.attr2plot}.pdf'
+            self._figures_titles_pdf.append(exp_file)
+            fig.savefig(self._figures_titles_pdf[-1])
+            print(f"   [DONE] Image for attr [{self.attr2plot}] saved in [{exp_file}]")
+        
+        
 
 class Plotter1D_Axial(_Plotter1D):
     
@@ -1151,39 +1256,78 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    SUBFLD_ = 'Mg_MZ4/'
+    SUBFLD_ = 'Mg_GDD_test/24_VAP9/' # 'Mg_GDD_test/24_HFB/' #
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
-    
+    FLD_ = _Plotter1D.FOLDER_PATH
     nuclei = [
-        # (10,11), 
-        (12,12), #(12,12),
+        (12,12),
         ]
     for z, n in nuclei:
-        files_ = [f'export_TESb20_z{z}n{n}_hamil_MZ4.txt',
-                  f'export_TESb20_z12n12_hamil_MZ4.txt']
-    
+        
+        ## Set the files and the labels to plot
+        files_, labels_by_files = [], []
+        for gdd_factor in np.append(range(75, 131, 5), 0):
+            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_{gdd_factor:03}.txt')
+            labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
+        files_.append(f'export_TESq20_z{z}n{n}_hamil_D1S_MZ3.txt')
+        labels_by_files.append(f"D1S-edf ")
+        
+        labels_by_files = dict(zip(files_, labels_by_files))
+        
         plt_obj = Plotter1D_Taurus(files_)
         plt_obj.LATEX_FORMAT = True
     
-        E_J0 = plt_obj.minimum_result[files_[0]].E_HFB
-        inertia_moment = DataAttributeHandler(
-            lambda jx, erot: 0.5*(jx*(jx+1)) / (erot - E_J0 + 1.e-3), 'Jx', 'E_HFB')
-        inertia_moment.setName("Mom inertia Jx")
-    
-        attr2plot_list = [
-            'E_HFB', 
-            inertia_moment
-            ]
-    
-        # plt_obj.setConstraintBase('b20_isoscalar')
-        # plt_obj.setTitle(r"TES\ D1S\ MZ=4\qquad z,n=(12,10)")
-    
-        for attr2plot in attr2plot_list:
-            plt_obj.setXlabel("beta {20}")
-            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        # attr2plot_list = [ 'E_HFB', 'pair', 'hf',]
+        # for attr2plot in attr2plot_list:
+        #     plt_obj.setXlabel(r"$\beta_{20}$")
+        #     # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
+        #     plt_obj.shift2topValue_plot(attr2plot, 
+        #                                 show_plot=attr2plot==attr2plot_list[-1])
+        #
+        # attr2plot_list = [ 'r_isoscalar', 'b40_isoscalar', 'Jz_2']  # DataTaurus
+        # for attr2plot in attr2plot_list:
+        #     plt_obj.setXlabel(r"$\beta_{20}$")
+        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
+        #     plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        _ = 0
+        """
+        Script to export for the json by 
+        """
+        export_, ii = {}, 0
+        for gdd_ in range(75, 81, 5):
+            gdd_ = f"{gdd_:03}"
+            export_[gdd_] = {}
+            for file_ in files_:
+                if not file_ in plt_obj._x_values: 
+                    continue
+                for k_b, b20 in plt_obj._x_values[file_].items():
+                    r : DataTaurus = plt_obj._results[file_][k_b]
+                    aux = {
+                        'B10': [r.b10_p, r.b10_n, r.b10_isoscalar, r.b10_isovector],
+                        'B10': [r.b20_p, r.b20_n, r.b20_isoscalar, r.b20_isovector],
+                        'B22': [r.b22_p, r.b22_n, r.b22_isoscalar, r.b22_isovector],
+                        'B30': [r.b30_p, r.b30_n, r.b30_isoscalar, r.b30_isovector],
+                        'B30': [r.b32_p, r.b32_n, r.b32_isoscalar, r.b32_isovector],
+                        'B40': [r.b40_p, r.b40_n, r.b40_isoscalar, r.b40_isovector],
+                        'B42': [r.b42_p, r.b42_n, r.b42_isoscalar, r.b42_isovector],
+                        'B44': [r.b44_p, r.b44_n, r.b44_isoscalar, r.b44_isovector],
+                        'E_1b':[r.kin_p, r.kin_n, r.kin,],
+                        'E_hf':[r.hf_pp, r.hf_pp, r.hf_pn, r.hf],
+                        'E_pp':[r.pair_pp, r.pair_nn, r.pair_pn, r.pair],
+                        'E_hfb':[r.E_HFB_pp, r.E_HFB_nn, r.E_HFB_pn, r.E_HFB],
+                        'Jx' : [r.Jx, r.Jx_2, r.Jx_var],
+                        'Jy' : [r.Jy, r.Jy_2, r.Jy_var],
+                        'Jz' : [r.Jz, r.Jz_2, r.Jz_var],
+                        'r': [r.r_p, r.r_n, r.r_isoscalar, r.r_isovector, r.r_charge],
+                        'Parity': [1.0], 
+                    }
+                    export_[gdd_][f"{b20:3.3f}"] = deepcopy(aux)
+            ii += 1
+        import json
+        with open(FLD_+f'results_gdd_b20_z{z}n{n}.json', 'w+') as fp:
+            json.dump(export_, fp)
         
-        _=0
-    
     #===========================================================================
     # PLOT the P_T surfaces
     #===========================================================================

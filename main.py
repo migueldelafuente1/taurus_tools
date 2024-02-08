@@ -32,43 +32,41 @@ if __name__ == '__main__':
     is to copy and read hamiltonians from a folder and perform, without DD components
     the minimization.
     """
-    for trf in range(75, 131, 5):
+    # for trf in range(75, 131, 5):
+    #
+    #     MAIN_HAMIL_FOLDER = 'FOLDER_GDD/'
+    #     curr_hamil = f'hamil_gdd_{trf:03}'
+    #     print(" Execute for Hamil:", curr_hamil)
+    #     if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
+    #         for extension in OutputFileTypes.members():
+    #             file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
+    #             if os.path.exists(file_): 
+    #                 shutil.copy(file_, curr_hamil+extension)
+    #     else:
+    #         print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
+    #         continue
+    #
+    #     nucleus = [(12, 12), ]
+    #     interactions = {(12, 12): curr_hamil, }
+    #
+    #     run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
+    #                     seed_base=3, ROmega= (0, 0), convergences=5,
+    #                     fomenko_points=(9, 9))
         
-        MAIN_HAMIL_FOLDER = 'FOLDER_GDD/'
-        curr_hamil = f'hamil_gdd_{trf:03}'
-        print(" Execute for Hamil:", curr_hamil)
-        if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
-            for extension in OutputFileTypes.members():
-                file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
-                if os.path.exists(file_): 
-                    shutil.copy(file_, curr_hamil+extension)
-        else:
-            print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
-            continue
-        
-        nucleus = [(12, 12), ]
-        interactions = {(12, 12): curr_hamil, }
-                        
-        run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
-                        seed_base=3, ROmega= (0, 0), convergences=5,
-                        fomenko_points=(9, 9))
-    
-    
-    
     """
     This script perform gogny surfaces by also obtaining the non-density dependent
     part of Gogny interactions by the key-word argument:
         gogny_interaction = GognyEnum.
     """
-    # interactions = {
-    #     ( 12, 10): (3, 0, 1.94),
-    #     ( 12, 12): (3, 0, 1.92),
-    #     ( 12, 14): (3, 0, 1.95),
-    # }
-    # nucleus = sorted(list(interactions.keys()))
-    # run_b20_Gogny_surface(nucleus, interactions, GognyEnum.B1,
-    #                       seed_base=3, ROmega=(12,12), 
-    #                       q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
+    interactions = {
+        # ( 12, 10): (3, 0, 1.94),
+        ( 12, 12): (3, 0, 1.83),
+        # ( 12, 14): (3, 0, 1.95),
+    }
+    nucleus = sorted(list(interactions.keys()))
+    run_b20_Gogny_surface(nucleus, interactions, GognyEnum.D1S,
+                          seed_base=3, ROmega=(14,12), 
+                          q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
     # raise Exception("STOP HERE.")
     
     

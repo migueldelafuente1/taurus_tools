@@ -707,6 +707,14 @@ class DataTaurus(_DataObjectBase):
         self.b40_n = None
         self.b40_isoscalar = None
         self.b40_isovector = None
+        self.b42_p = None
+        self.b42_n = None
+        self.b42_isoscalar = None
+        self.b42_isovector = None
+        self.b44_p = None
+        self.b44_n = None
+        self.b44_isoscalar = None
+        self.b44_isovector = None
         
         self.q10_p = None
         self.q10_n = None
@@ -736,6 +744,14 @@ class DataTaurus(_DataObjectBase):
         self.q40_n = None
         self.q40_isoscalar = None
         self.q40_isovector = None
+        self.q42_p = None
+        self.q42_n = None
+        self.q42_isoscalar = None
+        self.q42_isovector = None
+        self.q44_p = None
+        self.q44_n = None
+        self.q44_isoscalar = None
+        self.q44_isovector = None
         
         self.r_p  = None
         self.r_n  = None
@@ -905,6 +921,14 @@ class DataTaurus(_DataObjectBase):
             vals = self._getValues(line, self.HeaderEnum.Beta_40)
             self.b40_p, self.b40_n  = vals[0], vals[1]
             self.b40_isoscalar, self.b40_isovector = vals[2], vals[3]
+        elif self.HeaderEnum.Beta_42 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_42)
+            self.b42_p, self.b42_n  = vals[0], vals[1]
+            self.b42_isoscalar, self.b42_isovector = vals[2], vals[3]
+        elif self.HeaderEnum.Beta_44 in line:
+            vals = self._getValues(line, self.HeaderEnum.Beta_44)
+            self.b44_p, self.b44_n  = vals[0], vals[1]
+            self.b44_isoscalar, self.b44_isovector = vals[2], vals[3]
     
     def _getQDeformations(self, line):
                
@@ -936,6 +960,14 @@ class DataTaurus(_DataObjectBase):
             vals = self._getValues(line, self.HeaderEnum.Q_40)
             self.q40_p, self.q40_n  = vals[0], vals[1]
             self.q40_isoscalar, self.q40_isovector = vals[2], vals[3]
+        elif self.HeaderEnum.Q_42 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_42)
+            self.q42_p, self.q42_n  = vals[0], vals[1]
+            self.q42_isoscalar, self.q42_isovector = vals[2], vals[3]
+        elif self.HeaderEnum.Q_44 in line:
+            vals = self._getValues(line, self.HeaderEnum.Q_44)
+            self.q44_p, self.q44_n  = vals[0], vals[1]
+            self.q44_isoscalar, self.q44_isovector = vals[2], vals[3]
         #print("deform results :: [{}]".format(vals))
     
     def _roundGamma0(self, vals):
