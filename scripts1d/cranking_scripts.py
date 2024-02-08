@@ -52,8 +52,9 @@ def run_J_surface(nucleus, interactions, J_i,
             continue
         
         InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
-               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
+            **{InputTaurus.InpDDEnum.eval_dd    : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim      : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim  : ROmega[1]})
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,

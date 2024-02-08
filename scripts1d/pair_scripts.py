@@ -67,7 +67,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             continue
         
         InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.r_dim : ROmega[0],
+            **{InputTaurus.InpDDEnum.eval_dd : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim : ROmega[0],
                InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         input_args_start = {

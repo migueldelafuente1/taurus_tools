@@ -120,7 +120,7 @@ def run_b20_surface(nucleus, interactions,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
-            InputTaurus.ArgsEnum.beta_schm: 0, ## 0= q_lm, 1 b_lm, 2 triaxial
+            InputTaurus.ArgsEnum.beta_schm: 1,    ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
             'axial_calc' : axial_calc,
         }

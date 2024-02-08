@@ -339,14 +339,15 @@ class _PlotterBase(object):
                   " calling self.defaultPlot() (Skipping)")
             return
                 
-        from PyPDF2 import PdfWriter
-        merger = PdfWriter()
+        from PyPDF2 import PdfMerger
+        merger = PdfMerger()
         for fn_pdf in self._figures_titles_pdf:
             merger.append(fn_pdf)
         aux = '-'.join([str(x) for x in pdf_title])
         if aux != '': aux = f"({aux})"
         pdf_title = f"{self.FOLDER_PATH}results_plots{aux}.pdf"
         merger.write(pdf_title)
+        merger.close()
         
         # for fn_pdf in self._figures_titles_pdf:
         #     os.remove(fn_pdf) ## Permission errors
@@ -1150,106 +1151,106 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    # _Plotter1D.setFolderPath2Import('../DATA_RESULTS/')
-    #
-    # nuclei = [
-    #     # (10,11), 
-    #     (12,10), #(12,12),
-    #     ]
-    # for z, n in nuclei:
-    #     files_ = [f'export_TESb20_z{z}n{n}_hamil_MZ4.txt',
-    #               f'export_TESb20_z12n12_hamil_MZ4.txt']
-    #
-    #     plt_obj = Plotter1D_Taurus(files_)
-    #     plt_obj.LATEX_FORMAT = True
-    #
-    #     E_J0 = plt_obj.minimum_result[files_[0]].E_HFB
-    #     inertia_moment = DataAttributeHandler(
-    #         lambda jx, erot: 0.5*(jx*(jx+1)) / (erot - E_J0 + 1.e-3), 'Jx', 'E_HFB')
-    #     inertia_moment.setName("Mom inertia Jx")
-    #
-    #     attr2plot_list = [
-    #         'E_HFB', 
-    #         inertia_moment
-    #         ]
-    #
-    #     # plt_obj.setConstraintBase('b20_isoscalar')
-    #     # plt_obj.setTitle(r"TES\ D1S\ MZ=4\qquad z,n=(12,10)")
-    #
-    #     for attr2plot in attr2plot_list:
-    #         plt_obj.setXlabel("beta {20}")
-        #     plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        #
-        # _=0
+    _Plotter1D.setFolderPath2Import('../DATA_RESULTS/')
+    
+    nuclei = [
+        # (10,11), 
+        (12,10), #(12,12),
+        ]
+    for z, n in nuclei:
+        files_ = [f'export_TESb20_z{z}n{n}_hamil_MZ4.txt',
+                  f'export_TESb20_z12n12_hamil_MZ4.txt']
+    
+        plt_obj = Plotter1D_Taurus(files_)
+        plt_obj.LATEX_FORMAT = True
+    
+        E_J0 = plt_obj.minimum_result[files_[0]].E_HFB
+        inertia_moment = DataAttributeHandler(
+            lambda jx, erot: 0.5*(jx*(jx+1)) / (erot - E_J0 + 1.e-3), 'Jx', 'E_HFB')
+        inertia_moment.setName("Mom inertia Jx")
+    
+        attr2plot_list = [
+            'E_HFB', 
+            inertia_moment
+            ]
+    
+        # plt_obj.setConstraintBase('b20_isoscalar')
+        # plt_obj.setTitle(r"TES\ D1S\ MZ=4\qquad z,n=(12,10)")
+    
+        for attr2plot in attr2plot_list:
+            plt_obj.setXlabel("beta {20}")
+            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        
+        _=0
     
     #===========================================================================
     # PLOT the P_T surfaces
     #===========================================================================
     
-    SUBFLD_ = 'Mg_MZ4/'
-    # SUBFLD_ = 'Mg_MZ5/'
-    # SUBFLD_ = 'SDnuclei_MZ4_new/z17n17_seed5/'
-    SUBFLD_ = 'SDnuclei_MZ4_new/'
-    # SUBFLD_ = 'SDnuclei_MZ5/'
-    SUBFLD_ = 'Mg_MZ4_cranked/Jeq4/'
-    
-    Plotter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/PN_mixing/'+SUBFLD_)
-    
-    nuclei = [(12, z) for z in range(6, 31, 2)]
-    pair_constr = ['P_T00_J10', 'P_T1p1_J00', 'P_T1m1_J00',  'P_T10_J00']
-    nuclei = [
-        (10,10), (12,12),
-        # (8, 9), 
-        # (10,11), 
-        # (12,13),
-        # (16,17),
-        # (17,17),
-        ]
-    pairsT1_opp = DataAttributeHandler(
-        lambda mT0, mTp1, mTm1: (mT0**2) - 2*(mTp1*mTm1),
-        'P_T10_J00', 'P_T1p1_J00', 'P_T1m1_J00')
-    pairsT1_opp.setName('mod(delta^{T=1,J=0})')
-    
-    pairsT0_opp = DataAttributeHandler(
-        lambda mJ0, mJp1, mJm1: (mJ0**2) - 2*(mJp1*mJm1),
-        'P_T00_J10', 'P_T00_J1p1', 'P_T00_J1m1')
-    pairsT0_opp.setName('mod(delta^{T=0,J=1})')
-    
-    inertia_moment = DataAttributeHandler(
-        lambda jx, erot: 0.5*(jx*(jx+1)) / erot, 
-        'Jx', 'E_HFB')
-    inertia_moment.setName("Mom inertia Jx")
-    
-    Plotter1D_Taurus.EXPORT_PDF_AND_MERGE = True
-    for z, n in nuclei:
-        # if SUBFLD_.startswith('Mg' ):
-        #     if z != 12: continue
-        files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
-        # files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ5.txt" for pp in pair_constr]
-        files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ4.txt" for pp in pair_constr]
-    
-        plt_obj = Plotter1D_Taurus(files_, importNow=False)
-        plt_obj.LATEX_FORMAT = True
-        plt_obj.setConstraintBase(pair_constr)
-        plt_obj._getDataFromFiles(files_)
-    
-        # E_J0 = plt_obj.minimum_result[files_[0]].E_HFB
-        # inertia_moment._function = lambda jx, erot: .5*(jx*(jx+1)) / (erot - E_J0 + 1.e-3)
-        attr2plot_list = [
-            'E_HFB', 
-            'beta_isoscalar', #'gamma_isoscalar', 
-            'pair', 'pair_nn','pair_pp', 'pair_pn', 
-            #*pair_constr,
-            pairsT1_opp, pairsT0_opp,
-            'Jy', 'Jx'
-            ]
-    
-        for attr2plot in attr2plot_list:
-            plt_obj.setXlabel("Pair Constr. value")
-            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        plt_obj.mergeFiguresInto1PDF('pair', z,n, 'D1S-MZ4')
-    
-        _=0
+    # SUBFLD_ = 'Mg_MZ4/'
+    # # SUBFLD_ = 'Mg_MZ5/'
+    # # SUBFLD_ = 'SDnuclei_MZ4_new/z17n17_seed5/'
+    # SUBFLD_ = 'SDnuclei_MZ4_new/'
+    # # SUBFLD_ = 'SDnuclei_MZ5/'
+    # SUBFLD_ = 'Mg_MZ4_cranked/Jeq4/'
+    #
+    # Plotter1D_Taurus.setFolderPath2Import('../DATA_RESULTS/PN_mixing/'+SUBFLD_)
+    #
+    # nuclei = [(12, z) for z in range(6, 31, 2)]
+    # pair_constr = ['P_T00_J10', 'P_T1p1_J00', 'P_T1m1_J00',  'P_T10_J00']
+    # nuclei = [
+    #     (10,10), (12,12),
+    #     # (8, 9), 
+    #     # (10,11), 
+    #     # (12,13),
+    #     # (16,17),
+    #     # (17,17),
+    #     ]
+    # pairsT1_opp = DataAttributeHandler(
+    #     lambda mT0, mTp1, mTm1: (mT0**2) - 2*(mTp1*mTm1),
+    #     'P_T10_J00', 'P_T1p1_J00', 'P_T1m1_J00')
+    # pairsT1_opp.setName('mod(delta^{T=1,J=0})')
+    #
+    # pairsT0_opp = DataAttributeHandler(
+    #     lambda mJ0, mJp1, mJm1: (mJ0**2) - 2*(mJp1*mJm1),
+    #     'P_T00_J10', 'P_T00_J1p1', 'P_T00_J1m1')
+    # pairsT0_opp.setName('mod(delta^{T=0,J=1})')
+    #
+    # inertia_moment = DataAttributeHandler(
+    #     lambda jx, erot: 0.5*(jx*(jx+1)) / erot, 
+    #     'Jx', 'E_HFB')
+    # inertia_moment.setName("Mom inertia Jx")
+    #
+    # Plotter1D_Taurus.EXPORT_PDF_AND_MERGE = True
+    # for z, n in nuclei:
+    #     # if SUBFLD_.startswith('Mg' ):
+    #     #     if z != 12: continue
+    #     files_ = [f"export_PSz{z}n{n}_D1S_{pp.replace('_', '')}.txt" for pp in pair_constr]
+    #     # files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ5.txt" for pp in pair_constr]
+    #     files_ = [f"export_TES_{pp}_z{z}n{n}_D1S_MZ4.txt" for pp in pair_constr]
+    #
+    #     plt_obj = Plotter1D_Taurus(files_, importNow=False)
+    #     plt_obj.LATEX_FORMAT = True
+    #     plt_obj.setConstraintBase(pair_constr)
+    #     plt_obj._getDataFromFiles(files_)
+    #
+    #     # E_J0 = plt_obj.minimum_result[files_[0]].E_HFB
+    #     # inertia_moment._function = lambda jx, erot: .5*(jx*(jx+1)) / (erot - E_J0 + 1.e-3)
+    #     attr2plot_list = [
+    #         'E_HFB', 
+    #         'beta_isoscalar', #'gamma_isoscalar', 
+    #         'pair', 'pair_nn','pair_pp', 'pair_pn', 
+    #         #*pair_constr,
+    #         pairsT1_opp, pairsT0_opp,
+    #         'Jy', 'Jx'
+    #         ]
+    #
+    #     for attr2plot in attr2plot_list:
+    #         plt_obj.setXlabel("Pair Constr. value")
+    #         plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+    #     plt_obj.mergeFiguresInto1PDF('pair', z,n, 'D1S-MZ4')
+    #
+    #     _=0
     
     #===========================================================================
     # PLOT J cranking surfaces

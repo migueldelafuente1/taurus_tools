@@ -55,7 +55,11 @@ if __name__ == '__main__':
     
     
     
-    
+    """
+    This script perform gogny surfaces by also obtaining the non-density dependent
+    part of Gogny interactions by the key-word argument:
+        gogny_interaction = GognyEnum.
+    """
     # interactions = {
     #     ( 12, 10): (3, 0, 1.94),
     #     ( 12, 12): (3, 0, 1.92),
@@ -68,7 +72,9 @@ if __name__ == '__main__':
     # raise Exception("STOP HERE.")
     
     
-    
+    """
+    Build up interactions and perform the b20 interaction.
+    """
     # interactions = {
     #     ( 12, 10): (3, 0, 1.94),
     #     ( 12, 12): (3, 0, 1.92),
