@@ -131,7 +131,7 @@ def run_b20_surface(nucleus, interactions,
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.01,
+            InputTaurus.ArgsEnum.grad_tol : 0.001,
             'axial_calc' : axial_calc,
         }
         

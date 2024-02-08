@@ -1151,11 +1151,12 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    _Plotter1D.setFolderPath2Import('../DATA_RESULTS/')
+    SUBFLD_ = 'Mg_MZ4/'
+    _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
     
     nuclei = [
         # (10,11), 
-        (12,10), #(12,12),
+        (12,12), #(12,12),
         ]
     for z, n in nuclei:
         files_ = [f'export_TESb20_z{z}n{n}_hamil_MZ4.txt',
