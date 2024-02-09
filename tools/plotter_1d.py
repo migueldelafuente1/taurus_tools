@@ -1269,8 +1269,8 @@ if __name__ == "__main__":
         for gdd_factor in np.append(range(75, 131, 5), 0):
             files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_{gdd_factor:03}.txt')
             labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
-        files_.append(f'export_TESq20_z{z}n{n}_hamil_D1S_MZ3.txt')
-        labels_by_files.append(f"D1S-edf ")
+        # files_.append(f'export_TESq20_z{z}n{n}_hamil_D1S_MZ3.txt')
+        # labels_by_files.append(f"D1S-edf ")
         
         labels_by_files = dict(zip(files_, labels_by_files))
         
