@@ -59,10 +59,14 @@ if __name__ == '__main__':
         gogny_interaction = GognyEnum.
     """
     interactions = {
-        # ( 12, 10): (3, 0, 1.94),
+        ( 12, 8) : (3, 0, 1.81),
+        ( 12, 10): (3, 0, 1.83),
         ( 12, 12): (3, 0, 1.83),
-        # ( 12, 14): (3, 0, 1.95),
+        ( 12, 14): (3, 0, 1.79),
+        ( 12, 16): (3, 0, 1.80),
+        ( 12, 20): (3, 0, 2.01),
     }
+    
     nucleus = sorted(list(interactions.keys()))
     run_b20_Gogny_surface(nucleus, interactions, GognyEnum.D1S,
                           seed_base=3, ROmega=(14,12), 

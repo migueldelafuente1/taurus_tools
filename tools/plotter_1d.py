@@ -1256,7 +1256,7 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    SUBFLD_ = 'Mg_GDD_test/24_VAP9/' # 'Mg_GDD_test/24_HFB/' #
+    SUBFLD_ = 'Mg_GDD_test/24_HFB/' #'Mg_GDD_test/24_VAP9/' # 
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
     FLD_ = _Plotter1D.FOLDER_PATH
     nuclei = [
@@ -1277,25 +1277,25 @@ if __name__ == "__main__":
         plt_obj = Plotter1D_Taurus(files_)
         plt_obj.LATEX_FORMAT = True
     
-        # attr2plot_list = [ 'E_HFB', 'pair', 'hf',]
-        # for attr2plot in attr2plot_list:
-        #     plt_obj.setXlabel(r"$\beta_{20}$")
-        #     # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
-        #     plt_obj.shift2topValue_plot(attr2plot, 
-        #                                 show_plot=attr2plot==attr2plot_list[-1])
-        #
-        # attr2plot_list = [ 'r_isoscalar', 'b40_isoscalar', 'Jz_2']  # DataTaurus
-        # for attr2plot in attr2plot_list:
-        #     plt_obj.setXlabel(r"$\beta_{20}$")
-        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
-        #     plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        attr2plot_list = [ 'E_HFB', 'hf',]
+        for attr2plot in attr2plot_list:
+            plt_obj.setXlabel(r"$\beta_{20}$")
+            # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+            plt_obj.setLabelsForLegendByFileData(labels_by_files)
+            plt_obj.shift2topValue_plot(attr2plot, 
+                                        show_plot=attr2plot==attr2plot_list[-1])
+        
+        attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 'Jz_2']  # DataTaurus
+        for attr2plot in attr2plot_list:
+            plt_obj.setXlabel(r"$\beta_{20}$")
+            plt_obj.setLabelsForLegendByFileData(labels_by_files)
+            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
         _ = 0
         """
         Script to export for the json by 
         """
         export_, ii = {}, 0
-        for gdd_ in range(75, 81, 5):
+        for gdd_ in range(75, 91, 5):
             gdd_ = f"{gdd_:03}"
             export_[gdd_] = {}
             for file_ in files_:

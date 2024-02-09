@@ -185,7 +185,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = True
     
     for z, n in nucleus:
-        interaction = getInteractionFile4D1S(interactions, z, n, gogny_interaction)
+        interaction = getInteractionFile4D1S(interactions, z, n, 
+                                             gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
