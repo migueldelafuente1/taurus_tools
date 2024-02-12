@@ -19,7 +19,7 @@ import shutil
 
 import numpy as np
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
-    getSingleSpaceDegenerations
+    getSingleSpaceDegenerations, almostEqual
 from copy import copy
 from tools.Enums import Enum
 
@@ -73,6 +73,10 @@ class _DataObjectBase:
         
         self.sh_dim = sh_dim
         self.sp_dim = sp_dim * 2 # include z and n
+    
+    def isAxial(self, and_spherical=False):
+        raise DataObjectException("Abstract method, implement me!")
+        return False
 
 class EvolTaurus(_DataObjectBase):
     '''
@@ -381,7 +385,10 @@ class EvolTaurus(_DataObjectBase):
         plt.show()
         if export_filename:
             fig.savefig(export_filename)
-        
+    
+    def isAxial(self, and_spherical=False):
+        raise DataObjectException("Axial property is not deffined for this object!")
+        return False
 
 class EigenbasisData(_DataObjectBase):
     
@@ -472,7 +479,10 @@ class EigenbasisData(_DataObjectBase):
             self.DAT_FILE = DataTaurus.DatFileExportEnum.canonicalbasis
         else:
             raise DataObjectException(f"Cannot identify the file [{self.filename}]")
-
+    
+    def isAxial(self, and_spherical=False):
+        raise DataObjectException("TODO: implement me!")
+        return False
 
 class OccupationNumberData(_DataObjectBase):
     
@@ -538,6 +548,9 @@ class OccupationNumberData(_DataObjectBase):
             return self._occupations_unprojected, self._occupations_projected
         return self._occupations_unprojected, None
 
+    def isAxial(self, and_spherical=False):
+        raise DataObjectException("Axial property is not deffined for this object!")
+        return False
 
 #===============================================================================
 #   RESULTS FROM TAURUS 
@@ -547,6 +560,7 @@ class DataTaurus(_DataObjectBase):
     class HeaderEnum(Enum): ## line header to read the output file
         Number_of_protons  = 'Number of protons '
         Number_of_neutrons = 'Number of neutrons'
+        Parity   = 'Parity'
         One_body = 'One-body'
         ph_part  = ' ph part'
         pp_part  = ' pp part'
@@ -653,6 +667,7 @@ class DataTaurus(_DataObjectBase):
         self.neutron_numb = None
         self.var_p = None
         self.var_n = None
+        self.parity = None
         
         self.kin   = None
         self.kin_p = None
@@ -794,6 +809,7 @@ class DataTaurus(_DataObjectBase):
         self._filename = filename
         self._evol_obj  = None
         self._input_obj = None
+        self._exported_filename = ''
         if not empty_data:
             try:
                 self.get_results()
@@ -866,6 +882,8 @@ class DataTaurus(_DataObjectBase):
             # print(line)
             if 'Number of' in line:
                 self._getNumberNucleons(line)
+            elif self.HeaderEnum.Parity in line:
+                self.parity = self._getValues(line, self.HeaderEnum.Parity)[0]
             elif self.HeaderEnum.Rmed in line:
                 vals = self._getValues(line, self.HeaderEnum.Rmed)
                 self.r_p, self.r_n = vals[0], vals[1]
@@ -975,7 +993,7 @@ class DataTaurus(_DataObjectBase):
         #print("deform results :: [{}]".format(vals))
     
     def _roundGamma0(self, vals):
-        if abs(vals[2] - 180) < 1.e-8 or abs(vals[2] - 360) < 1.e-8:
+        if abs(vals[2] - 180) < 1.e-5 or abs(vals[2] - 360) < 1.e-5:
             vals[2] = 0.0
     
     def _getEnergies(self, line):
@@ -1081,7 +1099,28 @@ class DataTaurus(_DataObjectBase):
         
         return dict_
     
-
+    def isAxial(self, and_spherical=False):
+        """ requires Ji=0 Jz^2=0 and beta20!=0"""
+        if not almostEqual(self.parity - 1, 1.e-5): return False
+        TOL = 1.0e-5
+        for l in range(1,5):
+            mu_min = 2 if and_spherical else 1
+            for mu in range(mu_min, l +1, 2):
+                if not hasattr(self, f'b{l}{mu}_p'): continue
+                b_lm = (getattr(self, f'b{l}{mu}_p'),
+                        getattr(self, f'b{l}{mu}_n'))                           
+                if abs(b_lm[0]) > TOL: return False
+                if abs(b_lm[1]) > TOL: return False
+        
+        _properies = [ ]
+        for i in ('x', 'y', 'z'):
+            _properies.append(almostEqual(getattr(self,f'J{i}'), 0, TOL))
+            if and_spherical:
+                _properies.append(almostEqual(getattr(self,f'J{i}_2'), 0, TOL))
+        if not and_spherical:
+            _properies.append(almostEqual(self.Jz_2, 0, TOL))
+        
+        return not False in _properies
 
 class _DataTaurusContainer1D:
     
@@ -1207,6 +1246,8 @@ class DataAxial(DataTaurus):
         self.P_T00_J1m1 = 0.0
         self.P_T00_J1p1 = 0.0
         
+        self.parity = 1.0 ## always even
+        
         del self.time_per_iter
         self._filename = filename
         del self._evol_obj   
@@ -1311,6 +1352,7 @@ class DataAxial(DataTaurus):
                 vals = self._getValues(line, self.HeaderEnum.Rmed)
                 self.r_p, self.r_n = vals[0], vals[1]
                 self.r_isoscalar, self.r_charge = vals[2], vals[0]
+                self.r_isovector = (self.r_n - self.r_p) / 2
             if True in (p in line for p in _energies):
                 self._getEnergies(line)
             elif True in (d in line for d in ('Beta', 
@@ -1349,27 +1391,33 @@ class DataAxial(DataTaurus):
             self.gamma_p = 0.0 if (vals[0] == abs(vals[0])) else 60.0
             self.gamma_n = 0.0 if (vals[1] == abs(vals[1])) else 60.0
             self.gamma_isoscalar = 0.0 if (vals[2] == abs(vals[2])) else 60.0            
-        
+            self.b20_isovector = (self.b20_n - self.b20_p) / 2
         elif self.HeaderEnum.Beta_30 in line:
             vals = self._getValues(line, self.HeaderEnum.Beta_30)
             self.b30_p, self.b30_n, self.b30_isoscalar = vals[0],vals[1],vals[2]
+            self.b30_isovector = (self.b30_n - self.b30_p) / 2
         elif self.HeaderEnum.Beta_40 in line:
             vals = self._getValues(line, self.HeaderEnum.Beta_40)
             self.b40_p, self.b40_n, self.b40_isoscalar = vals[0],vals[1],vals[2]
+            self.b40_isovector = (self.b40_n - self.b40_p) / 2
         ## Quadrupole lines
         elif self.HeaderEnum.Q_10 in line:
             vals = self._getValues(line, self.HeaderEnum.Q_10)
             self.q10_p, self.q10_n, self.q10_isoscalar = vals[0],vals[1],vals[2]
+            self.q10_isovector = (self.q10_n - self.q10_p) / 2
             # MS Rad come after Q10, for b10 see in HeaderEnum.Rmed setting
         elif self.HeaderEnum.Q_20 in line:
             vals = self._getValues(line, self.HeaderEnum.Q_20)
             self.q20_p, self.q20_n, self.q20_isoscalar = vals[0],vals[1],vals[2]
+            self.q20_isovector = (self.q20_n - self.q20_p) / 2
         elif self.HeaderEnum.Q_30 in line:
             vals = self._getValues(line, self.HeaderEnum.Q_30)
             self.q30_p, self.q30_n, self.q30_isoscalar = vals[0],vals[1],vals[2]
+            self.q30_isovector = (self.q30_n - self.q30_p) / 2
         elif self.HeaderEnum.Q_40 in line:
             vals = self._getValues(line, self.HeaderEnum.Q_40)
             self.q40_p, self.q40_n, self.q40_isoscalar = vals[0],vals[1],vals[2]
+            self.q40_isovector = (self.q40_n - self.q40_p) / 2
     
     def _getEnergies(self, line):
         if self.HeaderEnum.One_body in line:
@@ -1396,7 +1444,17 @@ class DataAxial(DataTaurus):
     @property
     def getAttributesDictLike(self):
         return ', '.join([k+' : '+str(v) for k,v in self.__dict__.items()])
-
+    
+    def isAxial(self, and_spherical=False):
+        if and_spherical:
+            _properties = [
+                self.Jx_var, 
+                self.q10_n, self.q10_isoscalar, self.q20_n, self.q20_isoscalar,
+                self.q30_n, self.q30_isoscalar, self.q40_n, self.q40_isoscalar,
+            ]
+            _properties = [almostEqual(attr_, 1.e-5) for attr_ in _properties]
+            return not False in _properties
+        return True
 
 class DataAttributeHandler(object):
     """
