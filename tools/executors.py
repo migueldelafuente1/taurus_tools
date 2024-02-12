@@ -394,7 +394,7 @@ class _Base1DTaurusExecutor(object):
                 res0 : self.DTYPE = self._results[0][indx_]
                 if self._backPropagationAcceptanceCriteria(res, res0):
                     self._results[0][indx_] =  res
-                    self._final_bin_list_data[0][indx_] = res._exported_filename
+                    self._final_bin_list_data[0][k] = res._exported_filename
         else:
             print(" ** prolate (back):")
             for k, val in reversed(self._deformations_map[1][1:]): # prolate
