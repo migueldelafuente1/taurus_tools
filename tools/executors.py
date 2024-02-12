@@ -1360,6 +1360,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
+        print(LINE_1, LINE_1, LINE_1, LINE_1, LINE_1)
+        prettyPrintDictionary(self._final_bin_list_data)
+        print(LINE_1, LINE_1, LINE_1, LINE_1, LINE_1)
         ## exportar oblate-reverse order
         for k in range(len(self._final_bin_list_data[0]), -1, -1):
             tail = self._final_bin_list_data[0][k]
