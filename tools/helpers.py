@@ -58,7 +58,7 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
             str_ = None
             if isinstance(val, (list,tuple)) and len(val) > 0:
                 if isinstance(val[0], float):
-                    str_ = ["{x:6.3f}".format(x) for x in val]
+                    str_ = ["{:6.3f}".format(x) for x in val]
             str_ = str(val) if str_ == None else str_
             print(header+str(k)+':'+str_)
 
