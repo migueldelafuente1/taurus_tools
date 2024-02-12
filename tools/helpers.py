@@ -55,7 +55,12 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
             prettyPrintDictionary(val, level + 1, delimiter)
             print(header+'}')
         else:
-            print(header+str(k)+':'+str(val))
+            str_ = None
+            if isinstance(val, (list,tuple)) and len(val) > 0:
+                if isinstance(val[0], float):
+                    str_ = ["{x:6.3f}".format(x) for x in val]
+            str_ = str(val) if str_ == None else str_
+            print(header+str(k)+':'+str_)
 
 def linear_regression(X, Y, get_errors=False):
     """ Get the linear regression for an array of [Y] = A*[X] + B """
@@ -76,6 +81,12 @@ def linear_regression(X, Y, get_errors=False):
     
     return A, B, EA, EB
     
+def almostEqual(a, b, tolerance=0):
+    """ Input """
+    if tolerance == 0:
+        return (a == b) and (abs(a - b) < 1e-40)
+    
+    return abs(a - b) < tolerance
 
 #===============================================================================
 #   Import Enum, Standard enumetation classes for the 2B_MatrixElements form 

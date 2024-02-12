@@ -23,6 +23,7 @@ from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 from future.builtins.misc import isinstance
+from _ast import If
 
 class ExecutionException(BaseException):
     pass
@@ -78,6 +79,7 @@ class _Base1DTaurusExecutor(object):
         self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
         
         self.activeDDterm = True
+        self.axialSymetryRequired = False ## set up to reject non-axial results
         self._output_filename = self.DTYPE.DEFAULT_OUTPUT_FILENAME
         
         self.deform_oblate   : list = []
@@ -92,6 +94,8 @@ class _Base1DTaurusExecutor(object):
         self._preconvergence_steps = 0
         self._base_wf_filename = None
         self._base_seed_type = None
+        
+        self._final_bin_list_data = [{}, {}] # List of the names for the saved files to export
         
         self.include_header_in_results_file = True # set the export result to have the deformation header (i: Q[i]) ## data
         self.save_final_wf  = False # To set for the final wf to be copied as initial
@@ -188,6 +192,7 @@ class _Base1DTaurusExecutor(object):
             self.inputObj.setUpValenceSpaceCalculation()
         elif axial_calc:
             self.inputObj.setUpNoCoreAxialCalculation()
+            self.axialSymetryRequired = True
         
         _check = [(hasattr(self.ITYPE.ArgsEnum,k) or 
                    hasattr(self.ITYPE.ConstrEnum,k)) for k in input_kwargs.keys()]
@@ -243,7 +248,6 @@ class _Base1DTaurusExecutor(object):
     
     def _setDeformationFromMinimum(self, p_min, p_max, N_max):
         """ 
-        TODO: Update and fix
         Complete the deformations to the left(oblate) and right(prol)
         for the pairing minimum. dq defined by N_max, final total length= N_max+1
         """
@@ -298,7 +302,14 @@ class _Base1DTaurusExecutor(object):
                 self._deformations_map[0].append( (-k - 1, val) )
             self._deformations_map[1] = list(enumerate(deform_prolate))
         
-        
+    def _acceptanceCriteria(self, result):
+        """
+        Additional criteria to require certain properties after running.
+        """
+        if self.axialSymetryRequired and not result.isAxial:
+            return False
+        return True
+    
     def _runUntilConvergence(self, MAX_STEPS=3):
         """
         Option to converge a result 
@@ -318,7 +329,13 @@ class _Base1DTaurusExecutor(object):
             self.inputObj.seed = 1
             res = self._runUntilConvergence(MAX_STEPS-1)
             self.inputObj.seed = _base_seed
-        
+        elif not self._acceptanceCriteria(res):
+            ## not axial calculation
+            print(f"         [WRN] result is not axial, repeating smaller eta-mu G0 [{MAX_STEPS}/tot]")
+            self.inputObj.grad_type = 0
+            self.inputObj.eta_grad  = min(0.03, self.inputObj.eta_grad - 0.007)
+            self.inputObj.mu_grad   = min(0.2, self.inputObj.mu_grad - 0.01)
+            res = self._runUntilConvergence(MAX_STEPS-1)
         return res
     
     def run(self):
@@ -339,8 +356,10 @@ class _Base1DTaurusExecutor(object):
                 #     res : self.DTYPE = self._executeProgram()
                                 
                 self._results[0].append(res)
+                self._final_bin_list_data[0][k] = res._exported_filename
+            
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
-                self._run_backwardsSweeping(oblate_part=True) 
+                self._run_backwardsSweeping(oblate_part=True)
             
             print(" ** prolate:")
             for k, val in self._deformations_map[1][1:]: # prolate
@@ -350,6 +369,7 @@ class _Base1DTaurusExecutor(object):
                 res : self.DTYPE = self._runUntilConvergence()
                 
                 self._results[1].append(res)
+                self._final_bin_list_data[1][k] = res._exported_filename
                 # self._results[1].append(self._executeProgram())
             
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
@@ -374,6 +394,7 @@ class _Base1DTaurusExecutor(object):
                 res0 : self.DTYPE = self._results[0][indx_]
                 if self._backPropagationAcceptanceCriteria(res, res0):
                     self._results[0][indx_] =  res
+                    self._final_bin_list_data[0][indx_] = res._exported_filename
         else:
             print(" ** prolate (back):")
             for k, val in reversed(self._deformations_map[1][1:]): # prolate
@@ -385,6 +406,7 @@ class _Base1DTaurusExecutor(object):
                 res0 : self.DTYPE = self._results[1][k]
                 if self._backPropagationAcceptanceCriteria(res, res0):
                     self._results[1][k] =  res
+                    self._final_bin_list_data[0][k] = res._exported_filename
     
     def _backPropagationAcceptanceCriteria(self, result, prev_result):
         """
@@ -418,7 +440,10 @@ class _Base1DTaurusExecutor(object):
         """
         if not isinstance(result,  self.DTYPE): 
             return False    # cannot accept a new broken result
-        if isinstance(prev_result, self.DTYPE): 
+        if isinstance(prev_result, self.DTYPE):
+            if not self._acceptanceCriteria(result): 
+                return False ## the result do not have the correct symmetry
+            
             if   result.properly_finished and prev_result.properly_finished:
                 return result.E_HFB <= prev_result.E_HFB
             elif prev_result.properly_finished and not result.properly_finished:
@@ -453,7 +478,6 @@ class _Base1DTaurusExecutor(object):
             raise ExecutionException("Running runVarialeStep without a first "
                                      "converged result, stop. \n Suggestion:"
                                      "Call setUpExecution")
-        
         self.force_converg = True
         
         N_MAX   = 10 * self._N_steps
@@ -480,7 +504,7 @@ class _Base1DTaurusExecutor(object):
             while _whileCond and (self._iter < N_MAX):
                 b20 = b20_i - ((-1)**(prolate)*(dq_base / (2**div)))
                 
-                self.inputObj.setConstraints(**{self.CONSTRAINT: b20})
+                self.inputObj.setConstraints(**{self.CONSTRAINT: b20,})
                 
                 ## TODO: legacy_, here if the division were at the limit,
                 ## the script call to a convergence loop which reduced the eta/mu 
@@ -515,9 +539,10 @@ class _Base1DTaurusExecutor(object):
                 # take the E_HFB energy and compare the previous (acceptance criteria)
                 curr_energ = float(res.E_HFB)
                 self._iter += 1
+                _args = [curr_energ, energ, e_diff]
                 if ((div < dqDivisionMax)
-                    and (self._energyDiffRejectionCriteria(curr_energ, energ, e_diff, 
-                                                           tol_factor=2.5)
+                    and (self._energyDiffRejectionCriteria(*_args, tol_factor=2.5)
+                         or (self._acceptanceCriteria(res))
                          or (not res.properly_finished))):
                     # reject(increase division)
                     div += 1
@@ -541,9 +566,11 @@ class _Base1DTaurusExecutor(object):
                 if prolate == 0: #grow in order [-.5, -.4, .., 0, ..., +.5]
                     self._results[0].insert(0, res) 
                     self._deformations_map[0].append((-len(self._results[0]), b20_i))
+                    self._final_bin_list_data[0][self._iter] = res._exported_filename
                 else:
                     self._results[1].append(res)
                     self._deformations_map[1].append((len(self._results[1]), b20_i))
+                    self._final_bin_list_data[1][self._iter] = res._exported_filename
                 
                 self.include_header_in_results_file=True
                 self.exportResults()
@@ -656,6 +683,7 @@ class _Base1DTaurusExecutor(object):
                     f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
         shutil.copy('final_wf.bin', 
                     f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
+        self._current_result._exported_filename = tail
         
         if self.SAVE_DAT_FILES:
             dat_files = filter(lambda x: x.endswith('.dat'), os.listdir())
@@ -1328,7 +1356,28 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
+            exporting the list of results-wf final in a list.dat for BMF calculations
         """
+        ## export of the list.dat file
+        bins_, outs_ = [], []
+        ## exportar oblate-reverse order
+        for k in range(len(self._final_bin_list_data[0]), -1, -1):
+            tail = self._final_bin_list_data[0][k]
+            bins_.append("seed_{}.bin".format(tail))
+            outs_.append("res_{}.out".format(tail))
+        ## exportar prolate en orden
+        for k in range(len(self._final_bin_list_data[1])):
+            tail = self._final_bin_list_data[1][k]
+            bins_.append("seed_{}.bin".format(tail))
+            outs_.append("res_{}.out".format(tail))
+        
+        with open('list.dat', 'w+') as f:
+            f.write("\n".join(bins_))
+        with open('list_out.dat', 'w+') as f:
+            f.write("\n".join(outs_))
+        shutil.copy('list.dat', self.DTYPE.BU_folder)
+        shutil.copy('list_outs.dat', self.DTYPE.BU_folder)
+        
         args = list(args) + list(kwargs.values())
         if zip_bufolder:
             if self.CONSTRAINT != None:

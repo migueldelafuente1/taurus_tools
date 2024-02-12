@@ -1266,11 +1266,11 @@ if __name__ == "__main__":
         
         ## Set the files and the labels to plot
         files_, labels_by_files = [], []
-        for gdd_factor in np.append(range(75, 131, 5), 0):
+        for gdd_factor in np.append(range(50, 141, 10), 0):
             files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_{gdd_factor:03}.txt')
             labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
-        # files_.append(f'export_TESq20_z{z}n{n}_hamil_D1S_MZ3.txt')
-        # labels_by_files.append(f"D1S-edf ")
+        files_.append(f'export_TESb20_z{z}n{n}_D1S_MZ3.txt')
+        labels_by_files.append(f"D1S-edf ")
         
         labels_by_files = dict(zip(files_, labels_by_files))
         
@@ -1285,45 +1285,49 @@ if __name__ == "__main__":
             plt_obj.shift2topValue_plot(attr2plot, 
                                         show_plot=attr2plot==attr2plot_list[-1])
         
-        attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 'Jz_2']  # DataTaurus
-        for attr2plot in attr2plot_list:
-            plt_obj.setXlabel(r"$\beta_{20}$")
-            plt_obj.setLabelsForLegendByFileData(labels_by_files)
-            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        _ = 0
+        # attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 'Jz_2']  # DataTaurus
+        # for attr2plot in attr2plot_list:
+        #     plt_obj.setXlabel(r"$\beta_{20}$")
+        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
+        #     plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        # _ = 0
         """
         Script to export for the json by 
         """
-        export_, ii = {}, 0
-        for gdd_ in range(75, 91, 5):
-            gdd_ = f"{gdd_:03}"
+        export_ = {}
+        for file_ in files_:
+            
+            gdd_ = file_.replace('.txt', '').split("_")[-1]
+            if not gdd_.isdigit(): gdd_ = 'edf'
             export_[gdd_] = {}
-            for file_ in files_:
-                if not file_ in plt_obj._x_values: 
-                    continue
-                for k_b, b20 in plt_obj._x_values[file_].items():
-                    r : DataTaurus = plt_obj._results[file_][k_b]
-                    aux = {
-                        'B10': [r.b10_p, r.b10_n, r.b10_isoscalar, r.b10_isovector],
-                        'B10': [r.b20_p, r.b20_n, r.b20_isoscalar, r.b20_isovector],
-                        'B22': [r.b22_p, r.b22_n, r.b22_isoscalar, r.b22_isovector],
-                        'B30': [r.b30_p, r.b30_n, r.b30_isoscalar, r.b30_isovector],
-                        'B30': [r.b32_p, r.b32_n, r.b32_isoscalar, r.b32_isovector],
-                        'B40': [r.b40_p, r.b40_n, r.b40_isoscalar, r.b40_isovector],
-                        'B42': [r.b42_p, r.b42_n, r.b42_isoscalar, r.b42_isovector],
-                        'B44': [r.b44_p, r.b44_n, r.b44_isoscalar, r.b44_isovector],
-                        'E_1b':[r.kin_p, r.kin_n, r.kin,],
-                        'E_hf':[r.hf_pp, r.hf_pp, r.hf_pn, r.hf],
-                        'E_pp':[r.pair_pp, r.pair_nn, r.pair_pn, r.pair],
-                        'E_hfb':[r.E_HFB_pp, r.E_HFB_nn, r.E_HFB_pn, r.E_HFB],
-                        'Jx' : [r.Jx, r.Jx_2, r.Jx_var],
-                        'Jy' : [r.Jy, r.Jy_2, r.Jy_var],
-                        'Jz' : [r.Jz, r.Jz_2, r.Jz_var],
-                        'r': [r.r_p, r.r_n, r.r_isoscalar, r.r_isovector, r.r_charge],
-                        'Parity': [1.0], 
-                    }
-                    export_[gdd_][f"{b20:3.3f}"] = deepcopy(aux)
-            ii += 1
+            
+            if not file_ in plt_obj._x_values:
+                del export_[gdd_]
+                continue
+            ii = 0 
+            for k_b, b20 in plt_obj._x_values[file_].items():
+                r : DataTaurus = plt_obj._results[file_][ii]
+                aux = {
+                    'B10': [r.b10_p, r.b10_n, r.b10_isoscalar, r.b10_isovector],
+                    'B20': [r.b20_p, r.b20_n, r.b20_isoscalar, r.b20_isovector],
+                    'B22': [r.b22_p, r.b22_n, r.b22_isoscalar, r.b22_isovector],
+                    'B30': [r.b30_p, r.b30_n, r.b30_isoscalar, r.b30_isovector],
+                    'B30': [r.b32_p, r.b32_n, r.b32_isoscalar, r.b32_isovector],
+                    'B40': [r.b40_p, r.b40_n, r.b40_isoscalar, r.b40_isovector],
+                    # 'B42': [r.b42_p, r.b42_n, r.b42_isoscalar, r.b42_isovector],
+                    # 'B44': [r.b44_p, r.b44_n, r.b44_isoscalar, r.b44_isovector],
+                    'E_1b':[r.kin_p, r.kin_n, r.kin,],
+                    'E_hf':[r.hf_pp, r.hf_pp, r.hf_pn, r.hf],
+                    'E_pp':[r.pair_pp, r.pair_nn, r.pair_pn, r.pair],
+                    'E_hfb':[r.E_HFB_pp, r.E_HFB_nn, r.E_HFB_pn, r.E_HFB],
+                    'Jx' : [r.Jx, r.Jx_2, r.Jx_var],
+                    'Jy' : [r.Jy, r.Jy_2, r.Jy_var],
+                    'Jz' : [r.Jz, r.Jz_2, r.Jz_var],
+                    'r': [r.r_p, r.r_n, r.r_isoscalar, r.r_isovector, r.r_charge],
+                    'Parity': [1.0], 
+                }
+                export_[gdd_][f"{b20:3.3f}"] = deepcopy(aux)
+                ii += 1
         import json
         with open(FLD_+f'results_gdd_b20_z{z}n{n}.json', 'w+') as fp:
             json.dump(export_, fp)

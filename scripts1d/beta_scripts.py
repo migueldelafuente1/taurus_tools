@@ -225,7 +225,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         try:
             exe_ = ExeTaurus1D_DeformB20(z, n, interaction)
             exe_.setInputCalculationArguments(**input_args_start)
-            exe_.defineDeformationRange(q_min,  q_max, N_max)
+            exe_.defineDeformationRange(q_min, q_max, N_max)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
             exe_.force_converg = False
