@@ -55,11 +55,12 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
             prettyPrintDictionary(val, level + 1, delimiter)
             print(header+'}')
         else:
-            str_ = None
             if isinstance(val, (list,tuple)) and len(val) > 0:
                 if isinstance(val[0], float):
                     str_ = ["{:6.3f}".format(x) for x in val]
-            str_ = str(val) if str_ == None else str_
+                str_ = ', '.join(str_)
+            else:
+                str_ = str(val)
             print(header+str(k)+':'+str_)
 
 def linear_regression(X, Y, get_errors=False):
