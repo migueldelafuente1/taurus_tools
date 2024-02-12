@@ -556,11 +556,17 @@ class OccupationNumberData(_DataObjectBase):
 #   RESULTS FROM TAURUS 
 #===============================================================================
 class DataTaurus(_DataObjectBase):
-        
+    
+    """
+    Object to process all the methods related to the taurus_vap.exe output.
+        Exporting:
+            Energies ()
+    """
     class HeaderEnum(Enum): ## line header to read the output file
         Number_of_protons  = 'Number of protons '
         Number_of_neutrons = 'Number of neutrons'
         Parity   = 'Parity'
+        Zero_body= 'Zero-body'
         One_body = 'One-body'
         ph_part  = ' ph part'
         pp_part  = ' pp part'
@@ -615,6 +621,7 @@ class DataTaurus(_DataObjectBase):
         
     
     __message_startiter = '                   ITERATIVE MINIMIZATION'
+    __message_endvap    = '                 PROJECTED STATE PROPERTIES'
     __message_enditer   = '               QUASIPARTICLE STATE PROPERTIES'
     __message_converged = 'Calculation converged'
     __message_not_conv  = 'Maximum number of iterations reached'
@@ -669,6 +676,7 @@ class DataTaurus(_DataObjectBase):
         self.var_n = None
         self.parity = None
         
+        self.E_zero= None
         self.kin   = None
         self.kin_p = None
         self.kin_n = None
@@ -810,6 +818,7 @@ class DataTaurus(_DataObjectBase):
         self._evol_obj  = None
         self._input_obj = None
         self._exported_filename = ''
+        self._is_vap_calculation = False
         if not empty_data:
             try:
                 self.get_results()
@@ -856,7 +865,15 @@ class DataTaurus(_DataObjectBase):
             setattr(self, attr_, getattr(self._evol_obj, attr_))
     
     
-    def get_results(self):    
+    def get_results(self):
+        """
+        Read all the lines and export
+            For DataTaurus, only quasiparticle states are saved:
+        Note:
+            In the case of VAP calculation, the stored energies are the projected 
+            ones, the other observables will be from quasiparticles.
+            It assign the values twice (QP values appear in second place)
+        """
         with open(self._filename, 'r') as f:
             data = f.read()
             if self.__message_converged in data: 
@@ -864,15 +881,20 @@ class DataTaurus(_DataObjectBase):
             elif not self.__message_enditer in data:
                 self.broken_execution  = True
                 return
+            self._is_vap_calculation = self.__message_endvap in data
+            
             f.seek(0) # rewind the file reading
             
             data_inp, data_evol  = f.read().split(self.__message_startiter)
-            data_evol, data = data_evol.split(self.__message_enditer)
+            if self._is_vap_calculation:
+                data_evol, data = data_evol.split(self.__message_endvap)
+            else:
+                data_evol, data = data_evol.split(self.__message_enditer)
             data      = data.split('\n')
                     
-        _energies = (self.HeaderEnum.One_body, self.HeaderEnum.ph_part, 
-                     self.HeaderEnum.pp_part,  self.HeaderEnum.Two_body, 
-                     self.HeaderEnum.Full_H)
+        _energies = (self.HeaderEnum.Zero_body,  self.HeaderEnum.One_body,
+                     self.HeaderEnum.ph_part,    self.HeaderEnum.pp_part,  
+                     self.HeaderEnum.Two_body,   self.HeaderEnum.Full_H)
         
         self._read_inp   = True
         
@@ -997,7 +1019,17 @@ class DataTaurus(_DataObjectBase):
             vals[2] = 0.0
     
     def _getEnergies(self, line):
-        if self.HeaderEnum.One_body in line:
+        """
+        In case of vap-calculation, only the store the VAP values
+            Note: the lines goes in order, so if Projected states has been writen
+            self.E_HFB != 0:
+        """
+        if self._is_vap_calculation and self.E_HFB != None:
+            return
+        
+        if self.HeaderEnum.Zero_body in line:
+            self.E_zero = self._getValues(line, self.HeaderEnum.Zero_body)[0]
+        elif self.HeaderEnum.One_body in line:
             vals = self._getValues(line, self.HeaderEnum.One_body)
             self.kin_p, self.kin_n, self.kin = vals[0], vals[1], vals[2]
         else:
@@ -1517,7 +1549,7 @@ class DataAttributeHandler(object):
 
 if __name__ == '__main__':
     pass
-    # res = DataTaurus(10, 10, 'aux_output_Z10N10_00_00')
+    # res = DataTaurus(12, 12, '../DATA_RESULTS/Beta20/Mg_GDD_test/24_VAP9/BU_folder_hamil_gdd_100_z12n12/res_z12n12_d1_0.OUT')
     # res = DataTaurus(10, 6, 'aux_output_Z10N6_23')
     # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
     # res = DataTaurus(18, 18, '../res_z18n18_dbase.OUT')
