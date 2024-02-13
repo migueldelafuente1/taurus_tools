@@ -582,9 +582,9 @@ class _Base1DTaurusExecutor(object):
         # program = """ """
         # exec(program)
         FLD_TEST_ = 'data_resources/testing_files/'
-        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.OUT'
-        # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.OUT'
-        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.OUT'
+        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
+        # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
+        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -613,7 +613,7 @@ class _Base1DTaurusExecutor(object):
         for file_ in  ("canonicalbasis", "eigenbasis_h", 
                        "eigenbasis_H11", "occupation_numbers"):
             txt = ""
-            with open(f"{FLD_TEST_}TEMP_{file_}.dat", 'r') as f:
+            with open(f"{FLD_TEST_}TEMP_{file_}.txt", 'r') as f:
                 txt = f.read()
             with open(f"{file_}.dat", 'w+') as f:
                 f.write(txt) 
