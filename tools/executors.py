@@ -406,7 +406,7 @@ class _Base1DTaurusExecutor(object):
                 res0 : self.DTYPE = self._results[1][k]
                 if self._backPropagationAcceptanceCriteria(res, res0):
                     self._results[1][k] =  res
-                    self._final_bin_list_data[0][k] = res._exported_filename
+                    self._final_bin_list_data[1][k] = res._exported_filename
     
     def _backPropagationAcceptanceCriteria(self, result, prev_result):
         """
@@ -581,9 +581,10 @@ class _Base1DTaurusExecutor(object):
         """
         # program = """ """
         # exec(program)
-        file2copy = "TEMP_output_Z10N10_max_iter.txt"
-        # file2copy = 'TEMP_output_Z10N6_broken.txt'
-        file2copy = "TEMP_z18n18_dbase.txt"
+        FLD_TEST_ = 'data_resources/testing_files/'
+        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.OUT'
+        # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.OUT'
+        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.OUT'
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -602,7 +603,7 @@ class _Base1DTaurusExecutor(object):
                 f.write(str(hash_))
         
         if self.TRACK_TIME_AND_RAM:
-            with open('TEMP_time_verbose_output.txt', 'r') as f:
+            with open(FLD_TEST_+'TEMP_time_verbose_output.txt', 'r') as f:
                 data = f.read()
                 with open(self.TRACK_TIME_FILE, 'w+') as f2:
                     f2.write(data)
@@ -612,7 +613,7 @@ class _Base1DTaurusExecutor(object):
         for file_ in  ("canonicalbasis", "eigenbasis_h", 
                        "eigenbasis_H11", "occupation_numbers"):
             txt = ""
-            with open(f"TEMP_{file_}.txt", 'r') as f:
+            with open(f"{FLD_TEST_}TEMP_{file_}.dat", 'r') as f:
                 txt = f.read()
             with open(f"{file_}.dat", 'w+') as f:
                 f.write(txt) 
@@ -644,7 +645,7 @@ class _Base1DTaurusExecutor(object):
         tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}_{s_n}"
         return tail
     
-    def saveFinalWFprocedure(self, base_execution=False):
+    def saveFinalWFprocedure(self, result, base_execution=False):
         """ 
         Method to save wf and other objects from _executeProgram outputs
         Args
@@ -652,7 +653,7 @@ class _Base1DTaurusExecutor(object):
             :base_execution: is to know if the execution were the starter minimum
             localization or if it is in the run process
         """
-        if self._current_result.broken_execution: return
+        if result.broken_execution: return
         
         if base_execution:
             self._base_wf_filename = 'base_initial_wf.bin'
@@ -667,7 +668,7 @@ class _Base1DTaurusExecutor(object):
                 s_n = len(s_list)
                 unconv_n = " ".join(s_list).count("unconv")
                 s_n -= unconv_n
-                if getattr(self._current_result, 'properly_finished', False)==False:
+                if getattr(result, 'properly_finished', False)==False:
                     s_n = str(s_n)+'unconv'+str(self._preconvergence_steps)
                     ## Note, to keep the first(unconv) and intermediate results
                     ## read the "base" results in order until non (unconv) label
@@ -676,14 +677,14 @@ class _Base1DTaurusExecutor(object):
             tail = self._namingFilesToSaveInTheBUfolder()
         
         ## copy the wf to the initial wf always except non 
-        if (not self.force_converg) or self._current_result.properly_finished:
+        if (not self.force_converg) or result.properly_finished:
             shutil.copy('final_wf.bin', 'initial_wf.bin')
         
         shutil.move(self._output_filename, 
                     f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
         shutil.copy('final_wf.bin', 
                     f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
-        self._current_result._exported_filename = tail
+        result._exported_filename = tail
         
         if self.SAVE_DAT_FILES:
             dat_files = filter(lambda x: x.endswith('.dat'), os.listdir())
@@ -759,11 +760,10 @@ class _Base1DTaurusExecutor(object):
             res = self.DTYPE(self.z, self.n, _out_fn)
             if self.TRACK_TIME_AND_RAM: 
                 res = self._addExecutionPerformanceData(res)
-                
-            self._current_result = deepcopy(res)
             
-            self.saveFinalWFprocedure(base_execution)
+            self.saveFinalWFprocedure(res, base_execution)
             self.executionTearDown   (res, base_execution)
+            self._current_result = deepcopy(res)
             
         except Exception as e:
             print(f"  [FAIL]: {self.__class__}._executeProgram()")
@@ -968,7 +968,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
                          result.b20_isoscalar)
         print(txt, _iter_str)
         
-    def saveFinalWFprocedure(self, base_execution=False):
+    def saveFinalWFprocedure(self, result,  base_execution=False):
         """ 
         Method to save wf and other objects from _executeProgram outputs
         Args
@@ -976,7 +976,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
             :base_execution: is to know if the execution were the starter minimum
             localization or if it is in the run process
         """
-        if self._current_result.broken_execution: return
+        if result.broken_execution: return
         
         if base_execution:
             self._base_wf_filename = 'base_initial_wf.bin'
@@ -991,7 +991,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
                 s_n = len(s_list)
                 unconv_n = " ".join(s_list).count("unconv")
                 s_n -= unconv_n
-                if getattr(self._current_result, 'properly_finished', False)==False:
+                if getattr(result, 'properly_finished', False)==False:
                     s_n = str(s_n)+'unconv'+str(self._preconvergence_steps)
                     ## Note, to keep the first(unconv) and intermediate results
                     ## read the "base" results in order until non (unconv) label
@@ -1000,7 +1000,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
             tail = self._namingFilesToSaveInTheBUfolder()
         
         ## copy the wf to the initial wf always except non 
-        if (not self.force_converg) or self._current_result.properly_finished:
+        if (not self.force_converg) or result.properly_finished:
             shutil.copy('fort.11', 'fort.10')
         
         shutil.move(self._output_filename, 
@@ -1071,6 +1071,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 ## even-even general case
                 while not self._preconvergenceAccepted(res):
                     res = self._executeProgram(base_execution=True)
+        
+        self._final_bin_list_data[1][0] = self._1stSeedMinima._exported_filename
         
         ## negative values might be obtained        
         self._setDeformationFromMinimum(self._deform_lim_min, 
@@ -1345,8 +1347,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         return False # if not valid 2 repeat
     
-    def saveFinalWFprocedure(self, base_execution=False):
-        _Base1DTaurusExecutor.saveFinalWFprocedure(self, base_execution)
+    def saveFinalWFprocedure(self, result, base_execution=False):
+        _Base1DTaurusExecutor.saveFinalWFprocedure(self, result, base_execution)
     
     def run(self):
         ## TODO: might require additional changes
@@ -1360,11 +1362,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
-        print(LINE_1, LINE_1, LINE_1, LINE_1, LINE_1)
-        prettyPrintDictionary(self._final_bin_list_data)
-        print(LINE_1, LINE_1, LINE_1, LINE_1, LINE_1)
         ## exportar oblate-reverse order
-        for k in range(len(self._final_bin_list_data[0]), -1, -1):
+        for k in range(-1, -len(self._final_bin_list_data[0])-1, -1):
             tail = self._final_bin_list_data[0][k]
             bins_.append("seed_{}.bin".format(tail))
             outs_.append("res_{}.out".format(tail))
@@ -1376,10 +1375,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         with open('list.dat', 'w+') as f:
             f.write("\n".join(bins_))
-        with open('list_out.dat', 'w+') as f:
+        with open('list_outputs.dat', 'w+') as f:
             f.write("\n".join(outs_))
         shutil.copy('list.dat', self.DTYPE.BU_folder)
-        shutil.copy('list_outs.dat', self.DTYPE.BU_folder)
+        shutil.copy('list_outputs.dat', self.DTYPE.BU_folder)
         
         args = list(args) + list(kwargs.values())
         if zip_bufolder:
