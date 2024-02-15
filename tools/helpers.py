@@ -39,9 +39,10 @@ def zipBUresults(folder, z,n,interaction, *args):
     if len(count_buzips) > 0:
         buzip += '_{}.zip'.format(len(count_buzips))
     
-    order = 'zip -r {} {}'.format(buzip, folder)
+    order = 'zip -r {} {} > ZIP_PRINT_KK.gut'.format(buzip, folder)
     try:
         _e = subprocess.call(order, shell=True)
+        os.remove('ZIP_PRINT_KK.gut')
     except BaseException as be:
         print("[ERROR] zipping of the BUresults cannot be done:: $",order)
         print(">>>", be.__class__.__name__, ":", be)

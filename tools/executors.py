@@ -1395,16 +1395,17 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         shutil.copy('list_dict.dat', self.DTYPE.BU_folder)
         shutil.copy('list_outputs.dat', self.DTYPE.BU_folder)
         
-        args = list(args) + list(kwargs.values())
+        args = [self.z,self.n,self.interaction]+list(args)+list(kwargs.values())
         if zip_bufolder:
             if self.CONSTRAINT != None:
                 args.append(self.CONSTRAINT)
-            
-            zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction,
-                         *args)
+            zipBUresults(DataTaurus.BU_folder, *args)
+        
         ## Create a list of wf to do the VAP calculations:
         if self.DTYPE is DataTaurus:
+            print("  CWD 1=", os.getcwd())
             os.chdir(self.DTYPE.BU_folder)
+            print("  Saving the results for BMF, cwd():", os.getcwd())
             os.mkdir('PNVAP')
             list_dat = []
             for i, bin_ in enumerate(bins_):
