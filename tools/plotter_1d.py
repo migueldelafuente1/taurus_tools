@@ -8,7 +8,7 @@ import numpy as np
 from tools.data import DataTaurus, DataAxial, _DataObjectBase, EigenbasisData,\
     OccupationNumberData, DataAttributeHandler
 from tools.Enums import Enum
-from tools.executors import _Base1DAxialExecutor
+from tools.executors import _Base1DAxialExecutor, _Base1DTaurusExecutor
 from tools.helpers import OUTPUT_HEADER_SEPARATOR
 from copy import copy, deepcopy
 import zipfile
@@ -91,7 +91,8 @@ class _PlotterBase(object):
         self._results      = {}
         self.minimum_result= {} # Data-result for the minimum (index 0) by file
         self._x_values     = {}
-        self._legend_labels  = {}
+        self._legend_labels   = {}
+        self._kwargs_for_plot = {}
         
         self._axes = []
         self._figs = []
@@ -147,6 +148,7 @@ class _PlotterBase(object):
                     data_results.append(res)
                                     
                 self._results [file_] = data_results
+                self._kwargs_for_plot[file_] = {'linestyle': '-.'}
                 if _introduced_by_index:
                     self._x_values[file_] = dict(header_)
                 self._legend_labels[file_] = constr_
@@ -275,7 +277,7 @@ class _PlotterBase(object):
         for constr_ in self.constraints:
             self.constraints_str[constr_] = self._getVariableStringForDisplay(constr_)        
         
-        fig , ax = plt.subplots()
+        fig , ax = plt.subplots(figsize=(8, 6))
         self._axes = ax
         self._figs = fig
         
@@ -295,7 +297,9 @@ class _PlotterBase(object):
                     lab_ = "Taurus"
             else:
                 lab_ = self.constraints_str[constr_]
-            self._axes.plot(self._x_values[file_].values(), y_values, '.-', label=lab_)
+            self._axes.plot(self._x_values[file_].values(), y_values, 
+                            label=lab_,
+                            **self._kwargs_for_plot[file_])
             
             ## Print Un-converged results marked different
             x_npf, y_npf = self._getListOfDataNonProperlyFinished(file_)
@@ -321,8 +325,8 @@ class _PlotterBase(object):
         self._axes.set_xlabel(self._x_label)
         self._axes.set_ylabel(self._y_label)
         
-        self._axes.legend()
-        plt.tight_layout()
+        self._axes.legend(fontsize='xx-small')
+        self._figs.tight_layout()
         if show_plot:
             plt.show()
         
@@ -361,6 +365,19 @@ class _PlotterBase(object):
     
     def setYlabel(self, title):
         self._y_label = title
+        
+    def setPyplotKWARGS(self, kwargs_by_file):
+        """
+        :kwargs_by_file <dict> with the properties to for a pyplot.plot arguments:
+            :color='green'
+            :marker= '.,ov^<>1234spP*hH+xXdD' 1:11 or render string: '$...$'
+            :linestyle= '-', '--', '-.', ':', ''
+            :linewidth=2,  Set the line width in points.
+            :markersize=12 , :markerfacecolor, markeredgecolor
+        """
+        assert isinstance(kwargs_by_file, dict), "argument is not a dictionary"
+        for file_, kwargs in kwargs_by_file.items():
+            self._kwargs_for_plot[file_] = kwargs
     
     def setExportFigureFilename(self, output_filename):
         """ set output filename: formats ('.pdf', '.png', '.jpeg') """
@@ -490,7 +507,8 @@ class _Plotter1D(_PlotterBase):
         self._results      = {}  ## {file(constraint) : [DataResults, ( in order)], }
         self.minimum_result= {} # Data-result for the minimum (index 0) by file
         self._x_values     = {}  ## {file(constraint) : { index_ : value, }, }
-        self._legend_labels  = {}
+        self._legend_labels   = {}
+        self._kwargs_for_plot = {}
         
         self._axes = []
         self._figs = []
@@ -554,6 +572,7 @@ class _Plotter1D(_PlotterBase):
                     header_.append( (int(_i), float(val)) )
                                     
                 self._results [file_] = data_results
+                self._kwargs_for_plot[file_] = {'linestyle': '-', 'marker': '.'}
                 if _introduced_by_index:
                     self._x_values[file_] = dict(header_)
                 self._legend_labels[file_] = constr_
@@ -656,7 +675,7 @@ class _Plotter1D(_PlotterBase):
         for constr_ in self.constraints:
             self.constraints_str[constr_] = self._getVariableStringForDisplay(constr_)        
         
-        fig , ax = plt.subplots()
+        fig , ax = plt.subplots(figsize=(8, 6))
         self._axes = ax
         self._figs = fig
         
@@ -676,7 +695,9 @@ class _Plotter1D(_PlotterBase):
                 if lab_ == "DataTaurus": 
                     lab_ = "Taurus"
                 
-            self._axes.plot(self._x_values[file_].values(), y_values, '.-', label=lab_)
+            self._axes.plot(self._x_values[file_].values(), y_values, 
+                            label=lab_,
+                            **self._kwargs_for_plot[file_])
             self._set_axisLimits(y_values)
             
             ## Print Un-converged results marked different
@@ -684,8 +705,10 @@ class _Plotter1D(_PlotterBase):
             if len(y_npf)>0:
                 self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
                                    zorder=2.5, )
-            x0_indx = abs(min( list(self._x_values[file_].keys()) ))
-            self._axes.scatter(self._x_values[file_][0], y_values[x0_indx], marker='d')
+            ## NOTE: if 0 not in the _x_values deformation keys, will raise ValueError.
+            x0_indx = sorted([i for i in self._x_values[file_].keys()]).index(0)
+            self._axes.scatter(self._x_values[file_][0], y_values[x0_indx], marker='d',
+                               color=self._kwargs_for_plot[file_].get('color'))
         
         if len(self.import_files) == 0:
             print("[WARNING] Not founded any file to plot, Exiting")
@@ -705,8 +728,8 @@ class _Plotter1D(_PlotterBase):
         self._axes.set_xlabel(self._x_label)
         self._axes.set_ylabel(self._y_label)
         
-        self._axes.legend()
-        plt.tight_layout()
+        self._axes.legend(fontsize='xx-small')
+        self._figs.tight_layout()
         if show_plot:
             plt.show()
         
@@ -744,7 +767,7 @@ class Plotter1D_Taurus(_Plotter1D):
         for constr_ in self.constraints:
             self.constraints_str[constr_] = self._getVariableStringForDisplay(constr_)        
         
-        fig , ax = plt.subplots()
+        fig , ax = plt.subplots(figsize=(8, 6))
         self._axes = ax
         self._figs = fig
         
@@ -769,7 +792,8 @@ class Plotter1D_Taurus(_Plotter1D):
         for file_ in self.import_files:
             x_values, y_values = all_xy_values[0][file_], all_xy_values[1][file_]
             
-            self._axes.plot(x_values, y_values, '.-', label=all_xy_values[2][file_])
+            self._axes.plot(x_values, y_values, label=all_xy_values[2][file_],
+                            **self._kwargs_for_plot[file_])
             # self._set_axisLimits(y_values)
             
             ## Print Un-converged results marked different
@@ -777,8 +801,10 @@ class Plotter1D_Taurus(_Plotter1D):
             if len(y_npf)>0:
                 self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
                                    zorder=2.5, )
-            _ = x_values[0]
-            self._axes.scatter(x_values[0], y_values[0], marker='d')
+            
+            x0_indx = sorted([i for i in self._x_values[file_].keys()]).index(0)
+            self._axes.scatter(x_values[x0_indx], y_values[x0_indx], marker='d',
+                               color=self._kwargs_for_plot[file_].get('color'))
         
         if len(self.import_files) == 0:
             print("[WARNING] Not founded any file to plot, Exiting")
@@ -798,8 +824,8 @@ class Plotter1D_Taurus(_Plotter1D):
         self._axes.set_xlabel(self._x_label)
         self._axes.set_ylabel(self._y_label)
         
-        self._axes.legend()
-        plt.tight_layout()
+        self._axes.legend(fontsize='xx-small')
+        self._figs.tight_layout()
         if show_plot:
             plt.show()
         
@@ -851,7 +877,8 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
         AttrEigenbasisEnum.fermi_energ_prot
         ]
         
-    def __init__(self, filenames,  global_folder=None, attr2plot=None):
+    def __init__(self, filenames,  global_folder=None, attr2plot=None, 
+                 iter_procedure_sweep=False):
         """
         :filenames: export_file
             * <list>: only the filenames, the zip will be imported from the default
@@ -859,7 +886,9 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
             * <dict>: put the folder/zip for each constraint (several constraints to print)
                 {export_file_x.txt: folder / file_x.zip, }
         :global_folder: string to set one folder/zip to import (single constraint 2print)
-        
+            (do not put the subfolder generated by the suite)
+        :iter_procedure_sweep=False to identify format of automatic naming of the
+            results. i.e 
         """
         self._folders_for_filenames = {}
         self._automatic_naming_folders = True  ## Name of the folder from default zip/BU from filenames
@@ -878,6 +907,11 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
         self._zn_header = ''
         self._sp_dim_by_file = {}
         
+        if not iter_procedure_sweep:
+            self._iter_proc = _Base1DTaurusExecutor.IterativeEnum.EVEN_STEP_STD
+        else:
+            self._iter_proc = _Base1DTaurusExecutor.IterativeEnum.EVEN_STEP_SWEEPING
+        
         if global_folder:
             if isinstance(filenames, list):
                 assert len(filenames)==1, "If global_folder give only one file(constraint)"
@@ -895,7 +929,8 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
     
     def getFolderToImportDATfiles(self, file_):
         """ 
-        Required to call the folder or zip file containing the dat files 
+        Required to call the folder or zip file containing the dat files .
+        :file_ is the export_TES_ file, that will gives the interaction and z,n
         """
         ## export_TES_{constr}_{zn}_{interaction}
         file_ = file_.replace('export_TES_', '')
@@ -954,6 +989,10 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
         # OCCNUM = DataTaurus.DatFileExportEnum.occupation_numbers 
         
         if self._automatic_naming_folders:
+            _fmt_filedat = '_{}_d{}.dat'
+            if (self._iter_proc == 
+                _Base1DTaurusExecutor.IterativeEnum.EVEN_STEP_SWEEPING):
+                _fmt_filedat = '_{}_d{}_1.dat'
             
             for export_file in self.import_files:
                 
@@ -972,6 +1011,7 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
                 list_canbas = list(filter(lambda x: x.startswith(EI_CBA), all_f))
                 # list_occnum = list(filter(lambda x: x.startswith(OCCNUM), all_f))
                 n_dbase = list(filter(lambda x: x.endswith('dbase.bin'), all_f))
+                self._test_canbas_index = []
                 for indx_ in self._x_values[export_file].keys():
                     
                     if indx_ == 0:
@@ -979,7 +1019,9 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
                         aux = '0-' if len(n_dbase)>1 else ''
                         filedat = '_{}_{}dbase.dat'.format(self._zn_header, aux)
                     else:
-                        filedat = '_{}_d{}.dat'.format(self._zn_header, indx_)
+                        ## TODO: In case of STD sweep, there is no 0,1 label at 
+                        ##      the end, format would be '_{}_d{}.dat'
+                        filedat = _fmt_filedat.format(self._zn_header, indx_)
                     
                     if list_eigenh and (EI_HBA+filedat in list_eigenh):
                         self._has_eigen_h = True
@@ -998,12 +1040,13 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
                         res = EigenbasisData(fold_+'/'+EI_CBA+filedat)
                         res.getResults()
                         self._canonicalbasis_dats[export_file].append(res)
+                    
                     ## occupation numbers has different object
                     # if list_occnum and (OCCNUM+filedat in list_occnum):
                     #     res = OccupationNumberData(fold_+'/'+OCCNUM+filedat)
                     #     res.getResults()
                     #     self._occupation_numbers_dats[export_file].append(res)
-        #
+        _ = 0
     
     def _getVariableEigenStringForDisplay(self, var):
         
@@ -1035,9 +1078,8 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
         
         new_var = r'$${}$$'.format(new_var)
         return new_var
-          
     
-    def __plotSurfaces(self, attr2plot, index_2_print, datfile, show_plot=True):
+    def __plotSurfaces_bench(self, attr2plot, index_2_print, datfile, show_plot=True):
         ## process the surfaces by index for any attribute but fermi energies
         ## TODO: in case of attr2plot = h, plot also the fermi_ energy
         ## "index_2_print" is a set of index to be printed
@@ -1079,11 +1121,16 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
             for lab_ind, y_values in y_by_lab.items():
                 if (not attr2plot.startswith('fermi_energ')) and lab_ind not in index_lims: 
                     continue
-                self._axes.plot(self._x_values[file_export].values(), y_values, 
+                x_vals = self._x_values[file_export].values()
+                if len(x_vals) != len(y_values):
+                    print(" [ERROR], not all h(x) values has been found, check out"
+                          " if iter_procedure_sweep=[{}] or bad naming file convention, dims x,y= {},{}"
+                          .format(self._iter_proc, len(x_vals), len(y_values)))
+                self._axes.plot(x_vals, y_values, 
                                 '.-', label=lab_ind)
                 ## Print Un-converged results marked different
-                x_npf, y_npf = self._getDataNonProperlyFinished(file_export, 
-                                                                y_values)
+                x_npf, y_npf = self._getListOfDataNonProperlyFinished(file_export, 
+                                                                      y_values)
                 if len(y_npf)>0:
                     self._axes.scatter(x_npf, y_npf, marker='X', c='k', label='non converged',
                                         zorder=2.5, )
@@ -1116,6 +1163,93 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
             for attr_, reset_ in self._reset_labelsTitle.items():
                 if reset_: setattr(self, attr_, '') 
                     
+    
+    def __plotSurfaces(self, attr2plot, index_2_print, datfile, show_plot=True):
+        ## process the surfaces by index for any attribute but fermi energies
+        ## TODO: in case of attr2plot = h, plot also the fermi_ energy
+        ## "index_2_print" is a set of index to be printed
+        data = getattr(self, '_{}_dats'.format(datfile), [])
+        # otherwise the default titles wont change between dat files
+        for attr_ in self._reset_labelsTitle.keys():
+            self._reset_labelsTitle[attr_] = getattr(self, attr_, '') == ''
+        
+        for if_, file_export in enumerate(self.import_files):
+            
+            if index_2_print:
+                index_lims = index_2_print
+            else:
+                index_lims = [l+1 for l in range(self._sp_dim_by_file[file_export])]
+            ## 1. Sort the data by the indexes of the eigenstates_
+            # labels_  = {}
+            y_by_lab = [{}, {}] # for protons, neutrons
+            for i_x, res_x in enumerate(data[file_export]):
+                k_pn_count = [-1, -1]
+                if attr2plot.startswith('fermi_energ'):
+                    lab_ind = attr2plot[13:]
+                    value = getattr(res_x, attr2plot)
+                    pn_i = 0 if lab_ind == 'prot' else 1
+                    if i_x == 0:
+                        y_by_lab[pn_i][lab_ind] = [value, ]
+                    else:
+                        y_by_lab[pn_i][lab_ind].append(value)
+                else:
+                    for i_lab, value in enumerate(getattr(res_x, attr2plot)):
+                        pn_i = 1 if res_x.avg_neutron[i_lab] > 0.5 else 0
+                        k_pn_count[pn_i] += 1
+                        
+                        if i_x == 0:
+                            y_by_lab[pn_i][k_pn_count[pn_i]] = [value, ]
+                        else:
+                            y_by_lab[pn_i][k_pn_count[pn_i]].append(value)
+            
+            ## 2. Plot surfaces, (select the important labels, there are hundreds)
+            fig , ax = plt.subplots(nrows=1, ncols=2, figsize=(8,8))
+            self._axes = ax
+            
+            for pn_i in (0, 1):
+                for lab_ind, y_values in y_by_lab[pn_i].items():
+                    if (not attr2plot.startswith('fermi_energ')) and lab_ind not in index_lims: 
+                        continue
+                    self._axes[pn_i].plot(self._x_values[file_export].values(), 
+                                          y_values, 
+                                          '.-', label=lab_ind)
+                    ## Print Un-converged results marked different
+                    x_npf, y_npf = self._getListOfDataNonProperlyFinished(file_export, 
+                                                                          y_values)
+                    if len(y_npf)>0:
+                        self._axes[pn_i].scatter(x_npf, y_npf, 
+                                                 marker='X', c='k',
+                                                 zorder=2.5, )
+            
+            if len(self.import_files) == 0:
+                print("[WARNING] Not founded any file to plot, Exiting")
+                return
+            # Global Labels.
+            if self._title   == '':
+                lab_ = self.import_files[0].replace("export_TES_", '').replace(".txt", "")
+                lab_ = "{}  {}".format(datfile, lab_)
+                self._title = self._getVariableEigenStringForDisplay(lab_.replace("_", " "))        
+            if self._x_label == '':
+                print("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
+                lab_ = self.constraints_str[self.constraints[0]]
+                self._x_label = lab_
+            if self._y_label == '':
+                self._y_label = self._getVariableEigenStringForDisplay(attr2plot)
+            
+            self._axes[0].set_title (" (protons)")
+            self._axes[1].set_title (" (neutrons)")
+            self._axes[0].set_ylabel(self._y_label)
+            for pn_i in range(2):
+                self._axes[pn_i].set_xlabel(self._x_label)
+                self._axes[pn_i].legend(fontsize='xx-small')
+            fig.suptitle(self._title)
+            fig.tight_layout()
+            if show_plot: plt.show()
+            
+            ## return undefined labels to its null value
+            for attr_, reset_ in self._reset_labelsTitle.items():
+                if reset_: setattr(self, attr_, '') 
+                    
         
     
     def defaultPlot(self, attr2plot=None, index_2_print=None,
@@ -1132,9 +1266,9 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
         if attr2plotExport != None:
             if isinstance(attr2plotExport, list):
                 for attr_ in attr2plotExport:
-                    _Plotter1D.defaultPlot(self, attr_, False)
+                    _Plotter1D.defaultPlot(self, attr_, show_plot)
             else:
-                _Plotter1D.defaultPlot(self, attr2plotExport, False)
+                _Plotter1D.defaultPlot(self, attr2plotExport, show_plot)
         
         ## return undefined labels to its null value
         for attr_, reset_ in self._reset_labelsTitle.items():
@@ -1258,15 +1392,15 @@ if __name__ == "__main__":
     
     SUBFLD_ = 'Mg_GDD_test/24_HFB/' #'Mg_GDD_test/24_VAP9/' # 
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
+    _Plotter1D.EXPORT_PDF_AND_MERGE = True
     FLD_ = _Plotter1D.FOLDER_PATH
     nuclei = [
         (12,12),
         ]
     for z, n in nuclei:
-        
         ## Set the files and the labels to plot
         files_, labels_by_files = [], []
-        for gdd_factor in np.append(range(50, 141, 10), 0):
+        for gdd_factor in np.insert(range(50, 141, 10), 0, 0):
             files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_{gdd_factor:03}.txt')
             labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
         files_.append(f'export_TESb20_z{z}n{n}_D1S_MZ3.txt')
@@ -1275,22 +1409,26 @@ if __name__ == "__main__":
         labels_by_files = dict(zip(files_, labels_by_files))
         
         plt_obj = Plotter1D_Taurus(files_)
-        plt_obj.LATEX_FORMAT = True
-    
-        attr2plot_list = [ 'E_HFB', 'hf',]
-        for attr2plot in attr2plot_list:
-            plt_obj.setXlabel(r"$\beta_{20}$")
-            # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-            plt_obj.setLabelsForLegendByFileData(labels_by_files)
-            plt_obj.shift2topValue_plot(attr2plot, 
-                                        show_plot=attr2plot==attr2plot_list[-1])
-        
-        # attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 'Jz_2']  # DataTaurus
+        # plt_obj.LATEX_FORMAT = True
+        # plt_obj.setPyplotKWARGS(
+        #     {files_[0]: dict(color='red', marker='.'),
+        #      files_[-1]: dict(color='black', linestyle='--')})
+        #
+        # attr2plot_list = [ 'E_HFB', 'hf',]
+        # for attr2plot in attr2plot_list:
+        #     plt_obj.setXlabel(r"$\beta_{20}$")
+        #     # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
+        #     plt_obj.shift2topValue_plot(attr2plot, 
+        #                                 show_plot=attr2plot==attr2plot_list[-1])
+        #
+        # attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 
+        #                   'b30_isoscalar', 'Jz_2']  # DataTaurus
         # for attr2plot in attr2plot_list:
         #     plt_obj.setXlabel(r"$\beta_{20}$")
         #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
         #     plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        # _ = 0
+        # plt_obj.mergeFiguresInto1PDF('GDD_t3_list-D1S_sphericaledf_D1S')
         """
         Script to export for the json by 
         """
@@ -1331,7 +1469,36 @@ if __name__ == "__main__":
         import json
         with open(FLD_+f'results_gdd_b20_z{z}n{n}.json', 'w+') as fp:
             json.dump(export_, fp)
-        
+    
+    
+    SUBFLD_ = 'BU_folder_hamil_gdd_000_z12n12/'
+    # # SUBFLD_ = 'SDnuclei_MZ5/'
+    Plotter1D_CanonicalBasis.setFolderPath2Import('../DATA_RESULTS/Beta20/Mg_GDD_test/24_HFB/')
+    files_ = ["export_TESq20_z12n12_hamil_gdd_000.txt", ]
+    plt_obj2 = Plotter1D_CanonicalBasis(files_, iter_procedure_sweep=True)
+    plt_obj2.setXlabel("b20 value")
+    attr2plot_list = [
+            'E_HFB', 
+            # 'E_HFB_pp', 'E_HFB_nn', 'E_HFB_pn', 
+            # 'hf', 'hf_pp', 'hf_nn', 'hf_pn',
+            # 'pair_pp', 'pair_nn', 'pair_pn', 
+            # *pair_constr,
+            # 'beta_isoscalar', 'gamma_isoscalar',
+            # 'b30_isoscalar',  'b32_isoscalar',
+            # 'Jz', 'var_n', 'var_p'
+            ]
+    
+    attr2plot = [
+        Plotter1D_CanonicalBasis.AttrEigenbasisEnum.h,
+        # Plotter1D_CanonicalBasis.AttrEigenbasisEnum.avg_neutron,
+        # Plotter1D_CanonicalBasis.AttrEigenbasisEnum.v2,
+        # Plotter1D_CanonicalBasis.AttrEigenbasisEnum.fermi_energ_prot,
+        ]
+    for ind_, attr_ in enumerate(attr2plot):
+        plt_obj2.defaultPlot(attr_, index_2_print=None,
+                            attr2plotExport=attr2plot_list,
+                            show_plot=ind_==len(attr2plot)-1)
+    _=0
     #===========================================================================
     # PLOT the P_T surfaces
     #===========================================================================
@@ -1475,7 +1642,7 @@ if __name__ == "__main__":
     # PLOT NILSON TYPE SURFACES
     #===========================================================================
     
-    # SUBFLD_ = 'BU_folder_D1S_MZ5_z10n10'
+    # SUBFLD_ = 'BU_folder_D1S_MZ5_z10n10/'
     # # # SUBFLD_ = 'SDnuclei_MZ5/'
     # Plotter1D_CanonicalBasis.setFolderPath2Import('../DATA_RESULTS/Cranking/')
     # files_ = ['export_TES_Jx_z16n17_D1S_MZ4.txt', ]
