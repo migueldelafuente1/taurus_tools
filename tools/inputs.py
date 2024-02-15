@@ -10,6 +10,7 @@ import numpy as np
 from copy import deepcopy, copy
 import os
 from tools.Enums import Enum
+from tools.helpers import readAntoine
 
 class _Input(object):
     '''
@@ -189,9 +190,10 @@ r_dim                       = {r_dim}
 Omega_Order                 = {omega_dim}
 export_density (1, 0)       = {eval_export_h}
 eval QuasiParticle Vs       = 0
-eval/export Valence.Space   = 0 203 205 10001
+eval/export Valence.Space   = {export_vs}
 * Integration parameters:      ------------"""
-    
+    ## eval/export Valence.Space   = 0 203 205 10001
+
     class InpDDEnum(Enum):
         eval_dd = 'eval_dd'
         eval_rea = 'eval_rea'
@@ -201,6 +203,7 @@ eval/export Valence.Space   = 0 203 205 10001
         alpha_param = 'alpha_param'
         r_dim = 'r_dim'
         omega_dim = 'omega_dim'
+        export_vs = 'export_vs'
     
     ## default parameters
     _DEFAULT_DD_PARAMS = { 
@@ -212,6 +215,7 @@ eval/export Valence.Space   = 0 203 205 10001
         InpDDEnum.alpha_param : 0.333333,
         InpDDEnum.r_dim       : 10,
         InpDDEnum.omega_dim   : 10,
+        InpDDEnum.export_vs   : 0,
         }
     ## this is the parameters used to print the input_DD_PARAMS file
     _DD_PARAMS = {
@@ -223,6 +227,7 @@ eval/export Valence.Space   = 0 203 205 10001
         InpDDEnum.alpha_param : 0.333333,
         InpDDEnum.r_dim       : 10,
         InpDDEnum.omega_dim   : 10,
+        InpDDEnum.export_vs   : 0,
     }
     
     def __init__(self, z, n, interaction, input_filename=None, **params):
@@ -429,7 +434,7 @@ eval/export Valence.Space   = 0 203 205 10001
         state_found = False
         
         for spss in hamil_shell_list:
-            n, l, j = int(spss)
+            n, l, j = readAntoine(int(spss), l_ge_10)
             deg = j + 1
             if not state_found:
                 if l_ge_10:
@@ -484,6 +489,9 @@ eval/export Valence.Space   = 0 203 205 10001
             :eval_dd, rea, explicit_dd : 0,1
             :x0_param, t3_param, alpha_param : <float>
             :r_dim, omega_dim  :: <int>
+            :export_vs: get the arguments for exporting the valence space
+                0: do nothing; >0 export all the states; 
+                (101, 103, 205, 10001) for specific valence space exporting.
         '''
         ## reset the DD parameters
         for k, v in cls._DEFAULT_DD_PARAMS.items():
@@ -505,6 +513,25 @@ eval/export Valence.Space   = 0 203 205 10001
                     f"R/Omega dim must be positive integers. Got[{val}]"
             if isinstance(val, bool): val = int(val)
             
+            if arg == cls.InpDDEnum.export_vs:
+                if isinstance(val, (list, tuple)):
+                    if len(val) == 0: 
+                        val = 0
+                    else:
+                        if type(val[0]) == int:
+                            assert not False in [type(i)==int for i in val], \
+                                "set with integers."
+                        elif type(val[0]) == str:
+                            assert not False in [i.isdigit() for i in val], \
+                                "string values should be integers"
+                        val = "{} {}".format(len(val), " ".join(val))
+                elif isinstance(val, int) and (val > 0):
+                    val = 99 ## to ensure export all the space and ignore the states.
+                else:
+                    raise InputException(
+                        "The export of valence space should be 0, integer "
+                        "or list-tuple of the states to export")
+            
             cls._DD_PARAMS[arg] = val
             
     def get_inputDDparamsFile(self, r_dim=None, omega_dim=None):
@@ -517,7 +544,7 @@ eval/export Valence.Space   = 0 203 205 10001
             params[self.InpDDEnum.r_dim] = r_dim
         if omega_dim and isinstance(omega_dim, int):
             params[self.InpDDEnum.omega_dim] = omega_dim
-        
+                    
         if (params[self.InpDDEnum.eval_export_h] == 1):
             print("[WARNING] eval_calculations will use explicit evaluation of "
                   "the matrix elements and the time required will grow exponentially.")

@@ -32,7 +32,7 @@ if __name__ == '__main__':
     is to copy and read hamiltonians from a folder and perform, without DD components
     the minimization.
     """
-    for trf in range(50, 141, 10):
+    for trf in (75, 70, 80):#range(70, 81, 5):
     
         MAIN_HAMIL_FOLDER = 'FOLDER_GDD/'
         curr_hamil = f'hamil_gdd_{trf:03}'
@@ -50,27 +50,28 @@ if __name__ == '__main__':
         interactions = {(12, 12): curr_hamil, }
     
         run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
-                        seed_base=3, ROmega= (0, 0), convergences=5,
+                        seed_base=3, ROmega= (0, 0), convergences=3,
                         fomenko_points=(9, 9))
-        
+    
+
     """
     This script perform gogny surfaces by also obtaining the non-density dependent
     part of Gogny interactions by the key-word argument:
         gogny_interaction = GognyEnum.
     """
-    interactions = {
-        ( 12, 8) : (3, 0, 1.81),
-        ( 12, 10): (3, 0, 1.83),
-        ( 12, 12): (3, 0, 1.83),
-        ( 12, 14): (3, 0, 1.79),
-        ( 12, 16): (3, 0, 1.80),
-        ( 12, 20): (3, 0, 2.01),
-    }
-    
-    nucleus = sorted(list(interactions.keys()))
-    run_b20_Gogny_surface(nucleus, interactions, GognyEnum.D1S,
-                          seed_base=3, ROmega=(14,12), 
-                          q_min=-0.4, q_max=0.6, N_max=51, convergences=5)
+    # interactions = {
+    #     ( 12, 8) : 'D1S_MZ3', #(3, 0, 1.81),
+    #     # ( 12, 10): (3, 0, 1.83),
+    #     # ( 12, 12): (3, 0, 1.83),
+    #     # ( 12, 14): (3, 0, 1.79),
+    #     # ( 12, 16): (3, 0, 1.80),
+    #     # ( 12, 20): (3, 0, 2.01),
+    # }
+    #
+    # nucleus = sorted(list(interactions.keys()))
+    # run_b20_Gogny_surface(nucleus, interactions, GognyEnum.D1S,
+    #                       seed_base=3, ROmega=(14,12), 
+    #                       q_min=-0.4, q_max=0.6, N_max=4, convergences=1)
     # raise Exception("STOP HERE.")
     
     

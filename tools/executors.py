@@ -23,7 +23,6 @@ from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 from future.builtins.misc import isinstance
-from _ast import If
 
 class ExecutionException(BaseException):
     pass
@@ -80,6 +79,7 @@ class _Base1DTaurusExecutor(object):
         
         self.activeDDterm = True
         self.axialSymetryRequired = False ## set up to reject non-axial results
+        self.sphericalSymmetryRequired = False
         self._output_filename = self.DTYPE.DEFAULT_OUTPUT_FILENAME
         
         self.deform_oblate   : list = []
@@ -161,6 +161,7 @@ class _Base1DTaurusExecutor(object):
             print("[WARNING Executor] Seed was not defined, it will be copied (s=1).")
         
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False,
+                                     spherical_calc=False,
                                      **input_kwargs):
         """
         Set arguments or constraints to be STATIC in the calculation, 
@@ -190,9 +191,13 @@ class _Base1DTaurusExecutor(object):
         
         if core_calc:
             self.inputObj.setUpValenceSpaceCalculation()
-        elif axial_calc:
+        elif axial_calc or spherical_calc:
             self.inputObj.setUpNoCoreAxialCalculation()
             self.axialSymetryRequired = True
+            if spherical_calc:
+                self.sphericalSymmetryRequired = True
+                input_kwargs[InputTaurus.ArgsEnum.seed] = 2
+                
         
         _check = [(hasattr(self.ITYPE.ArgsEnum,k) or 
                    hasattr(self.ITYPE.ConstrEnum,k)) for k in input_kwargs.keys()]
@@ -306,8 +311,10 @@ class _Base1DTaurusExecutor(object):
         """
         Additional criteria to require certain properties after running.
         """
-        if self.axialSymetryRequired and not result.isAxial:
-            return False
+        if self.sphericalSymmetryRequired:
+            return result.isAxial(and_spherical=True)
+        if self.axialSymetryRequired:
+            return result.isAxial()
         return True
     
     def _runUntilConvergence(self, MAX_STEPS=3):
@@ -397,8 +404,10 @@ class _Base1DTaurusExecutor(object):
                     self._final_bin_list_data[0][k] = res._exported_filename
         else:
             print(" ** prolate (back):")
-            for k, val in reversed(self._deformations_map[1][1:]): # prolate
-                ## exclude the first state since it is the original seed
+            ## exclude the first state since it is the original seed
+            ## UPDATE, repeat that solution, the 1st minimum could not be the exact one 
+            start_from_ = 0
+            for k, val in reversed(self._deformations_map[1][start_from_:]): # prolate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
                 res  : self.DTYPE = self._executeProgram()
@@ -1359,25 +1368,31 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
             exporting the list of results-wf final in a list.dat for BMF calculations
+            
+            export the constrained value as well (from CONSTRAINT_DT)
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
         ## exportar oblate-reverse order
-        for k in range(-1, -len(self._final_bin_list_data[0])-1, -1):
+        for k in range(-len(self._final_bin_list_data[0]), -1, 1):
             tail = self._final_bin_list_data[0][k]
-            bins_.append("seed_{}.bin".format(tail))
-            outs_.append("res_{}.out".format(tail))
+            constr_val = getattr(self._results[0][k], self.CONSTRAINT_DT)
+            constr_val = f"{(constr_val):6.3f}".replace('-', '_')
+            bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
+            outs_.append("res_{}.out\t{}".format(tail, constr_val))
         ## exportar prolate en orden
         for k in range(len(self._final_bin_list_data[1])):
             tail = self._final_bin_list_data[1][k]
-            bins_.append("seed_{}.bin".format(tail))
-            outs_.append("res_{}.out".format(tail))
+            constr_val = getattr(self._results[1][k], self.CONSTRAINT_DT)
+            constr_val = f"{(constr_val):6.3f}".replace('-', '_')
+            bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
+            outs_.append("res_{}.out\t{}".format(tail, constr_val))
         
-        with open('list.dat', 'w+') as f:
+        with open('list_dict.dat', 'w+') as f:
             f.write("\n".join(bins_))
         with open('list_outputs.dat', 'w+') as f:
             f.write("\n".join(outs_))
-        shutil.copy('list.dat', self.DTYPE.BU_folder)
+        shutil.copy('list_dict.dat', self.DTYPE.BU_folder)
         shutil.copy('list_outputs.dat', self.DTYPE.BU_folder)
         
         args = list(args) + list(kwargs.values())
@@ -1387,8 +1402,21 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             
             zipBUresults(DataTaurus.BU_folder, self.z, self.n, self.interaction,
                          *args)
-    
-
+        ## Create a list of wf to do the VAP calculations:
+        if self.DTYPE is DataTaurus:
+            os.chdir(self.DTYPE.BU_folder)
+            os.mkdir('PNVAP')
+            list_dat = []
+            for i, bin_ in enumerate(bins_):
+                fn, def_ = bin_.split()
+                shutil.copy(fn, 'PNVAP/' + def_.strip() + '.bin')
+                fn, _ = outs_[i].split()
+                shutil.copy(fn.strip(), 'PNVAP/' + def_.strip() + '.out')
+                list_dat.append(def_ + '.bin')
+            with open('list.dat', 'w+') as f:
+                f.write("\n".join(list_dat))
+            shutil.move('list.dat', 'PNVAP/')
+            os.chdir('..')
 
 class ExeAxial1D_DeformQ20(_Base1DAxialExecutor, ExeTaurus1D_DeformQ20):
     

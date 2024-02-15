@@ -658,7 +658,7 @@ def __plotEfficiencyShitFromFilesInFolder(DATA_FOLDER, IMPORT_FILENAME, MODE2PRI
     
     
     fn_names = []
-    from pypdf import PdfMerger
+    from PyPDF2 import PdfMerger
     merger = PdfMerger()
     figures_dict = {'tcpuPi_by_spdim':fig1, 'tcpuPi_byRO':fig2, 
                     'ramUsage_by_spdimRO':fig3, 'densErr_byRO':fig4, 

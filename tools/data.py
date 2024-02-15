@@ -1136,7 +1136,7 @@ class DataTaurus(_DataObjectBase):
         if not almostEqual(self.parity - 1, 1.e-5): return False
         TOL = 1.0e-5
         for l in range(1,5):
-            mu_min = 2 if and_spherical else 1
+            mu_min = 0 if and_spherical else 1
             for mu in range(mu_min, l +1, 2):
                 if not hasattr(self, f'b{l}{mu}_p'): continue
                 b_lm = (getattr(self, f'b{l}{mu}_p'),
