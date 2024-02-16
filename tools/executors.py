@@ -367,9 +367,9 @@ class _Base1DTaurusExecutor(object):
             
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backwardsSweeping(oblate_part=True)
-            
-            print(" ** prolate:")
-            for k, val in self._deformations_map[1][1:]: # prolate
+            start_from_ = 0
+            print(" ** prolate:   start_from_ = ", start_from_, "")
+            for k, val in self._deformations_map[1][start_from_:]: # prolate
                 ## exclude the first state since it is the original seed
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
@@ -1377,19 +1377,19 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## exportar oblate-reverse order
         print("self._final_bin_list_data[0]=\n", self._final_bin_list_data[0])
         print("self._final_bin_list_data[1]=\n", self._final_bin_list_data[1])
-        for k in range(-len(self._final_bin_list_data[0]), -1, 1):
+        for k in range(-len(self._final_bin_list_data[0]), 0, 1):
             tail = self._final_bin_list_data[0][k]
-            constr_val = getattr(self._results[0][k], self.CONSTRAINT_DT)
-            constr_val = f"{(constr_val):6.3f}".replace('-', '_')
+            constr_val = getattr(self._results[0][-k-1], self.CONSTRAINT_DT)
+            constr_val = f"{constr_val:6.3f}".replace('-', '_')
             bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
-            outs_.append("res_{}.out\t{}".format(tail, constr_val))
+            outs_.append("res_{}.OUT\t{}".format(tail, constr_val))
         ## exportar prolate en orden
         for k in range(len(self._final_bin_list_data[1])):
             tail = self._final_bin_list_data[1][k]
             constr_val = getattr(self._results[1][k], self.CONSTRAINT_DT)
-            constr_val = f"{(constr_val):6.3f}".replace('-', '_')
+            constr_val = f"{constr_val:6.3f}".replace('-', '_')
             bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
-            outs_.append("res_{}.out\t{}".format(tail, constr_val))
+            outs_.append("res_{}.OUT\t{}".format(tail, constr_val))
         
         with open('list_dict.dat', 'w+') as f:
             f.write("\n".join(bins_))
@@ -1415,7 +1415,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
                 fno, _ = outs_[i].split()
                 print(f" cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
-                shutil.copy(fno, 'PNVAP/' + def_ + '.out')
+                shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
                 list_dat.append(def_ + '.bin')
             with open('list.dat', 'w+') as f:
                 f.write("\n".join(list_dat))
