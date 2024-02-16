@@ -1408,8 +1408,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             os.mkdir('PNVAP')
             list_dat = []
             for i, bin_ in enumerate(bins_):
-                fn, def_ = bin_.split()
-                def_ = def_.replace("-", "_")
+                fn, def_ = bin_.replace("-", "_").split()
                 shutil.copy(fn, 'PNVAP/' + def_.strip() + '.bin')
                 fn, _ = outs_[i].split()
                 shutil.copy(fn.strip(), 'PNVAP/' + def_.strip() + '.out')
