@@ -414,7 +414,7 @@ class EigenbasisData(_DataObjectBase):
         self.avg_neutron = []
         self.avg_n    = []
         self.avg_l    = []
-        self.avg_parity    = []
+        self.avg_parity  = []
         self.avg_j    = []
         self.avg_jz   = []
         self.v2   = []
