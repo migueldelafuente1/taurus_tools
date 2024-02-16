@@ -1373,7 +1373,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
+        print(f"\n  Export by the constraint [{self.CONSTRAINT_DT}]\n")
         ## exportar oblate-reverse order
+        print("self._final_bin_list_data[0]=\n", self._final_bin_list_data[0])
+        print("self._final_bin_list_data[1]=\n", self._final_bin_list_data[1])
         for k in range(-len(self._final_bin_list_data[0]), -1, 1):
             tail = self._final_bin_list_data[0][k]
             constr_val = getattr(self._results[0][k], self.CONSTRAINT_DT)
@@ -1404,14 +1407,15 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## Create a list of wf to do the VAP calculations:
         if self.DTYPE is DataTaurus:
             os.chdir(self.DTYPE.BU_folder)
-            print("\n  Saving the results for BMF in /PNVAP, cwd():", os.getcwd())
+            print(f"\n  Saving the results for BMF in /PNVAP, cwd(): [{os.getcwd()}]", )
             os.mkdir('PNVAP')
             list_dat = []
             for i, bin_ in enumerate(bins_):
-                fn, def_ = bin_.replace("-", "_").split()
-                shutil.copy(fn, 'PNVAP/' + def_.strip() + '.bin')
-                fn, _ = outs_[i].split()
-                shutil.copy(fn.strip(), 'PNVAP/' + def_.strip() + '.out')
+                fn, def_ = bin_.split()
+                shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
+                fno, _ = outs_[i].split()
+                print(f" cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
+                shutil.copy(fno, 'PNVAP/' + def_ + '.out')
                 list_dat.append(def_ + '.bin')
             with open('list.dat', 'w+') as f:
                 f.write("\n".join(list_dat))
