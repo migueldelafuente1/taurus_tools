@@ -13,7 +13,7 @@ from datetime import datetime
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.hamiltonianMaker import TBMEXML_Setter, TBME_HamiltonianManager
 from tools.Enums import CentralMEParameters, PotentialForms,\
-    BrinkBoekerParameters, ForceFromFileParameters
+    BrinkBoekerParameters, ForceFromFileParameters, GognyEnum
 
 def run_q20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
@@ -170,6 +170,9 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
     """
+    if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
+        and gogny_interaction != GognyEnum.B1):
+        raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
     ExeTaurus1D_DeformB20.ITERATIVE_METHOD = \
         ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_SWEEPING
@@ -177,7 +180,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
     ExeTaurus1D_DeformB20.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
-        DataTaurus.DatFileExportEnum.occupation_numbers,
+        # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = 3
     if convergences != None:
@@ -206,7 +209,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00)
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
         }
         
         input_args_onrun = {
@@ -217,7 +221,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00)
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
         }
         
         ExeTaurus1D_DeformB20.EXPORT_LIST_RESULTS = f"export_TESb20_z{z}n{n}_{interaction}.txt"

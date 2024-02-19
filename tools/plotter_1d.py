@@ -1306,18 +1306,19 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    SUBFLD_ = 'Mg_GDD_test/24_HFB/' #'Mg_GDD_test/24_VAP9/' # 
+    SUBFLD_ = 'Mg_GDD_test/22/VAP9/' #'Mg_GDD_test/24_VAP9/' # 
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
     _Plotter1D.EXPORT_PDF_AND_MERGE = True
     FLD_ = _Plotter1D.FOLDER_PATH
     nuclei = [
-        (12,12),
+        (12,10),
         ]
     for z, n in nuclei:
         ## Set the files and the labels to plot
+        aa = z+n
         files_, labels_by_files = [], []
-        for gdd_factor in np.insert(range(50, 141, 10), 0, 0):
-            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_{gdd_factor:03}.txt')
+        for gdd_factor in (75, ): #np.insert(range(50, 141, 10), 0, 0):
+            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_A{aa}_{gdd_factor:03}.txt')
             labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
         files_.append(f'export_TESb20_z{z}n{n}_D1S_MZ3.txt')
         labels_by_files.append(f"D1S-edf ")
@@ -1325,26 +1326,27 @@ if __name__ == "__main__":
         labels_by_files = dict(zip(files_, labels_by_files))
         
         plt_obj = Plotter1D_Taurus(files_)
-        # plt_obj.LATEX_FORMAT = True
-        # plt_obj.setPyplotKWARGS(
-        #     {files_[0]: dict(color='red', marker='.'),
-        #      files_[-1]: dict(color='black', linestyle='--')})
-        #
-        # attr2plot_list = [ 'E_HFB', 'hf',]
-        # for attr2plot in attr2plot_list:
-        #     plt_obj.setXlabel(r"$\beta_{20}$")
-        #     # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
-        #     plt_obj.shift2topValue_plot(attr2plot, 
-        #                                 show_plot=attr2plot==attr2plot_list[-1])
-        #
-        # attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 
-        #                   'b30_isoscalar', 'Jz_2']  # DataTaurus
-        # for attr2plot in attr2plot_list:
-        #     plt_obj.setXlabel(r"$\beta_{20}$")
-        #     plt_obj.setLabelsForLegendByFileData(labels_by_files)
-        #     plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
-        # plt_obj.mergeFiguresInto1PDF('GDD_t3_list-D1S_sphericaledf_D1S')
+        plt_obj.LATEX_FORMAT = True
+        plt_obj.setPyplotKWARGS(
+            {files_[0]: dict(color='red', marker='.'),
+             files_[-1]: dict(color='black', linestyle='--')})
+        
+        attr2plot_list = [ 'E_HFB', 'hf',]
+        for attr2plot in attr2plot_list:
+            plt_obj.setXlabel(r"$\beta_{20}$")
+            # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+            plt_obj.setLabelsForLegendByFileData(labels_by_files)
+            plt_obj.shift2topValue_plot(attr2plot, 
+                                        show_plot=attr2plot==attr2plot_list[-1])
+        
+        attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 
+                          'b30_isoscalar', 'Jz_2']  # DataTaurus
+        for attr2plot in attr2plot_list:
+            plt_obj.setXlabel(r"$\beta_{20}$")
+            plt_obj.setLabelsForLegendByFileData(labels_by_files)
+            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+        plt_obj.mergeFiguresInto1PDF('GDD_t3_list-D1S_sphericaledf_D1S')
+        0/0
         """
         Script to export for the json by 
         """
@@ -1389,7 +1391,7 @@ if __name__ == "__main__":
     
     SUBFLD_ = 'BU_folder_hamil_gdd_000_z12n12/'
     # # SUBFLD_ = 'SDnuclei_MZ5/'
-    Plotter1D_CanonicalBasis.setFolderPath2Import('../DATA_RESULTS/Beta20/Mg_GDD_test/24_HFB/')
+    Plotter1D_CanonicalBasis.setFolderPath2Import('../DATA_RESULTS/Beta20/Mg_GDD_test/24/HFB/')
     files_ = ["export_TESq20_z12n12_hamil_gdd_000.txt", ]
     plt_obj2 = Plotter1D_CanonicalBasis(files_, iter_procedure_sweep=True)
     plt_obj2.setXlabel("b20 value")
