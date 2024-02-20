@@ -1306,19 +1306,29 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    SUBFLD_ = 'Mg_GDD_test/22/VAP9/' #'Mg_GDD_test/24_VAP9/' # 
+    SUBFLD_ = 'Mg_GDD_test/26/VAP9/' 
+    # SUBFLD_ = 'Mg_B1/22/VAP9/' 
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
     _Plotter1D.EXPORT_PDF_AND_MERGE = True
     FLD_ = _Plotter1D.FOLDER_PATH
     nuclei = [
-        (12,10),
+        # (12, 8), (12,12), (12, 14), 
+        # (12, 16), (12, 18), 
+        (12, 20),
         ]
     for z, n in nuclei:
+        
+        SUBFLD_ = f'Mg_GDD_test/{z+n}/VAP9/' 
+        # SUBFLD_ = 'Mg_B1/22/VAP9/' 
+        _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
+        _Plotter1D.EXPORT_PDF_AND_MERGE = True
+        FLD_ = _Plotter1D.FOLDER_PATH
+        
         ## Set the files and the labels to plot
         aa = z+n
         files_, labels_by_files = [], []
-        for gdd_factor in (75, ): #np.insert(range(50, 141, 10), 0, 0):
-            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_A{aa}_{gdd_factor:03}.txt')
+        for gdd_factor in (0, 70, 75, 80, 100, ) : #np.insert(range(50, 141, 10), 0, 0):
+            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_A{aa}_{gdd_factor:03}.txt') # 
             labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
         files_.append(f'export_TESb20_z{z}n{n}_D1S_MZ3.txt')
         labels_by_files.append(f"D1S-edf ")
@@ -1346,6 +1356,8 @@ if __name__ == "__main__":
             plt_obj.setLabelsForLegendByFileData(labels_by_files)
             plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
         plt_obj.mergeFiguresInto1PDF('GDD_t3_list-D1S_sphericaledf_D1S')
+
+        # continue
         0/0
         """
         Script to export for the json by 

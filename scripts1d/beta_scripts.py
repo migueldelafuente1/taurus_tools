@@ -199,6 +199,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
                InputTaurus.InpDDEnum.r_dim     : ROmega[0],
                InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
+        axial_calc = seed_base in (2, 3, 9)
+        
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
@@ -211,6 +213,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
         }
         
         input_args_onrun = {
@@ -223,6 +226,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
         }
         
         ExeTaurus1D_DeformB20.EXPORT_LIST_RESULTS = f"export_TESb20_z{z}n{n}_{interaction}.txt"
@@ -297,6 +301,7 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         if interaction == None or not os.path.exists(interaction+'.sho'):
             print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
+        axial_calc = seed_base in (2, 3, 9)
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
@@ -308,7 +313,8 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00)
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
         }
         
         input_args_onrun = {
@@ -319,7 +325,8 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00)
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
         }
         
         ExeTaurus1D_DeformB20.EXPORT_LIST_RESULTS = f"export_TESb20_z{z}n{n}_{interaction}.txt"
