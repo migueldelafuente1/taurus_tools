@@ -478,14 +478,14 @@ class TBME_HamiltonianManager(object):
             f.write(com_text)
         self.com_filename = com_filename
     
-    def _set_defaultHamilName(self):
+    def _set_defaultHamilName(self, gogny_interaction):
         """ 
         Set a default name depending on the interaction choice.
         """
         if self.hamil_filename != None:
             return
         
-        name = 'D1S'
+        name = gogny_interaction if gogny_interaction!=None else 'D1S'
         if not self.do_coulomb:
             name += "_noCoul"
         if not self.do_LS:
@@ -496,13 +496,13 @@ class TBME_HamiltonianManager(object):
         
         self.hamil_filename = name       
     
-    def __setXMLforCommonArguments(self, root):
+    def __setXMLforCommonArguments(self, root, gogny_interaction=None):
         """ 
         Set the parts for <Output_Parameters>, <SHO_Parameters>, <Valence_Space>
         """
         out_   = root.find(InputParts.Output_Parameters)
         outfn_ = out_.find(Output_Parameters.Output_Filename)
-        self._set_defaultHamilName()
+        self._set_defaultHamilName(gogny_interaction)
         outfn_.text = self.hamil_filename
         docom_ = out_.find(Output_Parameters.COM_correction)
         docom_.text = '0' ## set to 0 and import directly the matrix element
@@ -545,7 +545,7 @@ class TBME_HamiltonianManager(object):
         title_ = root.find(InputParts.Interaction_Title)
         title_.text = aux_tit if title == "" else title
         
-        root =  self.__setXMLforCommonArguments(root)
+        root =  self.__setXMLforCommonArguments(root, gogny_interaction)
         
         forces = root.find(InputParts.Force_Parameters)
         forces = self._set_GognyParameters(forces, gogny_interaction)
