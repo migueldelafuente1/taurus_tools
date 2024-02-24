@@ -231,7 +231,7 @@ class _PlotterBase(object):
         Get a list to scatter for the states that could not be converged 
         Use select the index to select the y_values to present.!!
         """
-        x_npf, y_npf = [], []
+        x_npf, y_npf, lab_npf = [], [], []
         
         ppfin = ( x.properly_finished for x in self._results[file_])
         x_npf = self._x_values[file_].values()
@@ -1306,20 +1306,24 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    SUBFLD_ = 'Mg_GDD_test/26/VAP9/' 
+    SUBFLD_ = 'Mg_GDD_test/34/VAP9/' 
     # SUBFLD_ = 'Mg_B1/22/VAP9/' 
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
     _Plotter1D.EXPORT_PDF_AND_MERGE = True
     FLD_ = _Plotter1D.FOLDER_PATH
     nuclei = [
-        # (12, 8), (12,12), (12, 14), 
-        # (12, 16), (12, 18), 
+        # (12, 8),
+        # (12, 10),
+        (12, 12), 
+        (12, 14), 
+        (12, 16), 
+        (12, 18), 
         (12, 20),
         ]
     for z, n in nuclei:
-        
-        SUBFLD_ = f'Mg_GDD_test/{z+n}/VAP9/' 
-        # SUBFLD_ = 'Mg_B1/22/VAP9/' 
+        #
+        SUBFLD_ = f'Mg_GDD_test/{z+n}/HFB/' 
+        # SUBFLD_ = f'Mg_B1/{z+n}/VAP9/' 
         _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
         _Plotter1D.EXPORT_PDF_AND_MERGE = True
         FLD_ = _Plotter1D.FOLDER_PATH
@@ -1357,7 +1361,7 @@ if __name__ == "__main__":
             plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
         plt_obj.mergeFiguresInto1PDF('GDD_t3_list-D1S_sphericaledf_D1S')
 
-        # continue
+        continue
         0/0
         """
         Script to export for the json by 
@@ -1400,7 +1404,7 @@ if __name__ == "__main__":
         with open(FLD_+f'results_gdd_b20_z{z}n{n}.json', 'w+') as fp:
             json.dump(export_, fp)
     
-    
+    0/0
     SUBFLD_ = 'BU_folder_hamil_gdd_000_z12n12/'
     # # SUBFLD_ = 'SDnuclei_MZ5/'
     Plotter1D_CanonicalBasis.setFolderPath2Import('../DATA_RESULTS/Beta20/Mg_GDD_test/24/HFB/')

@@ -265,7 +265,7 @@ class EnergyByJGraph(EnergyLevelGraph):
 
     def render_box(self, plt_ax, color=''):
         
-        _LS_MK = 'o*vx+d^>s<hDPX'
+        _LS_MK = 'o*vx+d^>s<hDPX'*2
         for par, values_ in self._surface_bypar.items():
             for i, exc_col in enumerate(values_):
                 # NOTE:: This is to align the branch from left to right
@@ -380,6 +380,7 @@ class BaseLevelContainer(object):
         self._renderLevelGraphs(figaspect=figaspect)
         
         if export_filename:
+            export_filename.replace(".pdf", "")
             self._fig.savefig(export_filename + '.pdf')
     
     def _filterStatesForThisLevelObject(self, lev_obj : _BaseLevelGraph):
