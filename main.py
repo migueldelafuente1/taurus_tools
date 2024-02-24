@@ -53,30 +53,33 @@ if __name__ == '__main__':
     #                     seed_base=3, ROmega= (0, 0), convergences=3,
     #                     fomenko_points=(9, 9))
     
-    # nucleus = [(12, 8), (12, 10), #(12, 12),
-    #            (12, 14), (12, 16), (12, 18), (12, 20)]
-    # interactions = {}
-    #
-    # trf = 75
-    # for zz, nn in nucleus:#range(70, 81, 5):
-    #     aa = zz + nn
-    #     MAIN_HAMIL_FOLDER = f'FOLDER_GDD_{aa}/'
-    #     curr_hamil = f'hamil_gdd_A{aa}_{trf:03}'
-    #     print(" Copying for Hamil:", curr_hamil)
-    #     if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
-    #         for extension in OutputFileTypes.members():
-    #             file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
-    #             if os.path.exists(file_): 
-    #                 shutil.copy(file_, curr_hamil+extension)
-    #     else:
-    #         print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
-    #         continue
-    #
-    #     interactions [(zz, nn)] = curr_hamil
-    #
-    # run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
-    #                 seed_base=3, ROmega= (0, 0), convergences=3,
-    #                 fomenko_points=(9, 9))
+    nucleus = [
+        (12, 8),  (12, 10), (12, 12), (12, 14),
+        (12, 16), (12, 18), (12, 20), (12, 20),
+    ]
+    FMK_POINTS = 1
+    interactions = {}
+    
+    for zz, nn in nucleus:#range(70, 81, 5):
+        aa = zz + nn
+        MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
+        for trf in range(0, 261, 20):
+            curr_hamil = f'hamil_gdd_A{aa}_{trf:03}'
+            print(" Copying for Hamil:", curr_hamil)
+            if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
+                for extension in OutputFileTypes.members():
+                    file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
+                    if os.path.exists(file_): 
+                        shutil.copy(file_, curr_hamil+extension)
+            else:
+                print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
+                continue
+        
+            interactions [(zz, nn)] = curr_hamil
+    
+        run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
+                        seed_base=3, ROmega= (0, 0), convergences=5,
+                        fomenko_points=(FMK_POINTS, FMK_POINTS))
 
     """
     This script perform gogny surfaces by also obtaining the non-density dependent
@@ -84,18 +87,19 @@ if __name__ == '__main__':
         gogny_interaction = GognyEnum.
     """
     interactions_D1S = {
-        ( 12, 8) : (3, 0, 1.81), ( 12, 10): (3, 0, 1.83), ( 12, 12): (3, 0, 1.83),
-        ( 12, 14): (3, 0, 1.79), ( 12, 16): (3, 0, 1.80), ( 12, 18): (3, 0, 1.86),
-        ( 12, 20): (3, 0, 2.01),
+        (12,  8): (3, 0, 1.81), (12, 10): (3, 0, 1.83), 
+        (12, 12): (3, 0, 1.83), (12, 14): (3, 0, 1.79), 
+        (12, 16): (3, 0, 1.80), (12, 18): (3, 0, 1.86),
+        (12, 20): (3, 0, 2.01), (12, 20): (3, 0, 2.01),
     }
-    interactions_B1 = {
-        #( 12, 8) : (3, 0, 1.98), 
-        ( 12, 10): (3, 0, 1.94), ( 12, 12): (3, 0, 1.92), ( 12, 14): (3, 0, 1.95), 
-        #( 12, 16): (3, 0, 1.94), ( 12, 18): (3, 0, 1.98), ( 12, 20): (3, 0, 2.01),
-    }
+    # interactions_B1 = {
+    #     #(12,  8) : (3, 0, 1.98), 
+    #     (12, 10): (3, 0, 1.94), (12, 12): (3, 0, 1.92), (12, 14): (3, 0, 1.95), 
+    #     #(12, 16): (3, 0, 1.94), (12, 18): (3, 0, 1.98), (12, 20): (3, 0, 2.01),
+    # }
     
-    nucleus = sorted(list(interactions_B1.keys()))
-    run_b20_Gogny_surface(nucleus, interactions_B1, GognyEnum.B1,
+    nucleus = sorted(list(interactions_D1S.keys()))
+    run_b20_Gogny_surface(nucleus, interactions_D1S, GognyEnum.D1S,
                           seed_base=3, ROmega=(14,14), 
                           q_min=-0.4, q_max=0.6, N_max=50, convergences=4)
     raise Exception("STOP HERE.")
