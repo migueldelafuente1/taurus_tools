@@ -71,15 +71,16 @@ if __name__ == '__main__':
             curr_hamil = f'hamil_gdd_{trf:03}'
             print(" Copying for Hamil:", curr_hamil)
             if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
+                new_aa_hamil = curr_hamil.replace('gdd_', f'gdd_{aa}')
                 for extension in OutputFileTypes.members():
                     file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
                     if os.path.exists(file_): 
-                        shutil.copy(file_, curr_hamil+extension)
+                        shutil.copy(file_, new_aa_hamil+extension)
                     else:
                         print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
                         continue
             
-                interactions [(zz, nn)] = curr_hamil
+                interactions [(zz, nn)] = new_aa_hamil
         nucl_ = list(interactions.keys())
         run_b20_surface(nucl_, interactions, q_min=-.4, q_max=.5, N_max=45,
                         seed_base=3, ROmega= (0, 0), convergences=5,
