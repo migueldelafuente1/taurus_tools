@@ -58,26 +58,29 @@ if __name__ == '__main__':
         (12, 16), (12, 18), (12, 20), (12, 20),
     ]
     FMK_POINTS = 1
-    interactions = {}
     
-    for zz, nn in nucleus:#range(70, 81, 5):
-        aa = zz + nn
-        MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
-        for trf in range(0, 261, 20):
-            curr_hamil = f'hamil_gdd_A{aa}_{trf:03}'
+    for trf in range(0, 261, 20):
+        interactions = {}
+        
+        for zz, nn in nucleus:#range(70, 81, 5):
+            aa = zz + nn
+            MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
+            
+            
+            curr_hamil = f'hamil_gdd_{trf:03}'
             print(" Copying for Hamil:", curr_hamil)
             if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
                 for extension in OutputFileTypes.members():
                     file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
                     if os.path.exists(file_): 
                         shutil.copy(file_, curr_hamil+extension)
-            else:
-                print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
-                continue
-        
-            interactions [(zz, nn)] = curr_hamil
-    
-        run_b20_surface(nucleus, interactions, q_min=-.4, q_max=.5, N_max=45,
+                    else:
+                        print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
+                        continue
+            
+                interactions [(zz, nn)] = curr_hamil
+        nucl_ = list(interactions.keys())
+        run_b20_surface(nucl_, interactions, q_min=-.4, q_max=.5, N_max=45,
                         seed_base=3, ROmega= (0, 0), convergences=5,
                         fomenko_points=(FMK_POINTS, FMK_POINTS))
 
