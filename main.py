@@ -54,8 +54,9 @@ if __name__ == '__main__':
     #                     fomenko_points=(9, 9))
     
     nucleus = [
-        (12, 8),  (12, 10), (12, 12), (12, 14),
-        (12, 16), (12, 18), (12, 20), (12, 20),
+        (12, 8),  (12, 10), (12, 12), 
+        (12, 14), (12, 16), (12, 18), 
+        (12, 20), (12, 20),
     ]
     FMK_POINTS = 1
     
@@ -84,6 +85,7 @@ if __name__ == '__main__':
                         seed_base=3, ROmega= (0, 0), convergences=5,
                         fomenko_points=(FMK_POINTS, FMK_POINTS))
 
+    0/0
     """
     This script perform gogny surfaces by also obtaining the non-density dependent
     part of Gogny interactions by the key-word argument:
