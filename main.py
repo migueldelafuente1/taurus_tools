@@ -56,17 +56,17 @@ if __name__ == '__main__':
     nucleus = [
         (12, 8),  (12, 10), (12, 12), 
         (12, 14), (12, 16), (12, 18), 
-        (12, 20), (12, 20),
+        (12, 20), (12, 22),
     ]
-    FMK_POINTS = 1
+    FMK_POINTS = 9
     
-    for trf in range(0, 261, 20):
+    for trf in range(0, 261, 10):
+        if trf != 130: continue
         interactions = {}
         
         for zz, nn in nucleus:#range(70, 81, 5):
             aa = zz + nn
             MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
-            
             
             curr_hamil = f'hamil_gdd_{trf:03}'
             print(" Copying for Hamil:", curr_hamil)
@@ -85,8 +85,8 @@ if __name__ == '__main__':
         run_b20_surface(nucl_, interactions, q_min=-.4, q_max=.5, N_max=45,
                         seed_base=3, ROmega= (0, 0), convergences=5,
                         fomenko_points=(FMK_POINTS, FMK_POINTS))
-
-    0/0
+    
+    raise Exception("Stop, work done.")
     """
     This script perform gogny surfaces by also obtaining the non-density dependent
     part of Gogny interactions by the key-word argument:
