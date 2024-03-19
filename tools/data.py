@@ -1145,7 +1145,9 @@ class DataTaurus(_DataObjectBase):
                 if abs(b_lm[1]) > TOL: return False
         
         _properies = [ ]
-        for i in ('x', 'y', 'z'):
+        _properies.append(almostEqual(self.Jz_var , 0, TOL))
+        ## Jz /= 0 in odd nuclei, 
+        for i in ('x', 'y'):
             _properies.append(almostEqual(getattr(self,f'J{i}'), 0, TOL))
             if and_spherical:
                 _properies.append(almostEqual(getattr(self,f'J{i}_2'), 0, TOL))

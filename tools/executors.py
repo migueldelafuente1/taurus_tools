@@ -55,6 +55,7 @@ class _Base1DTaurusExecutor(object):
     SEEDS_RANDOMIZATION = 5 # Number of random seeds for even-even calculation / 
                             # ALSO: Number of blocking sp state for odd calculation
     GENERATE_RANDOM_SEEDS = False
+    IGNORE_BLOCKING     = False # Set True to do false odd-even nuclear surfaces
     # @classmethod
     # def __new__(cls, *args, **kwargs):
     #     """
@@ -1068,7 +1069,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self._getStatesAndDimensionsOfHamiltonian()
         
         if self._1stSeedMinima == None or reset_seed:
-            if 1 in self.numberParityOfIsotope:
+            if 1 in self.numberParityOfIsotope and (not self.IGNORE_BLOCKING):
                 ## procedure to evaluate odd-even nuclei
                 self._oddNumberParitySeedConvergence()
                 ## NOTE: The state blocked is in the seed, no more blocking during the process
@@ -1122,7 +1123,16 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         self._sh_states = sh_states
         self._sp_states = sp_states
-        self._sp_dim    = sp_dim        
+        self._sp_dim    = sp_dim
+        
+        sp_2j = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[2]), sh_states))
+        self._sp_2jmax = max(sp_2j.values())
+        self._sp_2jmin = min(sp_2j.values())
+        
+        sp_n = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[0]), sh_states))
+        self._sp_n_max = max(sp_n.values())
+        self._sp_n_min = min(sp_n.values())
+        
     
     def _oddNumberParitySeedConvergence(self):
         """

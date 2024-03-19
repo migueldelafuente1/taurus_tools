@@ -57,6 +57,10 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
             MSG_ = "Arguments must be (MZmax <int>, (>=) Mzmin <int>, b_lengt <float>)"
             assert len(args) == 3, MSG_
             MZmax, MZmin, b_length = args
+            
+            if b_length == None:                    ## Semiempirical formula
+                b_length = 1.005 * ((z+n)**(1/6))
+            
             assert type(MZmax)==int and type(MZmin) == int and type(b_length)==float, MSG_
             assert MZmax >= MZmin and MZmin >= 0, "MZmax >= Mzmin >= 0"
             

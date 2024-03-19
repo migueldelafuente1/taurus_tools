@@ -12,8 +12,8 @@ from tools.data import DataTaurus
 from datetime import datetime
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.hamiltonianMaker import TBMEXML_Setter, TBME_HamiltonianManager
-from tools.Enums import CentralMEParameters, PotentialForms,\
-    BrinkBoekerParameters, ForceFromFileParameters, GognyEnum
+from tools.Enums import GognyEnum
+from tools.exec_blocking_Kprojections import ExeTaurus1D_B20_OEblocking_Ksurfaces
 
 def run_q20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
@@ -345,3 +345,98 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         
     print("End run_b20_surface: ", datetime.now().time())
 
+
+def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
+                          seed_base=0, ROmega=(13, 13),
+                          q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                          fomenko_points=(1, 1)):
+    """
+    Reqire:
+    Args:
+        :nucleus: <list>: (z1,n1), (z2,n2), ..
+        :interactions: <dict> [Nucleus (z, n)]: (MZm_max, Mz_min, b_length)
+        :gogny_interaction: str from GognyEnum
+    Optional:
+        :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
+        :ROmega: <tuple>=(R, Omega) grid of Integration (Default is 10, 10)
+        :j_min
+        :j_max
+        :N_steps:
+        :convergences: <int> number of random seeds / blocked states to get the global minimum
+    """
+    if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
+        and gogny_interaction != GognyEnum.B1):
+        raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
+    
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.IGNORE_BLOCKING = True
+    
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.ITERATIVE_METHOD = \
+        ExeTaurus1D_B20_OEblocking_Ksurfaces.IterativeEnum.EVEN_STEP_STD
+        
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.SAVE_DAT_FILES = [
+        # DataTaurus.DatFileExportEnum.canonicalbasis,
+        DataTaurus.DatFileExportEnum.eigenbasis_h,
+        # DataTaurus.DatFileExportEnum.occupation_numbers,
+        ]
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION = 3
+    if convergences != None:
+        ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION = convergences
+        ExeTaurus1D_B20_OEblocking_Ksurfaces.GENERATE_RANDOM_SEEDS = True
+    
+    for z, n in nucleus:
+        interaction = getInteractionFile4D1S(interactions, z, n, 
+                                             gogny_interaction=gogny_interaction)
+        if interaction == None or not os.path.exists(interaction+'.sho'):
+            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            continue
+        
+        InputTaurus.set_inputDDparamsFile(
+            **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim     : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
+        
+        axial_calc = seed_base in (2, 3, 9)
+        
+        input_args_start = {
+            InputTaurus.ArgsEnum.com : 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
+            InputTaurus.ArgsEnum.seed: seed_base,
+            InputTaurus.ArgsEnum.iterations: 1000,
+            InputTaurus.ArgsEnum.grad_type: 1,
+            InputTaurus.ArgsEnum.grad_tol : 0.001,
+            InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
+            InputTaurus.ArgsEnum.pair_schm: 1,
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
+        }
+        
+        input_args_onrun = {
+            InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
+            InputTaurus.ArgsEnum.seed: 1,
+            InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.grad_type: 1,
+            InputTaurus.ArgsEnum.grad_tol : 0.01,
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
+        }
+        
+        ExeTaurus1D_B20_OEblocking_Ksurfaces.EXPORT_LIST_RESULTS = \
+            f"export_TESb20_z{z}n{n}_{interaction}.txt"        
+        try:
+            exe_ = ExeTaurus1D_B20_OEblocking_Ksurfaces(z, n, interaction)
+            exe_.setInputCalculationArguments(**input_args_start)
+            exe_.defineDeformationRange(q_min, q_max, N_max)
+            exe_.setUp()
+            exe_.setUpExecution(**input_args_onrun)
+            exe_.force_converg = False
+            exe_.run()
+            exe_.gobalTearDown()
+        except ExecutionException as e:
+            print(e)
+        
+    print("End run_b20_surface: ", datetime.now().time())

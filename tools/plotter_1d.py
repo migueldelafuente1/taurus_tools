@@ -448,7 +448,29 @@ class _PlotterBase(object):
         new_var = r'$${}$$'.format(new_var)
         return new_var
     
-
+    def modifyValuesForResults(self, files, **functions_over_attr):
+        """
+        This function modify attributes as function of other variables for each
+        result, iterated for all files and all the deformations.
+        
+        Example: modify the E_hfb because there is a problem with the zero energy
+            function_ (res_):
+                return res_.E_hfb + (res_.E_zero/2)
+            or:
+            function_ = lambda res_: res_.E_hfb + (res_.E_zero/2)
+        
+        Args:
+            files : list of specific file results, set None for all imported.
+            functions_over_attr: <dict>= attribute to change : function(attr)
+        """
+        if not files:
+            files = self.import_files
+        for file_ in files:
+            for k, res in enumerate(self._results[file_]):
+                for attr2change, function_ in functions_over_attr.items():
+                    setattr(res, attr2change, function_(res))
+                self._results[file_][k] = res
+    
 class _Plotter1D(_PlotterBase):
     '''
     classdocs
@@ -656,7 +678,7 @@ class _Plotter1D(_PlotterBase):
                     else:
                         self._axes.set_ylim([ -0.01, 1.0])
     
-    def defaultPlot(self, attr2plot=None, show_plot=True):
+    def defaultPlot(self, attr2plot=None, show_plot=True, show_errors=True):
         
         if hasattr(self, '_ylim_tops'): delattr(self, '_ylim_tops')
         if attr2plot:
@@ -701,10 +723,11 @@ class _Plotter1D(_PlotterBase):
             self._set_axisLimits(y_values)
             
             ## Print Un-converged results marked different
-            x_npf, y_npf = self._getListOfDataNonProperlyFinished(file_)
-            if len(y_npf)>0:
-                self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
-                                   zorder=2.5, )
+            if show_errors:
+                x_npf, y_npf = self._getListOfDataNonProperlyFinished(file_)
+                if len(y_npf)>0:
+                    self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
+                                       zorder=2.5, )
             ## NOTE: if 0 not in the _x_values deformation keys, will raise ValueError.
             x0_indx = sorted([i for i in self._x_values[file_].keys()]).index(0)
             self._axes.scatter(self._x_values[file_][0], y_values[x0_indx], marker='d',
@@ -745,7 +768,7 @@ class Plotter1D_Taurus(_Plotter1D):
     
     DTYPE = DataTaurus
     
-    def shift2topValue_plot(self, attr2plot=None, show_plot=True):
+    def shift2topValue_plot(self, attr2plot=None, show_plot=True, show_errors=True):
         """
         For all the surfaces, shift to the minimum value in the group and indicate
         in the plot the difference.
@@ -797,10 +820,11 @@ class Plotter1D_Taurus(_Plotter1D):
             # self._set_axisLimits(y_values)
             
             ## Print Un-converged results marked different
-            x_npf, y_npf = all_xy_failed[0][file_], all_xy_failed[1][file_]
-            if len(y_npf)>0:
-                self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
-                                   zorder=2.5, )
+            if show_errors:
+                x_npf, y_npf = all_xy_failed[0][file_], all_xy_failed[1][file_]
+                if len(y_npf)>0:
+                    self._axes.scatter(x_npf, y_npf, marker='X', c='k', #label='non converged',
+                                       zorder=2.5, )
             
             x0_indx = sorted([i for i in self._x_values[file_].keys()]).index(0)
             self._axes.scatter(x_values[x0_indx], y_values[x0_indx], marker='d',
@@ -1306,7 +1330,7 @@ if __name__ == "__main__":
     # PLOT OF DEFORMATION SURFACES
     #===========================================================================
     
-    SUBFLD_ = 'Mg_GDD_test/34/VAP9/' 
+    SUBFLD_ = 'Mg_GDD_test/34/HFB/' 
     # SUBFLD_ = 'Mg_B1/22/VAP9/' 
     _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
     _Plotter1D.EXPORT_PDF_AND_MERGE = True
@@ -1314,15 +1338,16 @@ if __name__ == "__main__":
     nuclei = [
         # (12, 8),
         # (12, 10),
-        (12, 12), 
-        (12, 14), 
-        (12, 16), 
+        # (12, 12), 
+        # (12, 14), 
+        # (12, 16), 
         (12, 18), 
-        (12, 20),
+        # (12, 20),
+        # (12, 22),
         ]
     for z, n in nuclei:
         #
-        SUBFLD_ = f'Mg_GDD_test/{z+n}/HFB/' 
+        SUBFLD_ = f'Mg_GDD_test/{z+n}/VAP9/' 
         # SUBFLD_ = f'Mg_B1/{z+n}/VAP9/' 
         _Plotter1D.setFolderPath2Import('../DATA_RESULTS/Beta20/'+SUBFLD_)
         _Plotter1D.EXPORT_PDF_AND_MERGE = True
@@ -1331,8 +1356,8 @@ if __name__ == "__main__":
         ## Set the files and the labels to plot
         aa = z+n
         files_, labels_by_files = [], []
-        for gdd_factor in (0, 70, 75, 80, 100, ) : #np.insert(range(50, 141, 10), 0, 0):
-            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_A{aa}_{gdd_factor:03}.txt') # 
+        for gdd_factor in range(130, 131, 20) : #np.insert(range(50, 141, 10), 0, 0):
+            files_.append(f'export_TESq20_z{z}n{n}_hamil_gdd_{aa}_{gdd_factor:03}.txt') # 
             labels_by_files.append(f"D1S_G ({gdd_factor/100:.2f})  ")
         files_.append(f'export_TESb20_z{z}n{n}_D1S_MZ3.txt')
         labels_by_files.append(f"D1S-edf ")
@@ -1340,29 +1365,32 @@ if __name__ == "__main__":
         labels_by_files = dict(zip(files_, labels_by_files))
         
         plt_obj = Plotter1D_Taurus(files_)
+        # plt_obj.modifyValuesForResults(files_[:-1],
+        #                                E_HFB = lambda r: r.E_HFB - (r.E_zero/2))
+        plt_obj.setTitle(f"$Quadrupole\ TES,\ ^{{{z+n}}}Mg\ D1S\ and\ hamiltonians$")
         plt_obj.LATEX_FORMAT = True
+        plt_obj.setPyplotKWARGS(dict([(f, dict(linestyle='--', )) for f in files_[1:-1]]))
         plt_obj.setPyplotKWARGS(
-            {files_[0]: dict(color='red', marker='.'),
-             files_[-1]: dict(color='black', linestyle='--')})
+            {files_[0]:  dict(color='red', marker='.'),
+             files_[-1]: dict(color='black', linestyle='-')})
         
         attr2plot_list = [ 'E_HFB', 'hf',]
         for attr2plot in attr2plot_list:
             plt_obj.setXlabel(r"$\beta_{20}$")
             # plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
             plt_obj.setLabelsForLegendByFileData(labels_by_files)
-            plt_obj.shift2topValue_plot(attr2plot, 
-                                        show_plot=attr2plot==attr2plot_list[-1])
+            plt_obj.shift2topValue_plot(attr2plot, show_errors=True,
+                                        show_plot=False )#attr2plot==attr2plot_list[-1])
         
         attr2plot_list = ['pair', 'r_isoscalar', 'b40_isoscalar', 
                           'b30_isoscalar', 'Jz_2']  # DataTaurus
         for attr2plot in attr2plot_list:
             plt_obj.setXlabel(r"$\beta_{20}$")
             plt_obj.setLabelsForLegendByFileData(labels_by_files)
-            plt_obj.defaultPlot(attr2plot, show_plot=attr2plot==attr2plot_list[-1])
+            plt_obj.defaultPlot(attr2plot, show_errors=True,
+                                show_plot=attr2plot==attr2plot_list[-1])
         plt_obj.mergeFiguresInto1PDF('GDD_t3_list-D1S_sphericaledf_D1S')
-
-        continue
-        0/0
+        
         """
         Script to export for the json by 
         """
