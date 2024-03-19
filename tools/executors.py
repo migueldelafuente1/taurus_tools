@@ -22,7 +22,6 @@ from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     ValenceSpacesDict_l_ge10_byM
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
-from future.builtins.misc import isinstance
 
 class ExecutionException(BaseException):
     pass
