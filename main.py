@@ -53,40 +53,40 @@ if __name__ == '__main__':
     #                     seed_base=3, ROmega= (0, 0), convergences=3,
     #                     fomenko_points=(9, 9))
     
-    nucleus = [
-        (12, 8),  (12, 10), (12, 12), 
-        (12, 14), (12, 16), (12, 18), 
-        (12, 20), (12, 22),
-    ]
-    FMK_POINTS = 9
-    
-    for trf in range(0, 261, 10):
-        if trf != 130: continue
-        interactions = {}
-        
-        for zz, nn in nucleus:#range(70, 81, 5):
-            aa = zz + nn
-            MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
-            
-            curr_hamil = f'hamil_gdd_{trf:03}'
-            print(" Copying for Hamil:", curr_hamil)
-            if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
-                new_aa_hamil = curr_hamil.replace('gdd_', f'gdd_{aa}')
-                for extension in OutputFileTypes.members():
-                    file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
-                    if os.path.exists(file_): 
-                        shutil.copy(file_, new_aa_hamil+extension)
-                    else:
-                        print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
-                        continue
-            
-                interactions [(zz, nn)] = new_aa_hamil
-        nucl_ = list(interactions.keys())
-        run_b20_surface(nucl_, interactions, q_min=-.4, q_max=.5, N_max=45,
-                        seed_base=3, ROmega= (0, 0), convergences=5,
-                        fomenko_points=(FMK_POINTS, FMK_POINTS))
-    
-    raise Exception("Stop, work done.")
+    # nucleus = [
+    #     (12, 8),  (12, 10), (12, 12), 
+    #     (12, 14), (12, 16), (12, 18), 
+    #     (12, 20), (12, 22),
+    # ]
+    # FMK_POINTS = 9
+    #
+    # for trf in range(0, 261, 10):
+    #     if trf != 130: continue
+    #     interactions = {}
+    #
+    #     for zz, nn in nucleus:#range(70, 81, 5):
+    #         aa = zz + nn
+    #         MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
+    #
+    #         curr_hamil = f'hamil_gdd_{trf:03}'
+    #         print(" Copying for Hamil:", curr_hamil)
+    #         if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
+    #             new_aa_hamil = curr_hamil.replace('gdd_', f'gdd_{aa}_')
+    #             for extension in OutputFileTypes.members():
+    #                 file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
+    #                 if os.path.exists(file_): 
+    #                     shutil.copy(file_, new_aa_hamil+extension)
+    #                 else:
+    #                     print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
+    #                     continue
+    #
+    #             interactions [(zz, nn)] = new_aa_hamil
+    #     nucl_ = list(interactions.keys())
+    #     run_b20_surface(nucl_, interactions, q_min=-.4, q_max=.5, N_max=45,
+    #                     seed_base=3, ROmega= (0, 0), convergences=5,
+    #                     fomenko_points=(FMK_POINTS, FMK_POINTS))
+    #
+    # raise Exception("Stop, work done.")
     """
     This script perform gogny surfaces by also obtaining the non-density dependent
     part of Gogny interactions by the key-word argument:
@@ -94,9 +94,9 @@ if __name__ == '__main__':
     """
     interactions_D1S = {
         (12,  8): (3, 0, 1.81), (12, 10): (3, 0, 1.83), 
-        (12, 12): (3, 0, 1.83), (12, 14): (3, 0, 1.79), 
-        (12, 16): (3, 0, 1.80), (12, 18): (3, 0, 1.86),
-        (12, 20): (3, 0, 2.01), (12, 20): (3, 0, 2.01),
+        # (12, 12): (3, 0, 1.83), (12, 14): (3, 0, 1.79), 
+        # (12, 16): (3, 0, 1.80), (12, 18): (3, 0, 1.86),
+        # (12, 20): (3, 0, 2.01), (12, 20): (3, 0, 2.01),
     }
     # interactions_B1 = {
     #     #(12,  8) : (3, 0, 1.98), 
@@ -105,9 +105,9 @@ if __name__ == '__main__':
     # }
     
     nucleus = sorted(list(interactions_D1S.keys()))
-    run_b20_Gogny_surface(nucleus, interactions_D1S, GognyEnum.D1S,
+    run_b20_Gogny_surface(nucleus, interactions_D1S, GognyEnum.B1,
                           seed_base=3, ROmega=(14,14), 
-                          q_min=-0.4, q_max=0.6, N_max=50, convergences=4)
+                          q_min=-0.4, q_max=0.6, N_max=20, convergences=4) # 50
     raise Exception("STOP HERE.")
     
     
