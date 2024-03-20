@@ -1133,7 +1133,7 @@ class DataTaurus(_DataObjectBase):
     
     def isAxial(self, and_spherical=False):
         """ requires Ji=0 Jz^2=0 and beta20!=0"""
-        if not almostEqual(self.parity - 1, 1.e-5): return False
+        if not almostEqual(self.parity, 1, 1.e-5): return False
         TOL = 1.0e-5
         for l in range(1,5):
             mu_min = 0 if and_spherical else 1
@@ -1151,7 +1151,7 @@ class DataTaurus(_DataObjectBase):
             _properies.append(almostEqual(getattr(self,f'J{i}'), 0, TOL))
             if and_spherical:
                 _properies.append(almostEqual(getattr(self,f'J{i}_2'), 0, TOL))
-        if not and_spherical:
+        if and_spherical:
             _properies.append(almostEqual(self.Jz_2, 0, TOL))
         
         return not False in _properies

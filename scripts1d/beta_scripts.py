@@ -368,7 +368,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         and gogny_interaction != GognyEnum.B1):
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
-    ExeTaurus1D_B20_OEblocking_Ksurfaces.IGNORE_BLOCKING = True
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.IGNORE_SEED_BLOCKING = True
     
     ExeTaurus1D_B20_OEblocking_Ksurfaces.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_OEblocking_Ksurfaces.IterativeEnum.EVEN_STEP_STD

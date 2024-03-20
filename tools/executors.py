@@ -54,7 +54,7 @@ class _Base1DTaurusExecutor(object):
     SEEDS_RANDOMIZATION = 5 # Number of random seeds for even-even calculation / 
                             # ALSO: Number of blocking sp state for odd calculation
     GENERATE_RANDOM_SEEDS = False
-    IGNORE_BLOCKING     = False # Set True to do false odd-even nuclear surfaces
+    IGNORE_SEED_BLOCKING  = False # Set True to do false odd-even nuclear surfaces
     # @classmethod
     # def __new__(cls, *args, **kwargs):
     #     """
@@ -594,6 +594,7 @@ class _Base1DTaurusExecutor(object):
         file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
         # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
         file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
+        file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -756,7 +757,7 @@ class _Base1DTaurusExecutor(object):
             if os.getcwd().startswith('C:'): ## Testing purpose 
                 self._auxWindows_executeProgram(_out_fn)
             else:
-                order_ =f'./{self.inputObj.PROGRAM} < {_inp_fn} > {_out_fn}'
+                order_ = f'./{self.inputObj.PROGRAM} < {_inp_fn} > {_out_fn}'
                 if self.TRACK_TIME_AND_RAM: 
                     ## option to analyze the program performance
                     order_ = f'{{ /usr/bin/time -v {order_}; }} 2> {self.TIME_FILE}'
@@ -795,7 +796,7 @@ class _Base1DTaurusExecutor(object):
         return result
         
     def printExecutionResult(self, result : DataTaurus, print_head=False, 
-                             *params2print):
+                                   *params2print):
         """
         Standard step information
         """
@@ -854,8 +855,7 @@ class _Base1DTaurusExecutor(object):
         else:
             ## save the intermediate Export File
             self.exportResults()
-        
-        
+    
     def exportResults(self, output_filename=None):
         """
         writes a text file with the results dict-like (before the program ends)
@@ -1068,7 +1068,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self._getStatesAndDimensionsOfHamiltonian()
         
         if self._1stSeedMinima == None or reset_seed:
-            if 1 in self.numberParityOfIsotope and (not self.IGNORE_BLOCKING):
+            if 1 in self.numberParityOfIsotope and (not self.IGNORE_SEED_BLOCKING):
                 ## procedure to evaluate odd-even nuclei
                 self._oddNumberParitySeedConvergence()
                 ## NOTE: The state blocked is in the seed, no more blocking during the process
