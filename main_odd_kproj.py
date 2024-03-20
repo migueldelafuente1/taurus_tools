@@ -6,6 +6,10 @@ Created on 18 mar 2024
 import os
 from tools.Enums import GognyEnum
 from scripts1d.beta_scripts import run_b20_FalseOE_Kprojections_Gogny
+from tools.inputs import InputTaurus
+from tools.helpers import importAndCompile_taurus
+
+if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
 if __name__ == '__main__':
     
