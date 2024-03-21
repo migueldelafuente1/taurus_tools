@@ -82,7 +82,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             
             self._sp_blocked_K_already_found = deepcopy(def_dct)
             for kk in self._sp_blocked_K_already_found:
-                self._sp_blocked_K_already_found[kk] = set()
+                self._sp_blocked_K_already_found[kk] = {}
+                for sp_ in range(1, self._sp_dim +1):
+                    self._sp_blocked_K_already_found[kk][sp_] = 0 # default
         
     
     def run(self):
@@ -142,7 +144,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
                         ## OPTIMIZATION: if state has a previous K skip
-                        if sp_ in self._sp_blocked_K_already_found[i]: continue
+                        K_prev = self._sp_blocked_K_already_found[i][sp_]
+                        if (K_prev != 0) and (K_prev != K): continue
                         
                         self.inputObj.qp_block = sp_ + in_neu
                         
@@ -162,7 +165,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                             line.append(res.getAttributesDictLike)
                             self._exportable_txt[i] = self.HEADER_SEPARATOR.join(line)
                             
-                            self._sp_blocked_K_already_found[i].add(sp_)
+                            self._sp_blocked_K_already_found[i][sp_] = K
                             
                             no_results_for_K *= False
                             ## no more minimizations for this deformation
