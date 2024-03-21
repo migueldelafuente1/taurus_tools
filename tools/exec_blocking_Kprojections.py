@@ -99,10 +99,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         def __get_mz_str(sp_):
             i_ = 0
             for sh_, deg in self._sp_states.items():
-                jz = int(f"{sh_:02}")
-                for mj in range(-jz, jz+1, 2):
+                jz = deg - 1                        # jz = int(f"{sh_:03}"[2:])
+                for mj in range(-jz, jz +1, 2):
                     i_ += 1
-                    if i_ == sp_: return f"{sh_:03}({mj:+1})"
+                    if i_ == sp_: return f"{sh_:03}({mj:+2})"
         
         # Perform the projections to save each K component
         BU_FLD = self.DTYPE.BU_folder
@@ -153,7 +153,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         if almostEqual(2 * res.Jz, K, 1.0e-5):
                             print("   [OK] {} {} <jz>= {:3.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
                                   .format(sp_, __get_mz_str(sp_),  
-                                          res.Jz, res.beta_isoscalar, res.E_HFB))
+                                          res.Jz, res.b20_isoscalar, res.E_HFB))
                             
                             ## Append the exportable result file
                             line = []
@@ -186,7 +186,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             # NOTE: if the function is not valid skip or ignore
             i = self._curr_deform_index
             b20_ = self.deform_oblate[i] if (i < 0) else self.deform_prolate[i]
-            fndat = f"{b20_:6.3f}".replace('-', '_')
+            fndat = f"{b20_:6.3f}".replace('-', '_').strip()
             fnbin = f"{fndat}.bin"
             
             _invalid = result.broken_execution or not result.properly_finished
