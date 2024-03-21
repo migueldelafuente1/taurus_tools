@@ -98,6 +98,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self._blocking_section = True
         if self.numberParityOfIsotope == (0, 0): return
         print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        
         def __get_mz_str(sp_):
             i_ = 0
             for sh_, deg in self._sp_states.items():
@@ -110,7 +111,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         BU_FLD = self.DTYPE.BU_folder
         no_results_for_K = True
         for K in self._valid_Ks:
-            # if K not in (-3, 3): continue
+            self._current_K = K
             # TODO: Could be done for the variable step
             
             # Refresh and create folders for vap-blocked results
@@ -225,7 +226,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 if len(self._exportable_LISTDAT):
                     f.write("\n".join(self._exportable_LISTDAT) )
             
-            K = int(np.round(2 * result.Jz, 0))
+            K = self._current_K
             with open(f'{self._exportable_BU_FLD_KBLOCK}/' + 
                       self.EXPORT_LIST_RESULTS.replace('TESb20', f'TESb20_K{K}')
                       , 'w+') as f:
@@ -241,5 +242,23 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             ExeTaurus1D_DeformB20.executionTearDown(self, result, base_execution, 
                                                     *args, **kwargs)
     
-    
-    
+    def gobalTearDown(self, zip_bufolder=True, *args, **kwargs):
+        """
+        Same exporting, but also including a map for the blocked states
+        """
+        lines = [f"{len(self._sp_blocked_K_already_found)} {self._sp_dim}"]
+        for i in self._sp_blocked_K_already_found.keys():
+            for sp_ in range(1, self._sp_dim +1):
+                
+                lines.append((i, sp_, self._sp_blocked_K_already_found[i][sp_]))
+                lines[-1] = "{} {} {}".format(*lines[-1]) 
+        
+        with open("blocked_state_def_K.txt", 'w+') as f:
+            f.write("\n".join(lines))
+        
+        shutil.copy("blocked_state_def_K.txt", self.DTYPE.BU_folder)
+        
+        ## main 
+        ExeTaurus1D_DeformB20.gobalTearDown(self, zip_bufolder=zip_bufolder, 
+                                                  *args, **kwargs)
+        
