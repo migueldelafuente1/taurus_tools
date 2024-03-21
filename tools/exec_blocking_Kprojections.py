@@ -152,7 +152,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         
                         ## minimize and save only if 2<Jz> = K
                         res : DataTaurus = self._executeProgram()
-                        if not (res.isAxial() and res.properly_finished): 
+                        if not (res.properly_finished and res.isAxial()): 
                             continue
                         if almostEqual(2 * res.Jz, K, 1.0e-5):
                             print("   [OK] {} {} <jz>= {:3.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
