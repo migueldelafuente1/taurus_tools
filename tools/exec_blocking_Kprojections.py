@@ -86,6 +86,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 for sp_ in range(1, self._sp_dim +1):
                     self._sp_blocked_K_already_found[kk][sp_] = 0 # default
         
+    def __get_mz_and_str(self, sp_):
+        """
+        Find the jz of the sp states. Also print the state exported
+        """
+        i_ = 0
+        for sh_, deg in self._sp_states.items():
+            jz = deg - 1                        # jz = int(f"{sh_:03}"[2:])
+            for mj in range(-jz, jz +1, 2):
+                i_ += 1
+                if i_ == sp_: 
+                    return mj, f"{sh_:03}({mj:+2})"
+        return 0, ""
     
     def run(self):
         """
@@ -99,19 +111,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         if self.numberParityOfIsotope == (0, 0): return
         print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
         
-        def __get_mz_str(sp_):
-            i_ = 0
-            for sh_, deg in self._sp_states.items():
-                jz = deg - 1                        # jz = int(f"{sh_:03}"[2:])
-                for mj in range(-jz, jz +1, 2):
-                    i_ += 1
-                    if i_ == sp_: return f"{sh_:03}({mj:+2})"
+        self.inputObj.eta_grad  = 0.03 
+        self.inputObj.mu_grad   = 0.00
+        self.inputObj.grad_type = 1
         
         # Perform the projections to save each K component
         BU_FLD = self.DTYPE.BU_folder
         no_results_for_K = True
         for K in self._valid_Ks:
             self._current_K = K
+            self.inputObj.grad_type = 0 if abs(K) > 3 else 1
             # TODO: Could be done for the variable step
             
             # Refresh and create folders for vap-blocked results
@@ -150,13 +159,17 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         
                         self.inputObj.qp_block = sp_ + in_neu
                         
+                        mj_sp, str_jjz = self.__get_mz_and_str(sp_)
+                        ## mj is conserved for axial calculations. skip otherwise
+                        if mj_sp != K: continue
+                        
                         ## minimize and save only if 2<Jz> = K
                         res : DataTaurus = self._executeProgram()
                         if not (res.properly_finished and res.isAxial()): 
                             continue
                         if almostEqual(2 * res.Jz, K, 1.0e-5):
                             print("   [OK] {} {} <jz>= {:3.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
-                                  .format(sp_, __get_mz_str(sp_),  
+                                  .format(sp_, str_jjz,  
                                           res.Jz, res.b20_isoscalar, res.E_HFB))
                             
                             ## Append the exportable result file
