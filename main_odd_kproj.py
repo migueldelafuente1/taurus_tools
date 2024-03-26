@@ -36,7 +36,7 @@ if __name__ == '__main__':
             Z_TOPS  = 8, 20
             N_TOPS  = Z_TOPS 
             DELTA_A = 6
-            CASE = 'OE' # 'OO' # 'EE' #
+            CASE = 'OE' # 'OO' # 'EE' # 
             
             i = 0
             interactions_B1 = {}
@@ -51,7 +51,7 @@ if __name__ == '__main__':
                         continue
                     i += 1
                     print("[{:2}] z{:2} n{:2} A[{}]".format(i, Z, N, Z+N))
-                    interactions_B1[(Z,N)] = (0, 4, None)
+                    interactions_B1[(Z,N)] = (4, 0, None)
                 print()        
     
     nucleus = sorted(list(interactions_B1.keys()))
