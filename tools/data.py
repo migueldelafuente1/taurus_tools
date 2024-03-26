@@ -26,6 +26,7 @@ from tools.Enums import Enum
 class DataObjectException(BaseException):
     pass
 
+
 class _DataObjectBase:
     
     """ Abstract class with common methods """

@@ -197,6 +197,21 @@ def getSingleSpaceDegenerations(MZmax, MZmin=0):
         sp_dim += sum(map(lambda x: x[2]+1 , sp_sts)) # deg = 2j + 1
     return sh_dim, sp_dim
 
+def shellSHO_Notation(n, l, j=0, mj=0):
+    """
+    Give the Shell state: (n,l)=(0,3) -> '0f', (n,l,j)=(1,2,3) -> '1d3/2' 
+    
+    Optional argument mj requires optional j, as 2*mj: 
+        mj=-3/2  -> '1d3/2(-3)' 
+    """
+    jmj = str(j)+'/2' if j != 0 else ''
+    if mj != 0:
+        jmj += f'({mj:+2})'
+    
+    return '{}{}{}'.format(str(n), 'spdfghijklm'[l], jmj)
+
+
+
 def importAndCompile_taurus(use_dens_taurus=True):
     """
     use_dens_taurus=True uses DD modified taurus_vap, False uses normal taurus_vap
@@ -220,3 +235,98 @@ def importAndCompile_taurus(use_dens_taurus=True):
     except Exception as e:
         print("Exception:", e.__class__.__name__)
         print(e)
+        
+
+#===============================================================================
+# WAVE FUNCTION AUXILIARY OBJECTS
+
+class QN_1body_jj(object):
+    """
+    :n     <int> principal quantum number >=0
+    :l     <int> orbital angular number >=0
+    :j     <int> total angular momentum (its assumed to be half-integer)
+    :m     <int> third component of j (its assumed to be half-integer)
+    
+    One body jj coupled wave function for nucleon (fermion) for SHO Radial 
+    wave functions.
+        m = 0 unless specification.
+        
+        |n, l, s=1/2, j, m>
+    """
+    _particleLabels = {
+        -1   : 'p',
+        0    : '',
+        1    : 'n'}
+    
+    def __init__(self, n, l, j, m=0, mt=0):
+        
+        self.__checkQNArguments(n, l, j, m, mt)
+        
+        self.n = n
+        self.l = l
+        self.j = j
+        self.m = m
+        
+        self.m_t = mt
+    
+    def __checkQNArguments(self, n, l, j, m, m_t):
+        
+        _types = [isinstance(arg, int) for arg in (n, l, j, m)]
+        assert not False in _types, AttributeError("Invalid argument types given"
+            ": [(n,l,j,m)={}]. All parameters must be integers (also for j, m)"
+            .format((n, l, j, m)))
+        
+        _sign  = [n >= 0, l >= 0, j > 0] # j = l + 1/2 so must be at least 1/2
+        assert not False in _sign, AttributeError("Negative argument/s given:"
+            " [(n,l,j>0)={}].".format((n, l, j)))
+        
+        assert abs(m) <= j, AttributeError("3rd component cannot exceed L number")
+        
+        assert j in (2*l + 1, 2*l - 1), AttributeError(
+            "j[{}] given is invalid with l[{}] + 1/2".format(j, l))
+        self._checkProtonNeutronLabel(m_t)
+    
+    def _checkProtonNeutronLabel(self, m_t):
+        assert m_t in (1,0,-1), AttributeError("m_t label for the state must be"
+            " 1 (+1/2 proton), -1 (-1/2 neutron) or 0 (undefined, might raise "
+            "error if the matrix element is labeled)")
+    
+    @property
+    def s(self):
+        return 1
+    
+    @property
+    def AntoineStrIndex(self):
+        """ Classic Antoine_ shell model index for l<10 """
+        aux = str(1000*self.n + 100*self.l + self.j)
+        if aux == '1':
+            return '001'
+        return aux
+    
+    @property
+    def AntoineStrIndex_l_greatThan10(self):
+        """ 
+        Same property but for matrix elements that involve s.h.o states with
+        l > 10 (n=1 =10000)
+        """
+        aux = str(10000*self.n + 100*self.l + self.j)
+        if aux == '1':
+            return '001'
+        return aux
+    
+    @property
+    def particleLabel(self):
+        return self._particleLabels[self.m_t]
+    
+    @property
+    def shellState(self):
+        return shellSHO_Notation(self.n, self.l, self.j, self.m)
+    
+    @property
+    def get_nl(self):
+        return self.n, self.l
+
+    def __str__(self):
+        lab_ = self._particleLabels[self.m_t]
+        return "(n:{},l:{},j:{}/2){}".format(self.n, self.l, self.j, lab_)
+    

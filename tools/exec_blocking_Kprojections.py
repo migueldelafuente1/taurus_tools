@@ -10,7 +10,7 @@ import shutil
 import numpy as np
 import os
 
-from tools.helpers import almostEqual, LINE_1
+from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj
 from tools.data import DataTaurus
 from .executors import ExeTaurus1D_DeformB20
 
@@ -28,7 +28,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             in folders "K%%_VAP/"
     '''
     IGNORE_SEED_BLOCKING = True
-
+    PARITY_TO_BLOCK      = 1
     
     def __init__(self, z, n, interaction, *args, **kwargs):
         
@@ -42,6 +42,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         ##   NOTE: for that deformation, we already know that sp will end into 
         ##         the previous K value
         self._sp_blocked_K_already_found : dict = {} # {b20_index: sp_found, ...}
+        self._sp_states_obj : dict = {}
         
         self._blocking_section = False
     
@@ -66,8 +67,25 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         # self._valid_Ks = list(filter(lambda x: abs(x) >= self._sp_2jmin,
         #                              self._valid_Ks))
         
+        valid_states_KP = set()
+        for sp_ in range(1, self._sp_dim +1):
+            i = 0
+            for sh_, deg in self._sp_states.items():
+                n, l, j = readAntoine(sh_, l_ge_10=True)
+                
+                if (-1)**l == self.PARITY_TO_BLOCK:
+                    valid_states_KP.add(j) ## add the jz max = K
+                
+                for mj in range(-j, j +1, +2):
+                    i += 1
+                    if i == sp_:
+                        assert not sp_ in self._sp_states_obj, "Already found"
+                        self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
+        
         ## optimal organization of the K: 1, -1, 3, -3, ...
         for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
+            if not k in valid_states_KP: 
+                continue # skip states with K but other parity
             self._valid_Ks.append(k)
             self._valid_Ks.append(-k)
         
@@ -85,19 +103,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 self._sp_blocked_K_already_found[kk] = {}
                 for sp_ in range(1, self._sp_dim +1):
                     self._sp_blocked_K_already_found[kk][sp_] = 0 # default
-        
-    def __get_mz_and_str(self, sp_):
-        """
-        Find the jz of the sp states. Also print the state exported
-        """
-        i_ = 0
-        for sh_, deg in self._sp_states.items():
-            jz = deg - 1                        # jz = int(f"{sh_:03}"[2:])
-            for mj in range(-jz, jz +1, 2):
-                i_ += 1
-                if i_ == sp_: 
-                    return mj, f"{sh_:03}({mj:+2})"
-        return 0, ""
+    
     
     def run(self):
         """
@@ -114,17 +120,20 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self.inputObj.eta_grad  = 0.03 
         self.inputObj.mu_grad   = 0.00
         self.inputObj.grad_type = 1
+        self.inputObj.iterations = 600
         
         # Perform the projections to save each K component
         BU_FLD = self.DTYPE.BU_folder
         no_results_for_K = True
         for K in self._valid_Ks:
             self._current_K = K
-            self.inputObj.grad_type = 0 if abs(K) > 3 else 1
+            self.inputObj.grad_type  = 0    if abs(K) > 3 else 1
+            self.inputObj.iterations = 1000 if abs(K) > 3 else 1
             # TODO: Could be done for the variable step
             
             # Refresh and create folders for vap-blocked results
-            BU_FLD_KBLOCK = f"{BU_FLD}/{K}_VAP"
+            _PAR = (1 - self.PARITY_TO_BLOCK)//2
+            BU_FLD_KBLOCK = f"{BU_FLD}/{K}_{_PAR}_VAP"
             BU_FLD_KBLOCK = BU_FLD_KBLOCK.replace('-', '_')
             # Create new BU folder
             if os.path.exists(BU_FLD_KBLOCK):
@@ -132,7 +141,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             os.mkdir(BU_FLD_KBLOCK)
             self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
             self._exportable_LISTDAT = []
-            print(f"* Doing 2K={K} for TES results. saving in [{BU_FLD_KBLOCK}]")
+            print(f"* Doing 2K={K} P({self.PARITY_TO_BLOCK}) for TES results.",
+                  f"saving in [{BU_FLD_KBLOCK}]")
             
             self._exportable_txt = {}
             # oblate part
@@ -153,15 +163,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     in_neu = self._sp_dim if self.numberParityOfIsotope[1] else 0
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
-                        ## OPTIMIZATION: if state has a previous K skip
-                        K_prev = self._sp_blocked_K_already_found[i][sp_]
-                        if (K_prev != 0) and (K_prev != K): continue
+                        ## OPTIMIZATION:
+                        # * if state has a previous K skip
+                        # * if state has different jz initial skip
+                        # * the parity is necessary to match a pattern
+                        K_prev  = self._sp_blocked_K_already_found[i][sp_]
+                        parity_ = (-1)**self._sp_states_obj[sp_].l
+                        
+                        if (K_prev != 0) and (K_prev != K) : continue
+                        if self._sp_states_obj[sp_].m != K: continue
+                        if parity_ != self.PARITY_TO_BLOCK : continue 
                         
                         self.inputObj.qp_block = sp_ + in_neu
-                        
-                        mj_sp, str_jjz = self.__get_mz_and_str(sp_)
-                        ## mj is conserved for axial calculations. skip otherwise
-                        if mj_sp != K: continue
                         
                         ## minimize and save only if 2<Jz> = K
                         res : DataTaurus = self._executeProgram()
@@ -169,7 +182,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                             continue
                         if almostEqual(2 * res.Jz, K, 1.0e-5):
                             print("   [OK] {} {} <jz>= {:3.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
-                                  .format(sp_, str_jjz,  
+                                  .format(sp_, self._sp_states_obj[sp_].shellState,  
                                           res.Jz, res.b20_isoscalar, res.E_HFB))
                             
                             ## Append the exportable result file
@@ -186,6 +199,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                             break
                         elif sp_ == self._sp_dim:
                             print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
+                    ## B20 loop
             if no_results_for_K: 
                 print("  [WARNING] No blocked result for 2K=", K)
             # K-loop

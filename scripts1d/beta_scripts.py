@@ -169,6 +169,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         :j_max
         :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :fomenko_points: (M protons, M neutron), default is HFB
+        :parity_2_block: parity of the states to block
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -263,6 +265,8 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         :j_max
         :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :fomenko_points: (M protons, M neutron), default is HFB
+        :parity_2_block: parity of the states to block
     """
     
     
@@ -349,7 +353,8 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
 def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
                           q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
-                          fomenko_points=(1, 1)):
+                          fomenko_points=(1, 1), 
+                          parity_2_block= 1, ):
     """
     Reqire:
     Args:
@@ -363,6 +368,8 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         :j_max
         :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :fomenko_points: (M protons, M neutron), default is HFB
+        :parity_2_block: parity of the states to block
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -379,6 +386,8 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION = 3
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.PARITY_TO_BLOCK     = parity_2_block
+    
     if convergences != None:
         ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION = convergences
         ExeTaurus1D_B20_OEblocking_Ksurfaces.GENERATE_RANDOM_SEEDS = True
@@ -426,7 +435,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         }
         
         ExeTaurus1D_B20_OEblocking_Ksurfaces.EXPORT_LIST_RESULTS = \
-            f"export_TESb20_z{z}n{n}_{interaction}.txt"        
+            f"export_TESb20_z{z}n{n}_{interaction}.txt"
         try:
             exe_ = ExeTaurus1D_B20_OEblocking_Ksurfaces(z, n, interaction)
             exe_.setInputCalculationArguments(**input_args_start)
