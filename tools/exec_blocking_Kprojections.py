@@ -120,7 +120,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self.inputObj.eta_grad  = 0.03 
         self.inputObj.mu_grad   = 0.00
         self.inputObj.grad_type = 1
-        self.inputObj.iterations = 600
+        self.inputObj.iterations = 500
         
         # Perform the projections to save each K component
         BU_FLD = self.DTYPE.BU_folder
@@ -128,7 +128,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         for K in self._valid_Ks:
             self._current_K = K
             self.inputObj.grad_type  = 0    if abs(K) > 3 else 1
-            self.inputObj.iterations = 1000 if abs(K) > 3 else 1
+            self.inputObj.iterations = 1000 if abs(K) > 3 else 500
             # TODO: Could be done for the variable step
             
             # Refresh and create folders for vap-blocked results
@@ -223,7 +223,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             _invalid = result.broken_execution or not result.properly_finished
             if _invalid:
                 shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
-                            f"{self._exportable_BU_FLD_KBLOCK}/broken_{fndat}.bin")
+                            f"{self._exportable_BU_FLD_KBLOCK}/broken_{fndat}.OUT")
                 return
             
             shutil.move("final_wf.bin", 
