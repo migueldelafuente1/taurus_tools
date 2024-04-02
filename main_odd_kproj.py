@@ -57,7 +57,7 @@ if __name__ == '__main__':
     nucleus = sorted(list(interactions_B1.keys()))
     run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions_B1, GognyEnum.B1,
                           seed_base=3, ROmega=(0,0), #ROmega=(14,14), 
-                          q_min=-0.4, q_max=0.6, N_max=50, convergences=5, 
+                          q_min=-0.4, q_max=0.6, N_max=50, convergences=3, 
                           parity_2_block=1)
     
     raise Exception("STOP HERE.")

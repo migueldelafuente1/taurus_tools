@@ -76,7 +76,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 if (-1)**l == self.PARITY_TO_BLOCK:
                     valid_states_KP.add(j) ## add the jz max = K
                 
-                for mj in range(-j, j +1, +2):
+                for mj in range(j, -j -1, -2):
                     i += 1
                     if i == sp_:
                         assert not sp_ in self._sp_states_obj, "Already found"
@@ -171,7 +171,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         parity_ = (-1)**self._sp_states_obj[sp_].l
                         
                         if (K_prev != 0) and (K_prev != K) : continue
-                        if self._sp_states_obj[sp_].m != K: continue
+                        if self._sp_states_obj[sp_].m != K : continue
                         if parity_ != self.PARITY_TO_BLOCK : continue 
                         
                         self.inputObj.qp_block = sp_ + in_neu
