@@ -85,7 +85,7 @@ def run_J_surface(nucleus, interactions, J_i,
             exe_.setUpExecution(**input_args_onrun)
             exe_.force_converg = True
             exe_.run()
-            exe_.gobalTearDown()
+            exe_.globalTearDown()
         except ExecutionException as e:
             print(e)
         
