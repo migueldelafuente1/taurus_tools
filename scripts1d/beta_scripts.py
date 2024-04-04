@@ -519,7 +519,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.001,
+            InputTaurus.ArgsEnum.grad_tol : 0.0001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
@@ -532,11 +532,11 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.iterations: 800,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.eta_grad : 0.015,
             InputTaurus.ArgsEnum.mu_grad  : 0.02, # 0.5
-            InputTaurus.ArgsEnum.grad_tol : 0.01,
+            InputTaurus.ArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
@@ -544,9 +544,9 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
-            InputTaurusPAV.ArgsEnum.alpha : 3,
-            InputTaurusPAV.ArgsEnum.beta  : 20,
-            InputTaurusPAV.ArgsEnum.gamma : 3,
+            InputTaurusPAV.ArgsEnum.alpha : 5,
+            InputTaurusPAV.ArgsEnum.beta  : 15,
+            InputTaurusPAV.ArgsEnum.gamma : 5,
             # PN-PAV and J bound arguments set by the program, P-PAV = no
         }
         ExeTaurus1D_B20_KMixing_OEblocking.EXPORT_LIST_RESULTS = \

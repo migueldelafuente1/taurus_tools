@@ -343,6 +343,7 @@ cd $var
 workdir=$PWD
 mkdir -p /scratch/delafuen/
 mkdir -p /scratch/delafuen/$SLURM_JOB_ID
+chmod 777 PROGRAM
 cp -r  PROGRAM INPUT_FILE left_wf.bin right_wf.bin /scratch/delafuen/$SLURM_JOB_ID
 cp -r  HAMIL.* /scratch/delafuen/$SLURM_JOB_ID
 
