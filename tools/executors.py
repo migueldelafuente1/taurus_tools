@@ -15,8 +15,8 @@ from numpy.random import randint
 from copy import deepcopy, copy
 from random import random
 
-from tools.inputs import InputTaurus, InputAxial
-from tools.data import DataTaurus, DataAxial
+from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
+from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS,\
     ValenceSpacesDict_l_ge10_byM
@@ -796,7 +796,7 @@ class _Base1DTaurusExecutor(object):
         return result
         
     def printExecutionResult(self, result : DataTaurus, print_head=False, 
-                                   *params2print):
+                                  *params2print):
         """
         Standard step information
         """
@@ -894,7 +894,7 @@ class _Base1DTaurusExecutor(object):
             f.write(txt_)
         
     
-    def gobalTearDown(self, *args, **kwargs):
+    def globalTearDown(self, *args, **kwargs):
         """
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
@@ -1372,7 +1372,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## TODO: might require additional changes
         _Base1DTaurusExecutor.run(self)
     
-    def gobalTearDown(self, zip_bufolder=True, *args, **kwargs):
+    def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
         """
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
@@ -1382,7 +1382,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
-        print(f"\n  [gobalTearDown] Export by [{self.CONSTRAINT_DT}]\n")
+        print(f"\n  [globalTearDown] Export by [{self.CONSTRAINT_DT}]\n")
         ## exportar oblate-reverse order
         print("self._final_bin_list_data[0]=\n", self._final_bin_list_data[0])
         print("self._final_bin_list_data[1]=\n", self._final_bin_list_data[1])
@@ -1416,7 +1416,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## Create a list of wf to do the VAP calculations:
         if self.DTYPE is DataTaurus:
             os.chdir(self.DTYPE.BU_folder)
-            print(f"\n  [gobalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
+            print(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
             os.mkdir('PNVAP')
             list_dat = []
             for i, bin_ in enumerate(bins_):
@@ -1430,7 +1430,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 f.write("\n".join(list_dat))
             shutil.move('list.dat', 'PNVAP/')
             os.chdir('..')
-        print( "  [gobalTearDown] Done.\n")
+        print( "  [globalTearDown] Done.\n")
 
 class ExeAxial1D_DeformQ20(_Base1DAxialExecutor, ExeTaurus1D_DeformQ20):
     
@@ -1611,4 +1611,112 @@ class ExeAxial0D_EnergyMinimum(ExeAxial1D_DeformB20):
 class ExeTaurus1D_FromBuckUpFiles(ExeTaurus1D_DeformB20):
     
     pass
+
+#===============================================================================
+# 
+#    EXECUTOR - SINGLE STEP / PROJECTIONS AND GCM
+#
+#===============================================================================
+
+class ExeTaurus0D_PAVProjection(_Base1DTaurusExecutor):
     
+    DTYPE = DataTaurusPAV  # DataType for the outputs to manage
+    ITYPE = InputTaurusPAV # Input type for the input management
+    
+    ITERATIVE_METHOD = _Base1DTaurusExecutor.IterativeEnum.SINGLE_EVALUATION
+    
+    CONSTRAINT    = None
+    CONSTRAINT_DT = None
+    
+    EXPORT_LIST_RESULTS = 'export_PAV'
+    
+    def __init__(self, z, n, interaction, *args, **kwargs):
+        
+        ## interactions and nucleus
+        self.z : int = z
+        self.n : int = n
+        self.interaction : str = interaction
+        
+        self.inputObj  : self.ITYPE  = None
+        self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
+        
+        self.axialSymetryRequired = False ## set up to reject non-axial results
+        self.sphericalSymmetryRequired = False
+        self._output_filename = self.DTYPE.DEFAULT_OUTPUT_FILENAME
+        
+        
+        self._curr_deform_index : int  = None
+        
+        self._iter    = 0
+        self._N_steps = 0
+        self._preconvergence_steps = 0
+        self._base_wf_filename = None
+        self._base_seed_type = None
+                
+        self.force_converg  = False # requirement of convergence for wf copy
+        
+        if kwargs:
+            for key_, value in kwargs.items():
+                setattr(self, key_, value)
+        
+        self._checkExecutorSettings()
+    
+    def setUp(self, **params):
+        pass
+    
+    def setUpExecution(self, reset_seed=False, *args, **kwargs):
+        pass
+    
+    def run(self):        
+        pass
+    
+    def resetExecutorObject(self, keep_1stMinimum=False):
+        """
+        Clean deformations and results from a previous calculation,
+        only instanced attributes generated during the run (inputObject, params, ... keept)
+        could keep the first minimum data
+        """
+                
+        self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
+                
+        self.deform_oblate   : list = []
+        self.deform_prolate  : list = []
+        self._deformations_map  : list = [[], []] #oblate, prolate
+        self._curr_deform_index : int  = None
+        
+        self._iter    = 0
+        self._N_steps = 0
+        self._preconvergence_steps = 0
+        
+        self._results = [[], []]
+        
+        if not keep_1stMinimum:
+            
+            self._1stSeedMinima : self.DTYPE  = None
+            self._base_wf_filename = None
+            
+            self._deform_lim_max = None
+            self._deform_lim_min = None
+            self._deform_base    = None
+    
+    def _acceptanceCriteria(self, result):
+        pass
+    
+    def _runUntilConvergence(self, MAX_STEPS=3):
+        pass
+    
+    def _auxWindows_executeProgram(self, output_fn):
+        pass
+    
+    def _executeProgram(self, base_execution=False):
+        pass
+    
+    def printExecutionResult(self, result:DataTaurus, print_head=False, 
+                             *params2print):
+        pass
+    
+    def executionTearDown(self, result:DataTaurus, base_execution, *args, **kwargs):
+        pass
+    
+    def saveFinalWFprocedure(self, result, base_execution=False):
+        pass
