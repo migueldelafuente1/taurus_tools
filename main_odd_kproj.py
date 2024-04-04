@@ -63,7 +63,7 @@ if __name__ == '__main__':
     
     run_b20_FalseOE_Kmixing(nucleus, interactions_B1, GognyEnum.B1,
                             seed_base=3, ROmega=(0,0), #ROmega=(14,14), 
-                            q_min=-0.6, q_max=0.6, N_max=7, convergences=3, 
+                            q_min=-0.6, q_max=0.6, N_max=5, convergences=3, 
                             parity_2_block=1)
     
     raise Exception("STOP HERE.")
