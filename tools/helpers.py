@@ -12,9 +12,16 @@ LINE_2 = "\n--------------------------------------------------------------------
 
 GITHUB_2BME_HTTP        = "https://github.com/migueldelafuente1/2B_MatrixElements.git"
 GITHUB_DENS_TAURUS_HTTP = "https://github.com/migueldelafuente1/dens_taurus_vap.git"
-DENS_TAURUS_SRC_FOLDER  = "dens_taurus_vap"
-GITHUB_TAURUS_HTTP = "https://github.com/project-taurus/taurus_vap.git"
-TAURUS_SRC_FOLDER  = "taurus_vap"
+GITHUB_TAURUS_VAP_HTTP  = "https://github.com/project-taurus/taurus_vap.git"
+GITHUB_TAURUS_PAV_HTTP  = "https://github.com/project-taurus/taurus_pav.git"
+GITHUB_TAURUS_MIX_HTTP  = "https://github.com/project-taurus/taurus_mix.git"
+
+TAURUS_SRC_FOLDERS = {
+    GITHUB_DENS_TAURUS_HTTP : "dens_taurus_vap", 
+    GITHUB_TAURUS_VAP_HTTP  : "taurus_vap",
+    GITHUB_TAURUS_PAV_HTTP  : "taurus_pav",
+    GITHUB_TAURUS_MIX_HTTP  : "taurus_mix",
+}
 
 TBME_SUITE = '2B_MatrixElements'
 TBME_HAMIL_FOLDER = 'savedHamilsBeq1/'
@@ -212,29 +219,36 @@ def shellSHO_Notation(n, l, j=0, mj=0):
 
 
 
-def importAndCompile_taurus(use_dens_taurus=True):
+def importAndCompile_taurus(use_dens_taurus=True, vap = False, mix = False):
     """
     use_dens_taurus=True uses DD modified taurus_vap, False uses normal taurus_vap
     """
-    SRC_ = GITHUB_DENS_TAURUS_HTTP if use_dens_taurus else GITHUB_TAURUS_HTTP
+    src_ = GITHUB_DENS_TAURUS_HTTP if use_dens_taurus else GITHUB_TAURUS_VAP_HTTP
     
-    try:
-        order_ = "git clone {}".format(SRC_)
-        e_ = subprocess.call(order_, shell=True)
-        
-        os.chdir('dens_taurus_vap')
-        ## compile and move executable to main directory
-        order_ = "make"
-        e_ = subprocess.call(order_, shell=True)
-        order_ = "cp exe/taurus_vap.exe ../"
-        e_ = subprocess.call(order_, shell=True)
-        
-        ## return to the main directory
-        os.chdir('..')
-        
-    except Exception as e:
-        print("Exception:", e.__class__.__name__)
-        print(e)
+    programs_ = [src_, ]
+    if vap: programs_.append(GITHUB_TAURUS_PAV_HTTP)
+    if mix: programs_.append(GITHUB_TAURUS_MIX_HTTP)
+    
+    programs_to_import = [(src_, TAURUS_SRC_FOLDERS[src_]) for src_ in programs_]
+    
+    for src_, folder_path in programs_to_import:
+        try:
+            order_ = "git clone {}".format(src_)
+            e_ = subprocess.call(order_, shell=True)
+            
+            os.chdir(folder_path)
+            ## compile and move executable to main directory
+            order_ = "make"
+            e_ = subprocess.call(order_, shell=True)
+            order_ = "cp exe/taurus_vap.exe ../"
+            e_ = subprocess.call(order_, shell=True)
+            
+            ## return to the main directory
+            os.chdir('..')
+            
+        except Exception as e:
+            print("Exception:", e.__class__.__name__)
+            print(e)
         
 
 #===============================================================================

@@ -18,6 +18,7 @@ class _Input(object):
     '''
     _TEMPLATE = """"""
     DEFAULT_INPUT_FILENAME  = 'aux.INP'
+    PROGRAM = None
     
     class ArgsEnum:
         pass
@@ -858,6 +859,336 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
         return self.getText4file()
     
 
+
+class InputTaurusPAV(_Input):
+    
+    DEFAULT_INPUT_FILENAME = 'aux_pav.INP'
+    _TEMPLATE = """Interaction
+-----------
+Master name hamil. files      {interaction}
+Center-of-mass correction     {com}
+Read reduced hamiltonian      {red_hamil}
+No. of MPI proc per H team    0
+
+Miscellaneous      
+------------- 
+Physics case studied          0
+Part of the calc. performed   0
+Read mat. elem. of operators  0
+Write/read rotated mat. elem. 0
+Cutoff for rotated overlaps   1.000E-16
+Read wavefunctions as text    0
+Cutoff occupied s.-p. states  0.000E-00
+Include all empty sp states   {empty_states}
+
+Particle Number
+---------------
+Number of active protons      {z}
+Number of active neutrons     {n} 
+No. gauge angles: protons     {z_Mphi}
+No. gauge angles: neutrons    {n_Mphi}
+No. gauge angles: nucleons    0
+Disable simplifications NZA   {disable_simplifications_NZA}
+
+Angular Momentum
+----------------
+Minimum angular momentum 2J   {j_min}
+Maximum angular momentum 2J   {j_max}
+No. Euler angles: alpha       {alpha}
+No. Euler angles: beta        {beta}
+No. Euler angles: gamma       {gamma}
+Disable simplifications JMK   {disable_simplifications_JMK}
+
+Parity
+------
+Projection on parity P        {parity}
+Disable simplifications P     {disable_simplifications_P}"""
+    
+    PROGRAM   = 'taurus_pav.exe'
+    
+    class ArgsEnum(Enum):
+        interaction = 'interaction'
+        com         = 'com'
+        red_hamil   = 'red_hamil' 
+        z        = 'z'
+        n        = 'n'
+        z_Mphi   = 'z_Mphi'
+        n_Mphi   = 'n_Mphi'
+        empty_states = 'empty_states'
+        disable_simplifications_NZA = 'disable_simplifications_NZA'
+        disable_simplifications_JMK = 'disable_simplifications_JMK'
+        disable_simplifications_P   = 'disable_simplifications_P'
+        j_min   = 'j_min'
+        j_max   = 'j_max'
+        alpha   = 'alpha'
+        beta    = 'beta'
+        gamma   = 'gamma'
+        parity  = 'parity'
+    
+    def __init__(self, z, n, interaction, input_filename=None, **params):
+        """
+        Construct a input object for taurus, several parameters can be given.
+        Arguments z, n, interaction are mandatory 
+        input_filename: to change the default input file to write (used in executeTaurus)
+        """
+        self.z = z
+        self.n = n
+        self.interaction = interaction
+        
+        ## default values
+        self.com        = 0
+        self.red_hamil  = 0
+        self.z_Mphi     = 1
+        self.n_Mphi     = 1
+        
+        ## Empty states and simplifications are by default set to zero,
+        ## Just disable it whenever one is sure of:
+        ##    NZA: pure hf states, no pairing/hf for L/R wf
+        ##    JMK: axial symmetry but do not use it ever
+        ##     P : not mixed parity of L/R wf.
+        self.empty_states = 1
+        self.disable_simplifications_NZA = 1
+        self.disable_simplifications_JMK = 1
+        self.disable_simplifications_P   = 1
+        
+        self.alpha = 0
+        self.beta  = 0
+        self.gamma = 0
+        self.j_min = 0
+        self.j_max = 0
+        self.parity= 0        
+        
+        self.input_filename = self.DEFAULT_INPUT_FILENAME
+        if input_filename:
+            self.input_filename = input_filename
+        
+        self.setParameters(**params)
+    
+    def setParameters(self, **params):
+        """
+        both internal and interface method to modify several constraints 
+        Use recommended to apply assertions over the valid taurus parameters
+        """
+        for arg, value in params.items():
+            if not hasattr(self.ArgsEnum, arg):
+                raise(f"Unidentified argument to set: [{arg}] val[{value}]")
+            ## Case selection of the non-constrained parts INLINE TEST
+            if   arg in (self.ArgsEnum.com,       
+                         self.ArgsEnum.red_hamil,
+                         self.ArgsEnum.parity,
+                         self.ArgsEnum.empty_states,
+                         self.ArgsEnum.disable_simplifications_NZA,
+                         self.ArgsEnum.disable_simplifications_JMK,
+                         self.ArgsEnum.disable_simplifications_P,):
+                assert value in (0,1, True, False), f"Value must be 1 or 0 [{value}]"
+                value = int(value)
+            elif arg in (self.ArgsEnum.z_Mphi, 
+                         self.ArgsEnum.n_Mphi,
+                         self.ArgsEnum.alpha, 
+                         self.ArgsEnum.beta, 
+                         self.ArgsEnum.gamma,
+                         self.ArgsEnum.j_min,
+                         self.ArgsEnum.j_max,):
+                assert isinstance(value, int) and value >=0, \
+                    f"Value must be non-negative integer [{value}]"
+            else:
+                assert type(value)==str, "Interaction hamil must be string"
+                
+            setattr(self, arg, value)
+        
+    
+    def __str__(self):
+        return self.getText4file()
+    
+    def getText4file(self):
+        """
+        Return of the Input template filled
+        """
+        kwargs = [(k_, getattr(self, k_)) for k_ in self.ArgsEnum.members()]
+        kwargs = dict(kwargs)
+        
+        txt_ = self._TEMPLATE.format(**kwargs)
+        return txt_
+    
+    def copy(self):
+        """ return a copy of a previous element """
+        snd_inp = InputTaurusPAV(self.z, self.n, self.interaction)
+        for atr in self.ArgsEnum.members():
+            setattr(snd_inp, atr, getattr(self, atr))
+        return snd_inp
+    
+
+
+class InputTaurusMIX(_Input):
+    
+    _TEMPLATE = """General parameters
+------------------
+Physics case studied          0
+Algorithm to solve HWG eq.    0
+Normalization of matrices     0
+Remove states giving ev<0     {opt_remove_neg_eigen}
+Convergence analysis (norm)   {opt_convergence_analysis}
+Max(E_exc) displayed (Mev)    {max_energy}
+
+Quantum numbers
+---------------
+Number of active protons  Z   {z}
+Number of active neutrons N   {n}
+Number of core protons  Zc    {z_core}   
+Number of core neutrons Nc    {n_core}
+Angular momentum min(2*J)     {j_val}
+Angular momentum max(2*J)     {j_val}
+Parity min(P)                 {parity}
+Parity max(P)                 {parity}
+Electric charge protons  (*e) 1.00
+Electric charge neutrons (*e) 0.00
+
+Cut-offs         
+--------
+Maximum number of states      {matrix_element_dim}
+Cut-off projected overlap     {cutoff_overlap}
+Cut-off projected energy      {cutoff_energy}
+Cut-off projected <Jz/J^2>    {cutoff_JzJ2}
+Cut-off projected <Z/N/A>     {cutoff_ZNA}
+Cut-off norm eigenvalues      {cutoff_norm_eigen}
+Cut-off |neg. eigenvalues|    {cutoff_negative_eigen}
+No. of specialized cut offs   0
+Specific cut-off (overlap)    O  0 +1 1.0000E-03
+Specific cut-off (small ev)   S  0 +1 1.0000E-03
+Specific cut-off (neg.  ev)   N  4 +1 1.0000E-03
+Specific cut-off (<J^2>)      J  0 +1 1.0000E-01
+Specific cut-off (<N/Z/A>)    A  0 +1 1.0000E-01
+Specific cut-off (label)      L  0 +1      941058169115  0"""
+    
+    PROGRAM   = 'taurus_pav.exe'
+    DEFAULT_INPUT_FILENAME = 'aux_mix.INP'
+    
+    class ArgsEnum(Enum):
+        z = 'z'
+        n = 'n'
+        z_core  = 'z_core'
+        n_core  = 'n_core'
+        j_val   = 'j_val'
+        parity  = 'parity'
+        opt_remove_neg_eigen     = 'opt_remove_neg_eigen'
+        opt_convergence_analysis = 'opt_convergence_analysis'
+        max_energy         = 'max_energy'
+        matrix_element_dim = 'matrix_element_dim'
+    
+    class CutoffArgsEnum(Enum):
+        cutoff_overlap = 'cutoff_overlap'
+        cutoff_energy  = 'cutoff_energy'
+        cutoff_JzJ2    = 'cutoff_JzJ2'
+        cutoff_ZNA     = 'cutoff_ZNA'
+        cutoff_norm_eigen = 'cutoff_norm_eigen'
+        cutoff_negative_eigen = 'cutoff_negative_eigen'
+        
+    
+    def __init__(self, z, n, matrix_element_dim, input_filename=None, **params):
+        """
+        Construct a input object for taurus, several parameters can be given.
+        Arguments z, n, interaction are mandatory 
+        input_filename: to change the default input file to write (used in executeTaurus)
+        """
+        self.z = z
+        self.n = n
+        self.matrix_element_dim = matrix_element_dim
+        self.__check_matrix_element_dim()
+        
+        ## default options and arguments
+        self.z_core = 0
+        self.n_core = 0
+        self.j_val  = 0
+        self.parity = 0
+        self.opt_remove_neg_eigen = 1
+        self.opt_convergence_analysis = 1
+        self.max_energy = 20 # MeV
+        
+        ## default values Cuttoffs
+        self.cutoff_overlap = 1.0e-10
+        self.cutoff_energy  = 0.0
+        self.cutoff_JzJ2    = 1.0e-6
+        self.cutoff_ZNA     = 1.0e-8
+        self.cutoff_norm_eigen     = 1.0e-9 
+        self.cutoff_negative_eigen = 1.0e-9
+        
+        ## TODO: set of specialized cut-offs
+        
+        self.input_filename = self.DEFAULT_INPUT_FILENAME
+        if input_filename:
+            self.input_filename = input_filename
+        
+        self.setParameters(**params)
+    
+    def __check_matrix_element_dim(self, _N=0):
+        """ 
+        Check if the number of matrix elements comes from an integer number
+        of GCMs:
+        """
+        _N = getattr(self, self.ArgsEnum.matrix_element_dim, 0)
+        D = (-1 + np.sqrt(1 + 8*_N)) / 2
+        if abs(D - int(D)) > 1.0e-9:
+            D1, D2 = int(D)*int(D+1)//2, int(D+1)*int(D+2)//2
+            print("[WARNING] Input Taurus Mix, # matrix elements is not 'Pascal':", 
+                  f"{_N} -> {D} ({D1} or {D2}?)", )
+            ## TODO: This should be an exception.
+        self._inner_gcm_coordinates_dim = int(D)
+        
+    
+    def setParameters(self, **params):
+        """
+        both internal and interface method to modify several constraints 
+        Use recommended to apply assertions over the valid taurus parameters
+        """
+        for arg, value in params.items():
+            if hasattr(self.CutoffArgsEnum, arg):
+                pass
+            elif hasattr(self.ArgsEnum, arg):
+                ## Case selection of the non-constrained parts INLINE TEST
+                if   arg in (self.ArgsEnum.opt_remove_neg_eigen,
+                             self.ArgsEnum.opt_convergence_analysis):
+                    assert value in (0,1, True, False), f"Value must be 1 or 0 [{value}]"
+                    value = int(value)
+                elif arg in (self.ArgsEnum.matrix_element_dim, 
+                             self.ArgsEnum.z_core,
+                             self.ArgsEnum.n_core,
+                             self.ArgsEnum.j_val, 
+                             self.ArgsEnum.parity,):
+                    assert isinstance(value, int) and value >=0, \
+                        f"Value must be non-negative integer [{value}]"
+                elif arg == self.ArgsEnum.max_energy:
+                    assert isinstance(value, (int, float)) and value > 0, \
+                        f"Value mist be positive number (int or float)"
+                else:
+                    raise(f"Unidentified argument to set: [{arg}] val[{value}]")
+            else:
+                raise(f"Unidentified argument to set: [{arg}] val[{value}]")
+            
+            setattr(self, arg, value)
+    
+    def __str__(self):
+        return self.getText4file()
+    
+    def getText4file(self):
+        """
+        Return of the Input template filled
+        """
+        kwargs = [(k_, getattr(self, k_)) for k_ in self.ArgsEnum.members()]        
+        cutoffs = []
+        for k_ in self.CutoffArgsEnum.members():
+            val = "{:3.3e}".format(max(getattr(self, k_),1e-16)).replace('e', 'E')
+            cutoffs.append( (k_, val) )
+        kwargs = dict(kwargs + cutoffs)
+        txt_ = self._TEMPLATE.format(**kwargs)
+        return txt_
+    
+    def copy(self):
+        """ return a copy of a previous element """
+        snd_inp = InputTaurusPAV(self.z, self.n, self.interaction)
+        for atr in (*self.ArgsEnum.members(), *self.CutoffArgsEnum.members()):
+            setattr(snd_inp, atr, getattr(self, atr))
+        return snd_inp
+    
 #===============================================================================
 # TESTS
 #===============================================================================
@@ -889,3 +1220,23 @@ OSCILLATOR LENGHT  0    *** 0               BP {b_len:9.7f} BZ {b_len:9.7f}
 #     InputTaurus.InpDDEnum.x0_param         : 0.0000000001})
 # # print(t_input.get_inputDDparamsFile(11, 20))
 # print(t_input.getText4file())
+
+
+# params = {
+#     InputTaurusPAV.ArgsEnum.parity : 1,
+#     InputTaurusPAV.ArgsEnum.disable_simplifications_NZA: True,
+#     InputTaurusPAV.ArgsEnum.alpha : 30,
+#           }
+# inp_ = InputTaurusPAV(1, 1, 'hamil_test', **params)
+#
+# print(inp_)
+
+# params = {
+#     InputTaurusMIX.ArgsEnum.opt_convergence_analysis : False,
+#     InputTaurusMIX.ArgsEnum.j_val: 2,
+#     InputTaurusMIX.CutoffArgsEnum.cutoff_negative_eigen : 1.53e-3,
+#           }
+# inp_ = InputTaurusMIX(1, 1, 14, **params)
+#
+# print(inp_)
+

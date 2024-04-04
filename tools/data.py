@@ -1210,6 +1210,421 @@ class _DataTaurusContainer1D:
         with open(output_file, 'w+') as f:
             f.write(txt_)
     
+class DataTaurusPAV(_DataObjectBase):
+    
+    """ Abstract class with common methods """
+    PROGRAM = 'taurus_pav.exe'
+    DEFAULT_OUTPUT_FILENAME = 'aux_output.OUT'
+    EXPORT_LIST_RESULTS     = 'export_resultTaurus.txt'
+    
+    # __message_startiter = '                   ITERATIVE MINIMIZATION'
+    # __message_endvap    = '                 PROJECTED STATE PROPERTIES'
+    __message_endpav     = '                  PROJECTED MATRIX ELEMENTS'
+    __message_components = '    J 2*MJ 2*KJ    P |     1     |      E     |     '\
+                           'Z       v |     N       v |     A       v |    J'\
+                           '    |    Jz     v |    P    |    T    |    Tz     v'
+    __message_sum_JP_components = '    J    P |           1           |           E'
+    __message_sum_KP_components = ' 2*KJ    P |           1           |           E'
+    
+    
+    class HeaderEnum(Enum):
+        """ Enumerate for the line headers of every argument to process"""
+        pass
+    
+    def __init__(self, z, n, filename, empty_data=False):
+        
+        self.z = z
+        self.n = n
+        self.properly_finished = False
+        self.broken_execution  = False
+        self._filename = filename
+        
+        self.J  = []
+        self.MJ = []
+        self.KJ = []
+        self.P  = []
+        self.proj_norm   = []
+        self.proj_energy = []
+        self.proj_Z = []
+        self.proj_N = []
+        self.proj_A = []
+        self.proj_J = []
+        self.proj_Jz= []
+        self.proj_P = []
+        self.proj_T = []
+        self.proj_Tz= []
+        
+        self.sum_JP_norm   = []
+        self.sum_JP_energy = []
+        
+        self.sum_KP_norm   = []
+        self.sum_KP_energy = []
+        
+        if not empty_data:
+            try:
+                self.get_results()
+            except Exception as e:
+                print(" (TC2)>> EXCEPTION from Taurus Constructor >> self::")
+                print(self)
+                print(" (TC2)>> exception:: ", e, "<<(TC2)")
+                print(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
+    
+    def __str__(self):
+        aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
+        return "\n".join(k+' :\t'+str(v) for k,v in aux.items())
+    
+    def get_results(self):
+        """
+        Read all the lines and export
+            For DataTaurusPAV, only quasiparticle states are saved:
+        Note:
+            In the case of VAP calculation, the stored energies are the projected 
+            ones, the other observables will be from quasiparticles.
+            It assign the values twice (QP values appear in second place)
+        """
+        with open(self._filename, 'r') as f:
+            data = f.read()
+            # if self.__message_converged in data: 
+            #     self.properly_finished = True
+            # elif not self.__message_enditer in data:
+            #     self.broken_execution  = True
+            #     return
+            # self._is_vap_calculation = self.__message_endvap in data
+            #
+            # f.seek(0) # rewind the file reading
+            #
+            # data_inp, data_evol  = f.read().split(self.__message_startiter)
+            # if self._is_vap_calculation:
+            #     data_evol, data = data_evol.split(self.__message_endvap)
+            # else:
+            #     data_evol, data = data_evol.split(self.__message_enditer)
+            data      = data.split('\n')
+        
+        self._ignorable_block = True
+        self._allNVcomp_block = False
+        self._sumJPcomp_block = False
+        self._sumKPcomp_block = False
+        
+        self._projecting_JMK  = True
+        self._projecting_P    = True
+        for _indx, line in enumerate(data):
+            if self._ignorable_block:
+                if line.startswith(self.__message_endpav):
+                    self._ignorable_block  = False
+                    self.properly_finished = True
+                continue
+            else:
+                if self._sumKPcomp_block and (line.startswith("%%%")):
+                    ## complementary files part, stop
+                    return
+            
+            if len(line) == 0:
+                continue
+            elif ('---' in line) or ('===' in line) or ('Sum of' in line):
+                continue
+            else:
+                if   line == self.__message_components:
+                    self._allNVcomp_block = True
+                    continue
+                elif line == self.__message_sum_JP_components:
+                    self._allNVcomp_block = False
+                    self._sumJPcomp_block = True
+                    continue
+                elif line == self.__message_sum_KP_components:
+                    self._sumJPcomp_block = False
+                    self._sumKPcomp_block = True
+                    continue
+            
+            if   self._allNVcomp_block:
+                self._getAllNVComponents_blockline(line)
+            elif self._sumJPcomp_block:
+                self._getSumJPComponents_blockline(line)
+            elif self._sumKPcomp_block:
+                self._getSumKPComponents_blockline(line)
+    
+    def _getAllNVComponents_blockline(self, line):
+        """
+        Get all values depending on the header, 
+        """
+        headers = [line[i:i+5].strip() for i in range(0, 19, 5)]
+        if   headers[0] == '':
+            self._projecting_JMK = False
+        else:
+            self.J .append(int(headers[0]))
+            self.MJ.append(int(headers[1]))
+            self.KJ.append(int(headers[2]))
+            
+        if headers[3] == '':
+            self._projecting_P   = False
+        else:
+            self.P .append(int(headers[3]))
+        
+        line = line[20:].split()
+        #     1     |      E     |     Z       v |     N       v |     A       v |
+        #    J    |    Jz     v |    P    |    T    |    Tz     v
+        _num_indx_val = (3, 5, 7, 10, 14)
+        for i, val in enumerate(line):
+            if i in _num_indx_val: continue
+            ## case select
+            if   (i == 0):
+                self.proj_norm  .append(float(val))
+            elif (i == 1):
+                self.proj_energy.append(float(val))
+            elif (i == 2):
+                self.proj_Z .append(float(val))
+            elif (i == 4):
+                self.proj_N .append(float(val))
+            elif (i == 6):
+                self.proj_A .append(float(val))
+            elif (i == 8):
+                self.proj_J .append(float(val))
+            elif (i == 9):
+                self.proj_Jz.append(float(val))
+            elif (i == 11):
+                self.proj_P .append(float(val))
+            elif (i == 12):
+                self.proj_T .append(float(val))
+            elif (i == 13):
+                self.proj_Tz.append(float(val))
+    
+    def _getSumJPComponents_blockline(self, line):
+        """ Block for J components"""
+        if line.startswith("    Total"): 
+            return
+        j, p = None, None
+        if self._projecting_JMK: j = int(line[0:5])
+        if self._projecting_P:   p = int(line[5:10])
+        vals = [float(x) for x in line[10:].split()]
+        
+        self.sum_JP_norm  .append(vals[0])
+        self.sum_JP_energy.append(vals[2])
+        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(J,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(J,P)=", j, p)
+    
+    def _getSumKPComponents_blockline(self, line):
+        """ Block for K components"""
+        if line.startswith("    Total"): 
+            return
+        j, p = None, None
+        if self._projecting_JMK: j = int(line[0:5])
+        if self._projecting_P:   p = int(line[5:10])
+        vals = [float(x) for x in line[10:].split()]
+        
+        self.sum_KP_norm  .append(vals[0])
+        self.sum_KP_energy.append(vals[2])
+        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(K,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(K,P)=", j, p)
+    
+
+class DataTaurusMIX(_DataObjectBase):
+    
+    """ Abstract class with common methods """
+    PROGRAM = 'taurus_mix.exe'
+    DEFAULT_OUTPUT_FILENAME = 'aux_output.OUT'
+    EXPORT_LIST_RESULTS     = 'export_resultTaurus.txt'
+    
+    # __message_startiter = '                   ITERATIVE MINIMIZATION'
+    __message_endpav     = '                  PROJECTED MATRIX ELEMENTS'
+    __message_components = '    J 2*MJ 2*KJ    P |     1     |      E     |     '\
+                           'Z       v |     N       v |     A       v |    J'\
+                           '    |    Jz     v |    P    |    T    |    Tz     v'
+    __message_sum_JP_components = '    J    P |           1           |           E'
+    __message_sum_KP_components = ' 2*KJ    P |           1           |           E'
+    
+    
+    class HeaderEnum(Enum):
+        """ Enumerate for the line headers of every argument to process"""
+        pass
+    
+    def __init__(self, z, n, filename, empty_data=False):
+        
+        self.z = z
+        self.n = n
+        self.properly_finished = False
+        self.broken_execution  = False
+        self._filename = filename
+        
+        self.J  = []
+        self.MJ = []
+        self.KJ = []
+        self.P  = []
+        self.proj_norm   = []
+        self.proj_energy = []
+        self.proj_Z = []
+        self.proj_N = []
+        self.proj_A = []
+        self.proj_J = []
+        self.proj_Jz= []
+        self.proj_P = []
+        self.proj_T = []
+        self.proj_Tz= []
+        
+        self.sum_JP_norm   = []
+        self.sum_JP_energy = []
+        
+        self.sum_KP_norm   = []
+        self.sum_KP_energy = []
+        
+        if not empty_data:
+            try:
+                self.get_results()
+            except Exception as e:
+                print(" (TC2)>> EXCEPTION from Taurus Constructor >> self::")
+                print(self)
+                print(" (TC2)>> exception:: ", e, "<<(TC2)")
+                print(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
+    
+    def __str__(self):
+        aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
+        return "\n".join(k+' :\t'+str(v) for k,v in aux.items())
+    
+    def get_results(self):
+        """
+        Read all the lines and export
+            For DataTaurusPAV, only quasiparticle states are saved:
+        Note:
+            In the case of VAP calculation, the stored energies are the projected 
+            ones, the other observables will be from quasiparticles.
+            It assign the values twice (QP values appear in second place)
+        """
+        with open(self._filename, 'r') as f:
+            data = f.read()
+            # if self.__message_converged in data: 
+            #     self.properly_finished = True
+            # elif not self.__message_enditer in data:
+            #     self.broken_execution  = True
+            #     return
+            # self._is_vap_calculation = self.__message_endvap in data
+            #
+            # f.seek(0) # rewind the file reading
+            #
+            # data_inp, data_evol  = f.read().split(self.__message_startiter)
+            # if self._is_vap_calculation:
+            #     data_evol, data = data_evol.split(self.__message_endvap)
+            # else:
+            #     data_evol, data = data_evol.split(self.__message_enditer)
+            data      = data.split('\n')
+        
+        self._ignorable_block = True
+        self._allNVcomp_block = False
+        self._sumJPcomp_block = False
+        self._sumKPcomp_block = False
+        
+        self._projecting_JMK  = True
+        self._projecting_P    = True
+        for _indx, line in enumerate(data):
+            if self._ignorable_block:
+                if line.startswith(self.__message_endpav):
+                    self._ignorable_block  = False
+                    self.properly_finished = True
+                continue
+            else:
+                if self._sumKPcomp_block and (line.startswith("%%%")):
+                    ## complementary files part, stop
+                    return
+            
+            if len(line) == 0:
+                continue
+            elif ('---' in line) or ('===' in line) or ('Sum of' in line):
+                continue
+            else:
+                if   line == self.__message_components:
+                    self._allNVcomp_block = True
+                    continue
+                elif line == self.__message_sum_JP_components:
+                    self._allNVcomp_block = False
+                    self._sumJPcomp_block = True
+                    continue
+                elif line == self.__message_sum_KP_components:
+                    self._sumJPcomp_block = False
+                    self._sumKPcomp_block = True
+                    continue
+            
+            if   self._allNVcomp_block:
+                self._getAllNVComponents_blockline(line)
+            elif self._sumJPcomp_block:
+                self._getSumJPComponents_blockline(line)
+            elif self._sumKPcomp_block:
+                self._getSumKPComponents_blockline(line)
+    
+    def _getAllNVComponents_blockline(self, line):
+        """
+        Get all values depending on the header, 
+        """
+        headers = [line[i:i+5].strip() for i in range(0, 19, 5)]
+        if   headers[0] == '':
+            self._projecting_JMK = False
+        else:
+            self.J .append(int(headers[0]))
+            self.MJ.append(int(headers[1]))
+            self.KJ.append(int(headers[2]))
+            
+        if headers[3] == '':
+            self._projecting_P   = False
+        else:
+            self.P .append(int(headers[3]))
+        
+        line = line[20:].split()
+        #     1     |      E     |     Z       v |     N       v |     A       v |
+        #    J    |    Jz     v |    P    |    T    |    Tz     v
+        _num_indx_val = (3, 5, 7, 10, 14)
+        for i, val in enumerate(line):
+            if i in _num_indx_val: continue
+            ## case select
+            if   (i == 0):
+                self.proj_norm  .append(float(val))
+            elif (i == 1):
+                self.proj_energy.append(float(val))
+            elif (i == 2):
+                self.proj_Z .append(float(val))
+            elif (i == 4):
+                self.proj_N .append(float(val))
+            elif (i == 6):
+                self.proj_A .append(float(val))
+            elif (i == 8):
+                self.proj_J .append(float(val))
+            elif (i == 9):
+                self.proj_Jz.append(float(val))
+            elif (i == 11):
+                self.proj_P .append(float(val))
+            elif (i == 12):
+                self.proj_T .append(float(val))
+            elif (i == 13):
+                self.proj_Tz.append(float(val))
+    
+    def _getSumJPComponents_blockline(self, line):
+        """ Block for J components"""
+        if line.startswith("    Total"): 
+            return
+        j, p = None, None
+        if self._projecting_JMK: j = int(line[0:5])
+        if self._projecting_P:   p = int(line[5:10])
+        vals = [float(x) for x in line[10:].split()]
+        
+        self.sum_JP_norm  .append(vals[0])
+        self.sum_JP_energy.append(vals[2])
+        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(J,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(J,P)=", j, p)
+    
+    def _getSumKPComponents_blockline(self, line):
+        """ Block for K components"""
+        if line.startswith("    Total"): 
+            return
+        j, p = None, None
+        if self._projecting_JMK: j = int(line[0:5])
+        if self._projecting_P:   p = int(line[5:10])
+        vals = [float(x) for x in line[10:].split()]
+        
+        self.sum_KP_norm  .append(vals[0])
+        self.sum_KP_energy.append(vals[2])
+        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(K,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(K,P)=", j, p)
+
+
+
+#===============================================================================
+#   OTHER OUTPUT FILES
+#===============================================================================
 
 class DataAxial(DataTaurus):
     
@@ -1572,4 +1987,8 @@ if __name__ == '__main__':
     # res = DataAxial(10, 10, 'out_20Ne.OUT')
     # with open(res.EXPORT_LIST_RESULTS, 'w+') as f:
     #     f.write(res.getAttributesDictLike)
+    
+    # res = DataTaurusPAV(12, 12, '../OUT_1')
+    res = DataTaurusPAV(11, 20, '../test_obl01_odd_31Na/OUT_m1_m1.OUT')
+    
     
