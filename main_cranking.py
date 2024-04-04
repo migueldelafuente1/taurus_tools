@@ -10,8 +10,7 @@ from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
 from scripts1d.cranking_scripts import run_J_surface
 
-if not (InputTaurus.PROGRAM in os.listdir()):
-    importAndCompile_taurus()
+if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
 if __name__ == '__main__':
     

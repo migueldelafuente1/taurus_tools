@@ -16,8 +16,7 @@ from scripts0d.unconstrained_scripts import run_symmetry_restricted_for_hamilton
 from tools.Enums import GognyEnum, CentralMEParameters, PotentialForms,\
     OutputFileTypes
 
-if not (InputTaurus.PROGRAM in os.listdir()):
-    importAndCompile_taurus()
+if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
 if __name__ == '__main__':
     

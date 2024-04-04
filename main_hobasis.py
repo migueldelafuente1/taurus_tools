@@ -4,7 +4,6 @@ Created on May 30, 2023
 @author: Miguel
 '''
 import os
-from tools.helpers import importAndCompile_taurus, TBME_SUITE
 from scripts1d.hamiltonian_scripts import run_computingHOhbarOmegaForD1S, \
     run_computingHOhbarOmegaForD1S_Axial
 
