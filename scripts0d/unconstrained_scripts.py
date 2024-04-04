@@ -80,7 +80,7 @@ def run_symmetry_restricted_for_hamiltonian(nucleus, MZmax=6,
             exe_.setUpExecution()
             # exe_.force_converg = True
             # exe_.run()
-            exe_.gobalTearDown()
+            exe_.globalTearDown()
         except ExecutionException as e:
             print(e)
         

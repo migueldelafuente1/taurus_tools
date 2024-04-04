@@ -77,7 +77,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
                 exe_.setUpExecution(**input_args_onrun)
                 exe_.force_converg = True 
                 exe_.run()
-                exe_.gobalTearDown(zip_bufolder=False)
+                exe_.globalTearDown(zip_bufolder=False)
                 
                 line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
@@ -171,7 +171,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
                 exe_.setUpExecution(**input_args_onrun)
                 exe_.force_converg = True 
                 exe_.run()
-                exe_.gobalTearDown(zip_bufolder=False)
+                exe_.globalTearDown(zip_bufolder=False)
                                 
                 line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
