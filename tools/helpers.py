@@ -22,6 +22,12 @@ TAURUS_SRC_FOLDERS = {
     GITHUB_TAURUS_PAV_HTTP  : "taurus_pav",
     GITHUB_TAURUS_MIX_HTTP  : "taurus_mix",
 }
+TAURUS_EXECUTABLE_BY_FOLDER = {
+    TAURUS_SRC_FOLDERS[GITHUB_DENS_TAURUS_HTTP] : "taurus_vap.exe",
+    TAURUS_SRC_FOLDERS[GITHUB_TAURUS_VAP_HTTP]  : "taurus_vap.exe",
+    TAURUS_SRC_FOLDERS[GITHUB_TAURUS_PAV_HTTP]  : "taurus_pav.exe",
+    TAURUS_SRC_FOLDERS[GITHUB_TAURUS_MIX_HTTP]  : "taurus_mix.exe",
+}
 
 TBME_SUITE = '2B_MatrixElements'
 TBME_HAMIL_FOLDER = 'savedHamilsBeq1/'
@@ -232,6 +238,7 @@ def importAndCompile_taurus(use_dens_taurus=True, vap = False, mix = False):
     programs_to_import = [(src_, TAURUS_SRC_FOLDERS[src_]) for src_ in programs_]
     
     for src_, folder_path in programs_to_import:
+        program_ = TAURUS_EXECUTABLE_BY_FOLDER[folder_path]
         try:
             order_ = "git clone {}".format(src_)
             e_ = subprocess.call(order_, shell=True)
@@ -240,7 +247,7 @@ def importAndCompile_taurus(use_dens_taurus=True, vap = False, mix = False):
             ## compile and move executable to main directory
             order_ = "make"
             e_ = subprocess.call(order_, shell=True)
-            order_ = "cp exe/taurus_vap.exe ../"
+            order_ = "cp exe/{} ../".format(program_)
             e_ = subprocess.call(order_, shell=True)
             
             ## return to the main directory
