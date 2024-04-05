@@ -525,21 +525,15 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         if self.inputObj.n_Mphi > 1: 
             self.inputObj_PAV.n_Mphi = self.inputObj.n_Mphi
         
-        self.inputObj_PAV.j_max = min( abs(self._valid_Ks[-1]), self._sp_2jmax)
-        self.inputObj_PAV.j_max = self._sp_2jmin
+        max_2j = min(abs(max(self._valid_Ks)), abs(min(self._valid_Ks)))
+        self.inputObj_PAV.j_max = min( max_2j, self._sp_2jmax)
+        self.inputObj_PAV.j_min = self._sp_2jmin
             
         self.inputObj_PAV.setParameters(**params)
         
         print("Will use the following PAV input optiones:")
         print(self.inputObj_PAV)
         print("EOF.\n\n")
-        
-    
-    # def run(self):
-    #     ExeTaurus1D_B20_OEblocking_Ksurfaces.run(self)
-    #
-    #     ## Group the results by deformations and folders
-    #     _ = 0
     
     def _KComponentSetUp(self):
         ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)
