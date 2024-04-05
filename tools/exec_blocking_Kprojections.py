@@ -113,8 +113,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         """ 
         Actions common for the creation of K folders or 
         """
-        self.inputObj.grad_type  = 0    if abs(self._current_K) > 3 else 1
-        self.inputObj.iterations = 1000 if abs(self._current_K) > 3 else 500
+        #self.inputObj.grad_type  = 0    if abs(self._current_K) > 3 else 1
+        #self.inputObj.iterations = 1000 if abs(self._current_K) > 3 else 500
                 
         # Refresh and create folders for vap-blocked results
         _PAR = (1 - self.PARITY_TO_BLOCK)//2
