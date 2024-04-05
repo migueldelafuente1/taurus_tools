@@ -525,8 +525,7 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         if self.inputObj.n_Mphi > 1: 
             self.inputObj_PAV.n_Mphi = self.inputObj.n_Mphi
         
-        max_2j = min(abs(max(self._valid_Ks)), abs(min(self._valid_Ks)))
-        self.inputObj_PAV.j_max = min( max_2j, self._sp_2jmax)
+        self.inputObj_PAV.j_max = min( max(self._valid_Ks), self._sp_2jmax)
         self.inputObj_PAV.j_min = self._sp_2jmin
             
         self.inputObj_PAV.setParameters(**params)
