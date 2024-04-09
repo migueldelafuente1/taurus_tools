@@ -88,16 +88,17 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         assert not sp_ in self._sp_states_obj, "Already found"
                         self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
         
-        if valid_Ks != []:
-            ## optimal organization of the K: 1, -1, 3, -3, ...
-            for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
-                if not k in valid_states_KP: 
-                    continue # skip states with K but other parity
-                self._valid_Ks.append(k)
-                if self.BLOCK_ALSO_NEGATIVE_K:
-                    self._valid_Ks.append(-k)
-        else:
-            self._valid_Ks = sorted(valid_Ks)
+        
+        ## optimal organization of the K: 1, -1, 3, -3, ...
+        for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
+            if not k in valid_states_KP: 
+                continue # skip states with K but other parity
+            if valid_Ks != [] and not k in valid_Ks:
+                continue
+            self._valid_Ks.append(k)
+            if self.BLOCK_ALSO_NEGATIVE_K:
+                self._valid_Ks.append(-k)
+        
         
         for k in self._valid_Ks:
             def_dct = list(map(lambda x: x[0], self._deformations_map[0]))
