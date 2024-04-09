@@ -12,7 +12,7 @@ import os
 
 from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj,\
     importAndCompile_taurus
-from tools.data import DataTaurus
+from tools.data import DataTaurus, DataTaurusPAV
 from tools.inputs import InputTaurusPAV, InputTaurusMIX
 from .executors import ExeTaurus1D_DeformB20
 from tools.Enums import OutputFileTypes
@@ -33,6 +33,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
     IGNORE_SEED_BLOCKING = True
     PARITY_TO_BLOCK      = 1
     BLOCK_ALSO_NEGATIVE_K = False
+    RUN_PROJECTION        = False
     
     def __init__(self, z, n, interaction, *args, **kwargs):
         
@@ -59,11 +60,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                                                            spherical_calc=spherical_calc, 
                                                            **input_kwargs)
     
-    def setUpExecution(self, reset_seed=False, *args, **kwargs):
+    def setUpExecution(self, reset_seed=False, valid_Ks=[], *args, **kwargs):
         """
         Set up of the main false OE TES and the arrays for the blocking part.
         """
-        ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, *args, **kwargs)
+        ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, 
+                                                   *args, **kwargs)
         
         ## organization only sorted: in the range of valid j
         # self._valid_Ks = [k for k in range(-self._sp_2jmax, self._sp_2jmax+1, 2)]
@@ -86,13 +88,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         assert not sp_ in self._sp_states_obj, "Already found"
                         self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
         
-        ## optimal organization of the K: 1, -1, 3, -3, ...
-        for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
-            if not k in valid_states_KP: 
-                continue # skip states with K but other parity
-            self._valid_Ks.append(k)
-            if self.BLOCK_ALSO_NEGATIVE_K:
-                self._valid_Ks.append(-k)
+        if valid_Ks != []:
+            ## optimal organization of the K: 1, -1, 3, -3, ...
+            for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
+                if not k in valid_states_KP: 
+                    continue # skip states with K but other parity
+                self._valid_Ks.append(k)
+                if self.BLOCK_ALSO_NEGATIVE_K:
+                    self._valid_Ks.append(-k)
+        else:
+            self._valid_Ks = sorted(valid_Ks)
         
         for k in self._valid_Ks:
             def_dct = list(map(lambda x: x[0], self._deformations_map[0]))
@@ -109,6 +114,17 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 for sp_ in range(1, self._sp_dim +1):
                     self._sp_blocked_K_already_found[kk][sp_] = 0 # default
     
+    def setUpProjection(self, **params):
+        """
+        Defines the parameters for the projection of the nucleus.
+        The z, n, interaction, com, Fomenko-points, and Jvals from the program
+        """
+        ExeTaurus1D_DeformB20.setUpProjection(self, **params)
+        
+        self._list_PAV_outputs = {} # list by K order
+        self.inputObj_PAV.j_max = min( max(self._valid_Ks), self._sp_2jmax)
+        
+        
     def _KComponentSetUp(self):
         """ 
         Actions common for the creation of K folders or 
@@ -126,7 +142,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             shutil.rmtree(BU_FLD_KBLOCK)
         os.mkdir(BU_FLD_KBLOCK)
         self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
-        self._exportable_LISTDAT = []
+        self._exportable_LISTDAT_forK = []
+        self._list_PAV_outputs[self._current_K] = []
         print(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
               f"results. saving in [{BU_FLD_KBLOCK}]")
     
@@ -188,7 +205,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         
                         ## minimize and save only if 2<Jz> = K
                         res : DataTaurus = self._executeProgram()
-                        if not (res.properly_finished and res.isAxial()): 
+                        if not (res.properly_finished and res.isAxial()):
                             continue
                         if almostEqual(2 * res.Jz, K, 1.0e-5):
                             ## no more minimizations for this deformation
@@ -197,11 +214,22 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                             break
                         elif sp_ == self._sp_dim:
                             print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
+                        else:
+                            self._K_notFoundActionsTearDown()
                     ## B20 loop
             if no_results_for_K: 
                 print("  [WARNING] No blocked result for 2K=", K)
             # K-loop
         _ = 0
+    
+    def runProjection(self, **params):
+        """
+            NOTE: Projection can only be called for blocked functions, occurring
+            in the blocking section. This method is called from _executeProgram()
+        """
+        if self._blocking_section:
+            return ExeTaurus1D_DeformB20.runProjection(self, **params)
+        return
     
     def saveFinalWFprocedure(self, result:DataTaurus, base_execution=False):
         """
@@ -229,16 +257,31 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
                         f"{self._exportable_BU_FLD_KBLOCK}/{fndat}.OUT")
             
-            if not fnbin in self._exportable_LISTDAT:
-                # if i < 0:
-                #     self._exportable_LISTDAT.insert(0, fnbin)
-                # else:
-                self._exportable_LISTDAT.append(fnbin)
-            
+            if not fnbin in self._exportable_LISTDAT_forK:
+                self._exportable_LISTDAT_forK.append(fnbin)
         else:
             ## Normal execution
             ExeTaurus1D_DeformB20.saveFinalWFprocedure(self, 
                                                        result, base_execution)
+    
+    def saveProjectedWFProcedure(self, result: DataTaurusPAV):
+        """
+        Default copy of the function for the deformation into the PAV BU-folder
+        """
+        out_args = (self._current_K, self._curr_deform_index)
+        outfn    = "K{}_d{}.OUT".format(*out_args)
+        
+        outpth = "{}/{}".format(self._curr_PAV_result.BU_folder, outfn)
+        
+        if result.broken_execution or not result.properly_finished:
+            outpth = "{}/broken_{}".format(self._curr_PAV_result.BU_folder, outfn)
+            shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, outpth)
+            return
+        
+        if not outfn in self._list_PAV_outputs[self._current_K]:
+            self._list_PAV_outputs[self._current_K].append(outfn)
+        
+        shutil.move(DataTaurusPAV.DEFAULT_OUTPUT_FILENAME, outpth)
     
     def executionTearDown(self, result:DataTaurus, base_execution, *args, **kwargs):
         """
@@ -248,8 +291,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         if self._blocking_section:
             ## save the list dat into folder
             with open(f'{self._exportable_BU_FLD_KBLOCK}/list.dat', 'w+') as f:
-                if len(self._exportable_LISTDAT):
-                    f.write("\n".join(self._exportable_LISTDAT) )
+                if len(self._exportable_LISTDAT_forK):
+                    f.write("\n".join(self._exportable_LISTDAT_forK) )
             
             K = self._current_K
             with open(f'{self._exportable_BU_FLD_KBLOCK}/' + 
@@ -261,11 +304,23 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                                                          self.CONSTRAINT_DT))
                 if len(self._exportable_txt):
                     f.write("\n".join(exportable_txt))
-            
         else:
             ## Normal execution
             ExeTaurus1D_DeformB20.executionTearDown(self, result, base_execution, 
                                                     *args, **kwargs)
+    
+    def projectionExecutionTearDown(self):
+        """
+        Process to save result after calling runProjection()
+        """
+        ## save the list dat into folder/ one per K value
+        for K in self._list_PAV_outputs.keys():
+            with open(f'{self._curr_PAV_result.BU_folder}/list_k{K}_pav.dat', 
+                      'w+') as f:
+                if len(self._list_PAV_outputs[K]):
+                    sort_ = self._list_PAV_outputs[K]
+                    sort_ = self._sortListDATForPAVresults(sort_)
+                    f.write("\n".join(sort_))
     
     def _K_foundActionsTearDown(self, res: DataTaurus, sp_index, b20):
         """
@@ -285,6 +340,17 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         self._sp_blocked_K_already_found[b20_index][sp_index] = self._current_K
     
+    def _K_notFoundActionsTearDown(self):
+        """
+        Actions to discard or notice invalid result.
+        """
+        invalid_fn = self._list_PAV_outputs[self._current_K].pop()
+        invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
+        
+        outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
+        shutil.move(invalid_fn, outpth)
+        
+    
     def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
         """
         Same exporting, but also including a map for the blocked states
@@ -301,7 +367,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         shutil.copy("blocked_state_def_K.txt", self.DTYPE.BU_folder)
         
-        ## main 
+        ## main export
         ExeTaurus1D_DeformB20.globalTearDown(self, zip_bufolder=zip_bufolder, 
                                                   *args, **kwargs)
 
@@ -386,6 +452,7 @@ cp gcm* outputs_PAV"""
 ulimit -s unlimited 
 
 LIST_JVALS
+chmod 777 PROGRAM
 for var in $LIST; do
 sed s/"J_VAL"/$var/ INPUT_FILE > INP0
 ./PROGRAM < INP0 > $var".dat"
@@ -405,6 +472,9 @@ cp $var1 left_wf.bin
 cp $var2 right_wf.bin
 mkdir $var
 cp PROGRAM INPUT_FILE left_wf.bin right_wf.bin HAMIL.* $var
+cd $var
+chmod 777 PROGRAM
+cd ../
 done"""
     
     
@@ -506,33 +576,6 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
     "projmatelem_states.bin", HWG folder and its bash-scripts.
     
     """
-    
-        
-    def setUpProjection(self, **params):
-        """
-        Defines the parameters for the projection of the nucleus.
-        The z, n, interaction, com, Fomenko-points, and Jvals from the program
-        """
-        self.inputObj_PAV = InputTaurusPAV(self.z, self.n, self.interaction)
-        
-        self.inputObj_PAV.com = self.inputObj.com
-        self.inputObj_PAV.red_hamil = 1 # first computation will export it
-        
-        self.inputObj_PAV.z_Mphi = 9
-        self.inputObj_PAV.n_Mphi = 9
-        if self.inputObj.z_Mphi > 1: 
-            self.inputObj_PAV.z_Mphi = self.inputObj.z_Mphi
-        if self.inputObj.n_Mphi > 1: 
-            self.inputObj_PAV.n_Mphi = self.inputObj.n_Mphi
-        
-        self.inputObj_PAV.j_max = min( max(self._valid_Ks), self._sp_2jmax)
-        self.inputObj_PAV.j_min = self._sp_2jmin
-            
-        self.inputObj_PAV.setParameters(**params)
-        
-        print("Will use the following PAV input optiones:")
-        print(self.inputObj_PAV)
-        print("EOF.\n\n")
     
     def _KComponentSetUp(self):
         ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)

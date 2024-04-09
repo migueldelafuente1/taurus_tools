@@ -1214,7 +1214,7 @@ class DataTaurusPAV(_DataObjectBase):
     
     """ Abstract class with common methods """
     PROGRAM = 'taurus_pav.exe'
-    DEFAULT_OUTPUT_FILENAME = 'aux_output.OUT'
+    DEFAULT_OUTPUT_FILENAME = 'aux_output_pav.OUT'
     EXPORT_LIST_RESULTS     = 'export_resultTaurus.txt'
     
     # __message_startiter = '                   ITERATIVE MINIMIZATION'

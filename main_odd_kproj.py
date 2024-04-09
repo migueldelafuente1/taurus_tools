@@ -6,7 +6,7 @@ Created on 18 mar 2024
 import os
 from tools.Enums import GognyEnum
 from scripts1d.beta_scripts import run_b20_FalseOE_Kprojections_Gogny, \
-    run_b20_FalseOE_Kmixing
+    run_b20_FalseOE_Kmixing, run_b20_FalseOE_Block1KAndPAV
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus
 
@@ -29,7 +29,6 @@ if __name__ == '__main__':
             #(12, 16): (3, 0, 1.94), 
             (12, 19): (3, 0, 1.98), (12, 21): (3, 0, 2.01),
         }
-        
         # ---------------------------------------------------------------------
         ## Automation for the a range of Z,N to evaluate
         # --------------------------------------------------------------------- 
@@ -61,9 +60,16 @@ if __name__ == '__main__':
     #                       q_min=-0.4, q_max=0.6, N_max=50, convergences=3, 
     #                       parity_2_block=1)
     
-    run_b20_FalseOE_Kmixing(nucleus, interactions_B1, GognyEnum.B1,
-                            seed_base=3, ROmega=(0,0), #ROmega=(14,14), 
-                            q_min=-0.6, q_max=0.6, N_max=5, convergences=3, 
-                            parity_2_block=1)
+    args = (nucleus, interactions_B1, GognyEnum.B1)
+    kwargs = dict(
+        seed_base=3, ROmega=(0,0), 
+        q_min=-0.6, q_max=0.6, N_max=5, convergences=3, 
+        parity_2_block=1
+    )
+    #run_b20_FalseOE_Kmixing(*args, **kwargs)
+    
+    K2block = 1
+    args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
+    run_b20_FalseOE_Block1KAndPAV(*args, **kwargs)
     
     raise Exception("STOP HERE.")

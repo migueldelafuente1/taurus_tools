@@ -15,11 +15,13 @@ from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
 from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS,\
-    ValenceSpacesDict_l_ge10_byM
+    ValenceSpacesDict_l_ge10_byM, TAURUS_EXECUTABLE_BY_FOLDER,\
+    GITHUB_TAURUS_PAV_HTTP, TAURUS_SRC_FOLDERS
 from tools.Enums import OutputFileTypes
 
 from tools.base_executors import _Base1DAxialExecutor, _Base1DTaurusExecutor, \
     ExecutionException
+from random import random
 
 #===========================================================================
 #
@@ -104,7 +106,100 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             (InputTaurus.ArgsEnum.seed in _new_input_args)):
             self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, 
                                                        None)
+    
+    def setUpProjection(self, **params):
+        """
+        Defines the parameters for the projection of the nucleus.
+        The z, n, interaction, com, Fomenko-points, and Jvals from the program
+        """
+        self.inputObj_PAV = InputTaurusPAV(self.z, self.n, self.interaction)
         
+        self.inputObj_PAV.com = self.inputObj.com
+        self.inputObj_PAV.red_hamil = 1 # first computation will export it
+        
+        self.inputObj_PAV.z_Mphi = 9
+        self.inputObj_PAV.n_Mphi = 9
+        if self.inputObj.z_Mphi > 1: 
+            self.inputObj_PAV.z_Mphi = self.inputObj.z_Mphi
+        if self.inputObj.n_Mphi > 1: 
+            self.inputObj_PAV.n_Mphi = self.inputObj.n_Mphi
+        
+        self.inputObj_PAV.j_max = self._sp_2jmax
+        self.inputObj_PAV.j_min = self._sp_2jmin
+            
+        self.inputObj_PAV.setParameters(**params)
+        self._list_PAV_outputs = []
+        
+        ## Create a folder in BU_ to store the projected results after a VAP-HFB
+        if self.RUN_PROJECTION:
+            if self.IGNORE_SEED_BLOCKING and 1 in self.numberParityOfIsotope:
+                w = "\t[WARNING] Verify runProjection() before performing PAV over NON-Blocked wf!!!\n"*3
+                print(LINE_2, w, LINE_2)
+            
+            DataTaurusPAV.BU_folder = self.DTYPE.BU_folder + '/PNAMP'
+            DataTaurusPAV.setUpFolderBackUp()
+        
+        print("Will use the following PAV input optiones:")
+        print(self.inputObj_PAV)
+        print("EOF.\n\n")
+    
+    def runProjection(self, **params):
+        """
+        Base PAV-diagonal execution if VAP-HFB were executed: 
+            1. Copy final_wf.bin-> left_wf.bin and right_wf.bin
+            2. Run and save the PAV output.
+            3. 
+        """
+        program_ = TAURUS_SRC_FOLDERS[GITHUB_TAURUS_PAV_HTTP]
+        program_ = TAURUS_EXECUTABLE_BY_FOLDER[program_]
+        
+        if not (self._current_result and self._current_result.properly_finished):
+            print(" [WARNING] Previous result is invalid for PAV. Skipping")
+            return
+        if not os.path.exists(program_):
+            print(" [WARNING] PAV executable is missing. Skipping")
+            return
+            
+        shutil.copy('final_wf.bin', 'left_wf.bin')
+        shutil.copy('final_wf.bin', 'right_wf.bin')
+        
+        inp_fn = self.inputObj_PAV.DEFAULT_INPUT_FILENAME
+        out_fn = DataTaurusPAV.DEFAULT_OUTPUT_FILENAME
+        with open(inp_fn, 'w+') as f2:
+                f2.write(self.inputObj_PAV.getText4file())
+        
+        if os.getcwd().startswith('C:'): ## Testing purpose 
+            self._auxWindows_executeProgram_PAV(out_fn)
+        else:
+            os.system('./{} < {} > {}'.format(program_, inp_fn, out_fn))
+        
+        res = DataTaurusPAV(self.z, self.n, out_fn)
+        self._curr_PAV_result  = res
+        ## move the projection results to another folder
+        ## TODO. Exportable for printing as for K projection
+        if self._curr_PAV_result.properly_finished:
+            self.saveProjectedWFProcedure(res)
+            self.projectionExecutionTearDown()
+        else:
+            print(" [ERROR-PAV] PAV could not be achieved. Skipping")
+    
+    def saveProjectedWFProcedure(self, result: DataTaurusPAV):
+        """
+        Default copy of the function for the deformation into the PAV BU-folder
+        """
+        outfn = "d{}.OUT".format(self._curr_deform_index)
+        outpth = "{}/{}".format(self._curr_PAV_result.BU_folder, outfn)
+        
+        if result.broken_execution or not result.properly_finished:
+            outpth = "{}/broken_{}".format(self._curr_PAV_result.BU_folder, outfn)
+            shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, outpth)
+            return
+        
+        if not outfn in self._list_PAV_outputs:
+            self._list_PAV_outputs.append(outfn)
+        
+        shutil.move(DataTaurusPAV.DEFAULT_OUTPUT_FILENAME, outpth)
+    
     def _getStatesAndDimensionsOfHamiltonian(self):
         """
         Read the hamiltonian and get the sp states/shell for the calculation
@@ -438,7 +533,29 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             shutil.move('list.dat', 'PNVAP/')
             os.chdir('..')
         print( "  [globalTearDown] Done.\n")
-
+    
+    def projectionExecutionTearDown(self):
+        """
+        Process to save result after calling runProjection()
+        """
+        ## save the list dat into folder
+        with open('{}/list_pav.dat'.format(self._curr_PAV_result.BU_folder), 
+                  'w+') as f:
+            if len(self._list_PAV_outputs):
+                sort_ = self._sortListDATForPAVresults(self._list_PAV_outputs)
+                f.write("\n".join(sort_))
+                
+    def _sortListDATForPAVresults(self, list_):
+        """
+        Sorting procedure by deformations:
+            >>> [ 'K1_d3.OUT', 'K1_d-1.OUT', 'K1_d-2.OUT']
+            <<< ['K1_d-2.OUT', 'K1_d-1.OUT', 'K1_d3.OUT']
+        """
+        initial_ = [int(x.replace('.OUT', '').split('_d')[-1]) for x in list_]
+        return [list_[initial_.index(i)] for i in sorted(initial_)]
+        
+        
+        
 class ExeAxial1D_DeformQ20(_Base1DAxialExecutor, ExeTaurus1D_DeformQ20):
     
     CONSTRAINT    = InputAxial.ConstrEnum.b20
@@ -713,7 +830,21 @@ class ExeTaurus0D_PAVProjection(_Base1DTaurusExecutor):
         pass
     
     def _auxWindows_executeProgram(self, output_fn):
-        pass
+        """ 
+        Dummy method to test the scripts1d in Windows
+        """
+        # program = """ """
+        # exec(program)
+        FLD_TEST_ = 'data_resources/testing_files/'
+        file2copy = FLD_TEST_+'TEMP_res_PAV_z2n1_odd.txt'
+        
+        txt = ''
+        with open(file2copy, 'r') as f:
+            txt = f.read()
+            txt = txt.format(INPUT_2_FORMAT=self.inputObj_PAV)
+        
+        with open(output_fn, 'w+') as f:
+            f.write(txt)
     
     def _executeProgram(self, base_execution=False):
         pass

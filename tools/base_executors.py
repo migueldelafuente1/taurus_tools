@@ -52,6 +52,8 @@ class _Base1DTaurusExecutor(object):
                             # ALSO: Number of blocking sp state for odd calculation
     GENERATE_RANDOM_SEEDS = False
     IGNORE_SEED_BLOCKING  = False # Set True to do false odd-even nuclear surfaces
+    RUN_PROJECTION        = False # Set True to project PAV the MF - results
+    
     # @classmethod
     # def __new__(cls, *args, **kwargs):
     #     """
@@ -71,8 +73,10 @@ class _Base1DTaurusExecutor(object):
         
         self.inputObj  : self.ITYPE  = None
         self._DDparams : dict = None
+        self.inputObj_PAV   : InputTaurusPAV  = None
         self._1stSeedMinima : self.DTYPE  = None
-        self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
+        self._current_result: self.DTYPE  = None
+        self._curr_PAV_result : DataTaurusPAV = None
         
         self.activeDDterm = True
         self.axialSymetryRequired = False ## set up to reject non-axial results
@@ -218,7 +222,39 @@ class _Base1DTaurusExecutor(object):
             * 
         """
         raise ExecutionException("Abstract method, implement me!")
+    
+    def setUpProjection(self, **params):
+        """
+        Defines the parameters for the projection of the nucleus.
+        The z, n, interaction, com, Fomenko-points, and Jvals from the program
+        """
+        raise ExecutionException("Abstract method, implement me!")
+    
+    def runProjection(self, **params):
+        """
+        After a VAP-HFB result, project using taurus_pav.exe (GITHUB/project-taurus)
+        """
+        raise ExecutionException("Abstract method, implement me!")
+    
+    def _auxWindows_executeProgram_PAV(self, output_fn):
+        """ 
+        Dummy method to test the scripts1d - PAV in Windows
+        """
+        FLD_TEST_ = 'data_resources/testing_files/'
+        file2copy = FLD_TEST_+'TEMP_res_PAV_z2n1_odd.txt'
         
+        txt = ''
+        with open(file2copy, 'r') as f:
+            txt = f.read()        
+        with open(output_fn, 'w+') as f:
+            f.write(txt)
+    
+    def projectionExecutionTearDown(self):
+        """
+        Process to save result after calling runProjection()
+        """
+        raise ExecutionException("Abstract method, implement me!")
+    
     def defineDeformationRange(self, min_, max_, N_steps):
         """
         Set the arrays for the deformations (prolate, oblate)
@@ -624,7 +660,7 @@ class _Base1DTaurusExecutor(object):
                 txt = f.read()
             with open(f"{file_}.dat", 'w+') as f:
                 f.write(txt) 
-    
+        
     def _namingFilesToSaveInTheBUfolder(self):
         """ 
         Naming and  tracking of the unconverged and converged results 
@@ -771,6 +807,8 @@ class _Base1DTaurusExecutor(object):
             self.saveFinalWFprocedure(res, base_execution)
             self.executionTearDown   (res, base_execution)
             self._current_result = deepcopy(res)
+            
+            if self.RUN_PROJECTION and not base_execution: self.runProjection()
             
         except Exception as e:
             print(f"  [FAIL]: {self.__class__}._executeProgram()")
