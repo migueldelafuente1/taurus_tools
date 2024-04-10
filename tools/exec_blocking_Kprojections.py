@@ -123,7 +123,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         ExeTaurus1D_DeformB20.setUpProjection(self, **params)
         
         self._list_PAV_outputs = {} # list by K order
-        self.inputObj_PAV.j_max = min( max(self._valid_Ks), self._sp_2jmax)
+        #self.inputObj_PAV.j_max = min( max(self._valid_Ks), self._sp_2jmax)
         
         
     def _KComponentSetUp(self):
