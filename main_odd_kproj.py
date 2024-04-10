@@ -21,7 +21,7 @@ if __name__ == '__main__':
         # (12, 16): (3, 0, 1.80), (12, 18): (3, 0, 1.86),
     }
     if os.getcwd().startswith('C:'):   ## TESTING
-        interactions_B1 = {(2, 1): (2, 0, None), (2, 3): (2, 0, None),}
+        interactions_B1 = {(2, 1): (3, 0, None), (2, 3): (2, 0, None),}
     else:
         interactions_B1 = {
             #(12,  8) : (3, 0, 1.98), 
@@ -65,12 +65,13 @@ if __name__ == '__main__':
     kwargs = dict(
         seed_base=3, ROmega=(0,0), 
         q_min=-0.6, q_max=0.6, N_max=5, convergences=3, 
-        parity_2_block=1
+        parity_2_block=1,
+        fomenko_points=(9, 9),
     )
     #run_b20_FalseOE_Kmixing(*args, **kwargs)
     
     K2block = 1
     args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
-    run_b20_FalseOE_Block1KAndPAV(*args, **kwargs)
+    run_b20_FalseOE_Block1KAndPAV(*args, **kwargs, )
     
     raise Exception("STOP HERE.")
