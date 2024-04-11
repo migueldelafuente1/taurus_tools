@@ -551,9 +551,11 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
-            InputTaurusPAV.ArgsEnum.alpha : 5,
-            InputTaurusPAV.ArgsEnum.beta  : 15,
-            InputTaurusPAV.ArgsEnum.gamma : 5,
+            InputTaurusPAV.ArgsEnum.alpha : 10,
+            InputTaurusPAV.ArgsEnum.beta  : 20,
+            InputTaurusPAV.ArgsEnum.gamma : 10,
+            InputTaurusPAV.ArgsEnum.empty_states : 0,
+            InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0, 
             # PN-PAV and J bound arguments set by the program, P-PAV = no
         }
         ExeTaurus1D_B20_KMixing_OEblocking.EXPORT_LIST_RESULTS = \
@@ -662,9 +664,11 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
-            InputTaurusPAV.ArgsEnum.alpha : 5,
-            InputTaurusPAV.ArgsEnum.beta  : 15,
-            InputTaurusPAV.ArgsEnum.gamma : 5,
+            InputTaurusPAV.ArgsEnum.alpha : 10,
+            InputTaurusPAV.ArgsEnum.beta  : 20,
+            InputTaurusPAV.ArgsEnum.gamma : 10,
+            InputTaurusPAV.ArgsEnum.empty_states : 0,
+            InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0, 
             # PN-PAV and J bound arguments set by the program, P-PAV = no
         }
         ExeTaurus1D_B20_KMixing_OEblocking.EXPORT_LIST_RESULTS = \

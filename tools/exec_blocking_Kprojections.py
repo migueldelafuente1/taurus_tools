@@ -200,7 +200,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     #     b20_ = self.deform_oblate[i]
                     setattr(self.inputObj, self.CONSTRAINT, b20_)
                     
-                    in_neu = self._sp_dim if self.numberParityOfIsotope[1] else 0
+                    isNeu = self._sp_dim if self.numberParityOfIsotope[1] else 0
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
                         self._current_sp = sp_
@@ -215,7 +215,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         if self._sp_states_obj[sp_].m != K : continue
                         if parity_ != self.PARITY_TO_BLOCK : continue 
                         
-                        self.inputObj.qp_block = sp_ + in_neu
+                        self.inputObj.qp_block = sp_ + isNeu
                         
                         ## minimize and save only if 2<Jz> = K
                         res : DataTaurus = self._executeProgram()

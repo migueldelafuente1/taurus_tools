@@ -22,6 +22,7 @@ if __name__ == '__main__':
     }
     if os.getcwd().startswith('C:'):   ## TESTING
         interactions_B1 = {(2, 1): (3, 0, None), (2, 3): (2, 0, None),}
+        interactions_B1 = {(2, 1): 'B1_MZ3', (2, 3): 'B1_MZ3',}
     else:
         interactions_B1 = {
             #(12,  8) : (3, 0, 1.98), 
@@ -67,7 +68,8 @@ if __name__ == '__main__':
         q_min=-0.6, q_max=0.6, N_max=5, convergences=3, 
         parity_2_block=1,
     )
-    #run_b20_FalseOE_Kmixing(*args, **kwargs)
+    # run_b20_FalseOE_Kmixing(*args, **kwargs)
+    # raise Exception("STOP HERE.")
     
     K2block = 1
     args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
