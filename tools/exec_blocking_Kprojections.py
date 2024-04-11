@@ -12,7 +12,7 @@ import os
 
 from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj,\
     importAndCompile_taurus
-from tools.data import DataTaurus, DataTaurusPAV
+from tools.data import DataTaurus, DataTaurusPAV, BaseResultsContainer1D
 from tools.inputs import InputTaurusPAV, InputTaurusMIX
 from .executors import ExeTaurus1D_DeformB20
 from tools.Enums import OutputFileTypes
@@ -30,8 +30,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         3. Prepare and export all the components as a surface, also for a later PAV
             in folders "K%%_VAP/"
     '''
-    IGNORE_SEED_BLOCKING = True
-    PARITY_TO_BLOCK      = 1
+    IGNORE_SEED_BLOCKING  = True
+    PARITY_TO_BLOCK       = 1
+    FIND_K_FOR_ALL_SPS    = False
     BLOCK_ALSO_NEGATIVE_K = False
     RUN_PROJECTION        = False
     
@@ -48,8 +49,15 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         ##         the previous K value
         self._sp_blocked_K_already_found : dict = {} # {b20_index: sp_found, ...}
         self._sp_states_obj : dict = {}
+        self._current_sp    : int  = 999999
         
         self._blocking_section = False
+        self._save_results     = True
+        
+        if self.FIND_K_FOR_ALL_SPS:
+            self._save_results = False
+            self._container    = BaseResultsContainer1D()
+            # self._contaienrPAV = BaseResultsContainer1D("TEMP_BU_PAV")
     
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False, 
                                            spherical_calc=False, **input_kwargs):
@@ -159,6 +167,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self._blocking_section = True
         if self.numberParityOfIsotope == (0, 0): return
         print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
+        print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
+        print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}")
         
         self.inputObj.seed = 1
         self.inputObj.eta_grad  = 0.03 
@@ -182,15 +193,17 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                                 "initial_wf.bin")
                     
                     ## fijar la deformacion i en la coordenada a constrain
-                    if prolate:
-                        b20_ = self.deform_prolate[i] 
-                    else: 
-                        b20_ = self.deform_oblate[i]
+                    b20_ = dict(self._deformations_map[prolate]).get(i)
+                    # if prolate:
+                    #     b20_ = self.deform_prolate[i]
+                    # else: 
+                    #     b20_ = self.deform_oblate[i]
                     setattr(self.inputObj, self.CONSTRAINT, b20_)
                     
                     in_neu = self._sp_dim if self.numberParityOfIsotope[1] else 0
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
+                        self._current_sp = sp_
                         ## OPTIMIZATION:
                         # * if state has a previous K skip
                         # * if state has different jz initial skip
@@ -211,12 +224,15 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         if almostEqual(2 * res.Jz, K, 1.0e-5):
                             ## no more minimizations for this deformation
                             no_results_for_K *= False
-                            self._K_foundActionsTearDown(res, sp_, b20=b20_)
-                            break
+                            self._K_foundActionsTearDown(res)
+                            if not self.FIND_K_FOR_ALL_SPS: break
                         elif sp_ == self._sp_dim:
                             print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
                         else:
                             self._K_notFoundActionsTearDown()
+                    
+                    if self.FIND_K_FOR_ALL_SPS and not no_results_for_K:
+                        self._selectStateFromCalculationSetTearDown(b20_)
                     ## B20 loop
             if no_results_for_K: 
                 print("  [WARNING] No blocked result for 2K=", K)
@@ -228,7 +244,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             NOTE: Projection can only be called for blocked functions, occurring
             in the blocking section. This method is called from _executeProgram()
         """
-        if self._blocking_section:
+        if self._blocking_section and self._save_results:
             return ExeTaurus1D_DeformB20.runProjection(self, **params)
         return
     
@@ -238,12 +254,19 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             naming, dat files, output in the BU folder
         """
         if self._blocking_section:
+            if not self._save_results:
+                id_ = "sp{}_d{}K{}".format(self._current_sp, 
+                                           self._curr_deform_index,
+                                           self._current_K)
+                self._container.append(result, id_=id_, binary='final_wf.bin')
+                return
+                
             # copy the final wave function and output with the deformation
             # naming (_0.365.OUT, 0.023.bin, etc )
             #
             # NOTE: if the function is not valid skip or ignore
             i = self._curr_deform_index
-            b20_ = self.deform_oblate[i] if (i < 0) else self.deform_prolate[i]
+            b20_  = self.deform_oblate[i] if (i < 0) else self.deform_prolate[i]
             fndat = f"{b20_:6.3f}".replace('-', '_').strip()
             fnbin = f"{fndat}.bin"
             
@@ -267,7 +290,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
     
     def saveProjectedWFProcedure(self, result: DataTaurusPAV):
         """
-        Default copy of the function for the deformation into the PAV BU-folder
+        Default copy of the function for the deformation into the PAV BU-folder.
+        
+        After ._save_results option, the PAV is just done after all sp done
         """
         out_args = (self._current_K, self._curr_deform_index)
         outfn    = "K{}_d{}.OUT".format(*out_args)
@@ -290,6 +315,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             minimization after blocking.
         """
         if self._blocking_section:
+            if not self._save_results: 
+                return
             ## save the list dat into folder
             with open(f'{self._exportable_BU_FLD_KBLOCK}/list.dat', 'w+') as f:
                 if len(self._exportable_LISTDAT_forK):
@@ -323,34 +350,92 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     sort_ = self._sortListDATForPAVresults(sort_)
                     f.write("\n".join(sort_))
     
-    def _K_foundActionsTearDown(self, res: DataTaurus, sp_index, b20):
+    def _K_foundActionsTearDown(self, res: DataTaurus):
         """
         Other exportable actions for founded result in K
         """
-        b20_index = self._curr_deform_index
-        print("   [OK] {} {} <jz>= {:3.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
-              .format(sp_index, self._sp_states_obj[sp_index].shellState,  
-                      res.Jz, res.b20_isoscalar, res.E_HFB))
+        i   = self._curr_deform_index
+        prolate = 0 if i < 0 else 1 
+        b20 = dict(self._deformations_map[prolate]).get(i)
+        sp_index = self._current_sp
         
+        if self._save_results:
+            print("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
+                  .format(sp_index, self._sp_states_obj[sp_index].shellState,  
+                          res.Jz, res.b20_isoscalar, res.E_HFB))
+        else:
+            print("      . {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
+                  .format(sp_index, self._sp_states_obj[sp_index].shellState,  
+                          res.Jz, res.b20_isoscalar, res.E_HFB))
         ## Append the exportable result file
         line = []
         if self.include_header_in_results_file:
-            line.append(f"{b20_index:5}: {b20:+6.3f}")
+            line.append(f"{i:5}: {b20:+6.3f}")
         line.append(res.getAttributesDictLike)
-        self._exportable_txt[b20_index] = self.HEADER_SEPARATOR.join(line)
+        self._exportable_txt[i] = self.HEADER_SEPARATOR.join(line)
         
-        self._sp_blocked_K_already_found[b20_index][sp_index] = self._current_K
+        self._sp_blocked_K_already_found[i][sp_index] = self._current_K
     
     def _K_notFoundActionsTearDown(self):
         """
         Actions to discard or notice invalid result.
         """
+        if not self._save_results:
+            return
         invalid_fn = self._list_PAV_outputs[self._current_K].pop()
         invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
         
         outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
         shutil.move(invalid_fn, outpth)
         
+    
+    def _selectStateFromCalculationSetTearDown(self, b20):
+        """
+        After all the results evaluated for each sp for a def/K case:
+            1. choose the best result (minimal E_hfb)
+            2. Copy the binary/ output/ selected to main folder.
+                VAP
+                PAV if used.
+            3. Apply the methods save_WF modified as in the 1st solution case.
+        """
+        self._save_results = True
+        
+        ## Select the wavefunciton and files to save..
+        id_min = 0
+        e_min : DataTaurus  = 99999999
+        for id_, res in self._container.getAllResults().items():
+            if res.E_HFB < e_min:
+                id_min = id_
+                e_min  = res.E_HFB
+            
+        res, bin_, datfiles  = self._container.get(id_min)
+        self._current_result = res
+        ## Copy into main folder as in a normal result execution
+        ## id_ format: "sp{}_d{}K{}"
+        self._current_sp = int(id_min.split('_')[0].replace('sp', ''))
+        
+        src = "{}/{}.OUT".format(self._container.BU_folder, id_min)
+        shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
+        src = "{}/{}".format(self._container.BU_folder, bin_)
+        shutil.copy(src, 'final_wf.bin')
+        if datfiles:
+            for file_ in datfiles:
+                file_2 = file_.replace(f"_{self._current_sp}", "")
+                shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
+                            file_2)
+        
+        if self.RUN_PROJECTION: self.runProjection()
+        
+        ## Execute exporting functions as it where the 
+        self.saveFinalWFprocedure(res, False)
+        self.executionTearDown(res, False)
+        self._K_foundActionsTearDown(res)
+        
+        
+        
+        ## Reset all  
+        self._container.clear()
+        self._save_results = False       
     
     def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
         """
@@ -371,6 +456,15 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         ## main export
         ExeTaurus1D_DeformB20.globalTearDown(self, zip_bufolder=zip_bufolder, 
                                                   *args, **kwargs)
+
+
+
+
+# class ExeTaurus1D_B20_OEblocking_Ksurfaces_pro(ExeTaurus1D_B20_OEblocking_Ksurfaces):
+#
+#     pass
+
+
 
 
 class _SlurmJob1DPreparation():
@@ -598,11 +692,14 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 self._export_PAV_Folders[i] = BU_FLD_DEF_BLOCK + '/'
                     
     
-    def _K_foundActionsTearDown(self, res:DataTaurus, sp_index, b20):
-        """ Overwriting to save the results in d """
+    def _K_foundActionsTearDown(self, res:DataTaurus):
+        """ Overwriting to save the results in d """        
         ExeTaurus1D_B20_OEblocking_Ksurfaces.\
-            _K_foundActionsTearDown(self, res, sp_index, b20)
+            _K_foundActionsTearDown(self, res)
         
+        if not self._save_results:  
+            ## ALL SP results require not to store until all done
+            return
         _PAR = (1 - self.PARITY_TO_BLOCK)//2
         dest_ = f"{self._current_K}_{_PAR}.bin"
         shutil.copy('final_wf.bin', 

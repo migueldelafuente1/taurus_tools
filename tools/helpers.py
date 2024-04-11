@@ -245,7 +245,10 @@ def importAndCompile_taurus(use_dens_taurus=True, vap = False, mix = False):
             
             os.chdir(folder_path)
             ## compile and move executable to main directory
-            order_ = "make"
+            #order_ = "make   ## gfortran
+            ## NOTE: ifort compiler speed-up with multithreading 
+            order_ = './compile.sh ifort'
+            
             e_ = subprocess.call(order_, shell=True)
             order_ = "cp exe/{} ../".format(program_)
             e_ = subprocess.call(order_, shell=True)

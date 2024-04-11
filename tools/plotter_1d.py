@@ -13,7 +13,6 @@ from tools.helpers import OUTPUT_HEADER_SEPARATOR
 from copy import copy, deepcopy
 import zipfile
 import shutil
-from tools.inputs import InputTaurus
 
 MATPLOTLIB_INSTALLED   = True
 

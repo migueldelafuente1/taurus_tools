@@ -487,6 +487,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     ExeTaurus1D_B20_KMixing_OEblocking.IGNORE_SEED_BLOCKING  = True
     ExeTaurus1D_B20_KMixing_OEblocking.BLOCK_ALSO_NEGATIVE_K = False
     ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION        = True 
+    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = True
         
     ExeTaurus1D_B20_KMixing_OEblocking.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD

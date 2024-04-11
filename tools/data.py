@@ -1158,57 +1158,6 @@ class DataTaurus(_DataObjectBase):
             _properies.append(almostEqual(self.Jz_2, 0, TOL))
         
         return not False in _properies
-
-class _DataTaurusContainer1D:
-    
-    """
-    This object store the results as stack, to be instanced on executor 
-    classmethod to keep dataTaurus results in order
-    """
-    EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
-    
-    def __init__(self):
-        self._results = []
-    
-    def reset(self):
-        print(f" * Reseting _DataTaurusContainer1D, deleted [{len(self._results)}] elements")
-        self._results = []
-    
-    def append(self, result : DataTaurus):
-        
-        assert isinstance(result, DataTaurus), f"invalid result type given: {result.__class__}"
-        
-        self._results.append(result)
-    
-    
-    def get(self, index_):
-        """ get the i-th element """
-        if len(self._results) >= index_:
-            return None
-        return self._results[index_]
-    
-    def set(self, index_, result):
-        """ get the i-th element """
-        assert isinstance(result, DataTaurus), f"invalid result type given: {result.__class__}"
-        
-        if len(self._results) >= index_:
-            print(f"[WARNING] index [{index_}] > dimension of list [{len(self._results)}], appending")
-            self.append(result)
-        else:
-            self._results[index_] = result
-            
-    
-    def dump(self, output_file=None ):
-        """
-        export results in file
-        """
-        txt_ = '\n'.join([res.getAttributesDictLike for res in self._results]) 
-        
-        if output_file == None:
-            output_file = self.EXPORT_LIST_RESULTS
-        
-        with open(output_file, 'w+') as f:
-            f.write(txt_)
     
 class DataTaurusPAV(_DataObjectBase):
     
@@ -1966,6 +1915,173 @@ class DataAttributeHandler(object):
         return False
     def endsswith(self, str_):
         return False
+
+#===============================================================================
+# Data-Containers
+#
+#===============================================================================
+class BaseResultsContainer1D(_DataObjectBase):
+    
+    """
+    Data containers store different calculations results and auxiliary files
+    in order to process or select the final result of a calculation. 
+    
+    The object let easy access on run to a set of results, i.e. to do some trial
+    calculations and then choosing the best result.
+    
+    Life cycle:
+    
+    __init__: create the back up folder to store temporary the files
+    
+    append(_DataObject, id_='fort_1', binary='fort.11', datfiles=['fort.21', ]): 
+        appends the result ()to data and copying into the Back Up
+    get(id_):
+        returns all the data asociated with a previous id_, otherwise appends
+    
+    set(*)  : the same as append, but changing the values 
+    
+    clear() : remove the back up folder with the contents
+    dump()  : creates an exportable result.
+    
+    
+    It has to be used after after calling the calculation, in case the final 
+    """
+    
+    BU_folder  = 'TEMP_BU'
+    EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
+    
+    def __init__(self, container_name : str= None):
+        
+        self._file_id   = []
+        self._results   = []
+        self._binaries  = []
+        self._dat_files = {}
+        
+        self._container_name = container_name
+        
+        if container_name:
+            container_name = container_name.replace(' ', '_')
+            self.BU_folder = container_name.upper()
+            self._container_name = container_name
+        self.setUpFolderBackUp(container_name)
+    
+    def clear(self):
+        """
+        Reseting the Container Object and deleting the temporal folder.
+        """
+        print(f" * Reseting _DataTaurusContainer1D, deleted [{len(self._results)}] elements")
+        
+        self._results   = []
+        self._file_id   = []
+        self._binaries  = []
+        self._dat_files = {}
+        
+        shutil.rmtree(self.BU_folder)
+        if os.path.exists(self.EXPORT_LIST_RESULTS):
+            os.remove(self.EXPORT_LIST_RESULTS)
+        self.setUpFolderBackUp(self._container_name)
+    
+    def _dat_filenaming(self, file_, id_):
+        """
+        Auxiliary method, change the complementary file for the id_
+            id_ = 3
+            canonicalbasis.dat   -> canonicalbasis_3.dat
+            canonical.basis.txt  -> canonical.basis_3.txt
+            canonicalbasis       -> canonicalbasis_3
+        """
+        if file_.endswith('.dat'):
+            file_2 = file_.replace('.dat', f"_{id_}.dat")
+        elif '.' in file_:
+            tail_  = file_.split('.')[-1]
+            file_2 = file_.replace(tail_, f"_{id_}.{tail_}")
+        else:
+            file_2 = f"{file_}_{id_}"
+        
+        return file_2
+    
+    def append(self, result : _DataObjectBase, id_=None ,binary=None, datfiles=[]):        
+        """
+        Save the files in the BU folder with an id and store the 
+        """
+        
+        if id_ == None: id_ = len(self._results)
+        self._file_id.append(id_)
+        
+        self._results.append(result)
+        shutil.copy(result.DEFAULT_OUTPUT_FILENAME, f"{self.BU_folder}/{id_}.OUT")
+        
+        if binary:
+            self._binaries.append(f'{id_}.bin')
+            shutil.copy(binary, f"{self.BU_folder}/{id_}.bin")
+        if datfiles:
+            self._dat_files[id_] = []
+            for file_ in datfiles:
+                if not os.path.exists(file_):
+                    print(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
+                    continue
+                file_2 = self._dat_filenaming(file_, id_)
+                self._dat_files[id_].append(file_2)
+                shutil.copy(file_, f"{self.BU_folder}/{file_2}")
+    
+    def get(self, id_):
+        """ 
+        Get the i-th element and complementary files.
+        """
+        if not id_ in self._file_id:
+            print( " [Error] Invalid index for DataContainer1D.")
+            return None, None, []
+        
+        index_ = self._file_id.index(id_)
+        args = (
+            self._results[index_],
+            self._binaries[index_],
+            self._dat_files[index_] if index_ in self._dat_files else [],
+        )
+        return args
+    
+    def getAllResults(self):
+        """
+        Get the results by id in order to filter.
+        """
+        return dict(zip(self._file_id, self._results))
+    
+    def set(self, id_, result: _DataObjectBase, binary=None, datfiles=[]):
+        """
+        In order to change the result already stored by its id.
+        """
+        if id_ in self._file_id:
+            i = self._file_id.index(id_)
+            self._results[i] = result
+            shutil.copy(result.DEFAULT_OUTPUT_FILENAME, f"{self.BU_folder}/{id_}.OUT")
+            
+            if binary:
+                self._binaries[i] = f'{id_}.bin'
+                shutil.copy(binary, f"{self.BU_folder}/{id_}.bin")
+            
+            if datfiles:
+                self._dat_files[id_] = []
+                for file_ in datfiles:
+                    if not os.path.exists(file_):
+                        print(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
+                        continue
+                    file_2 = self._dat_filenaming(file_, id_)
+                    self._dat_files[id_][i] = file_2
+                    shutil.copy(file_, f"{self.BU_folder}/{file_2}")
+        else:
+            self.append(result, id_, binary, datfiles)
+    
+    def dump(self, output_file=None ):
+        """
+        export results in file
+        """
+        txt_ = '\n'.join([res.getAttributesDictLike for res in self._results]) 
+        
+        if output_file == None:
+            output_file = self.EXPORT_LIST_RESULTS
+        
+        with open(output_file, 'w+') as f:
+            f.write(txt_)
+
 
 if __name__ == '__main__':
     pass
