@@ -244,11 +244,13 @@ def importAndCompile_taurus(use_dens_taurus=True, vap = False, mix = False):
             e_ = subprocess.call(order_, shell=True)
             
             os.chdir(folder_path)
-            ## compile and move executable to main directory
-            #order_ = "make   ## gfortran
-            ## NOTE: ifort compiler speed-up with multithreading 
-            os.system('chmod 777 compile.sh')
-            order_ = './compile.sh ifort'
+            if folder_path == 'dens_taurus_vap':
+                ## compile and move executable to main directory
+                order_ = "make"   ## gfortran
+            else:
+                ## NOTE: ifort compiler speed-up with multithreading 
+                os.system('chmod 777 compile.sh')
+                order_ = './compile.sh ifort'
             
             e_ = subprocess.call(order_, shell=True)
             order_ = "cp exe/{} ../".format(program_)
