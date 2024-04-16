@@ -12,7 +12,8 @@ import os
 
 from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj,\
     importAndCompile_taurus
-from tools.data import DataTaurus, DataTaurusPAV, BaseResultsContainer1D
+from tools.data import DataTaurus, DataTaurusPAV, BaseResultsContainer1D,\
+    DataObjectException
 from tools.inputs import InputTaurusPAV, InputTaurusMIX
 from .executors import ExeTaurus1D_DeformB20
 from tools.Enums import OutputFileTypes
@@ -53,6 +54,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         self._blocking_section = False
         self._save_results     = True
+        self._previous_bin_path= None
         
         if self.FIND_K_FOR_ALL_SPS:
             self._save_results = False
@@ -234,6 +236,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     if self.FIND_K_FOR_ALL_SPS and not no_results_for_K:
                         self._selectStateFromCalculationSetTearDown(b20_)
                     ## B20 loop
+                self._previous_bin_path = None
             if no_results_for_K: 
                 print("  [WARNING] No blocked result for 2K=", K)
             # K-loop
@@ -388,6 +391,103 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
         shutil.move(invalid_fn, outpth)
         
+    def _selectionCriteriaForState(self):
+        """
+        
+        """
+        min_energy_criteria = False
+        if min_energy_criteria:
+            ## Energy_criteria
+            id_min, res, bin_, datfiles = self._energy_CriteriaForStateSelection()
+        else:
+            ## Overlap citeria: <def_1, def_2(K)> max or not broken for MF-PAV
+            id_min, res, bin_, datfiles = self._overlap_CriteriaForStateSelection()
+        
+        self._current_result = res
+        ## Copy into main folder as in a normal result execution
+        ## id_ format: "sp{}_d{}K{}"
+        if id_min != None:
+            self._current_sp = int(id_min.split('_')[0].replace('sp', ''))
+        else:
+            self._current_sp = None
+        return id_min, res, bin_, datfiles
+    
+    
+    def _energy_CriteriaForStateSelection(self):
+        
+        id_min = None
+        e_min : DataTaurus  = 99999999
+        print("   * Energy criteria begins ---------------------")
+        for id_, res in self._container.getAllResults().items():
+            if res.E_HFB < e_min:
+                id_min = id_
+                e_min  = res.E_HFB
+                print(f"   *( pass) energy_{id_}= {e_min:6.5f}")
+            else:
+                print(f"   *(large) energy_{id_}= {res.E_HFB:6.5f}")
+        print("   * Final state selected =", id_min, "\n -----------------")
+        res, bin_, datfiles  = self._container.get(id_min)
+        return id_min, res, bin_, datfiles
+    
+    def _overlap_CriteriaForStateSelection(self):
+        """
+        Overlap between different states <L | R> from the surface,
+        """
+        if not self._previous_bin_path:
+            ## No result, use the minimum energy result or first result
+            id_sel, res, bin_, datfiles = self._energy_CriteriaForStateSelection()
+            print("   * Initial state selected =", id_sel, "\n ---------------")
+        else:
+            print("   * Overlap criteria begins ---------------")
+            shutil.copy(self._previous_bin_path, 'left_wf.bin')
+            
+            id_sel, overlap_max = None, -999999
+            for id_, res in self._container.getAllResults().items():
+                bin = self._container.get(id_)[1]
+                shutil.copy(f'{self._container.BU_folder}/{bin}', 'right_wf.bin')
+                ## No PAV projection 
+                inp_pav = self.inputObj_PAV.copy()
+                inp_pav.setUpNoPAVCalculation()
+                
+                res_ov: DataTaurusPAV = None
+                for empty_states_case in (0, 1):
+                    inp_pav.empty_states = empty_states_case
+                    
+                    fn_ = 'check_overlap'
+                    with open(f'{fn_}.inp', 'w+') as f: 
+                        f.write(inp_pav.getText4file())
+                    
+                    try:
+                        os.system(f'./taurus_pav.exe < {fn_}.inp > {fn_}.out')
+                        res_ov = DataTaurusPAV(self.z, self.n, f'{fn_}.out')
+                    except BaseException:
+                        if res_ov == None:
+                            print("      [Err] No solution")
+                        continue
+                    
+                    if res_ov.broken_execution or len(res_ov.proj_norm) == 0:
+                        print("      [Err] Solution is broken, emptyst =",
+                              empty_states_case)
+                        continue
+                    overl  = res_ov.proj_norm[0]
+                    if abs(overl) > overlap_max:
+                        overlap_max = abs(overl)
+                        id_sel = id_
+                        print(f"     *( pass) overlap_{id_}= {overl:6.5f}")
+                    else:
+                        print(f"     *(large) overlap_{id_}= {overl:6.5f}")
+                    break
+                
+            os.remove(self._previous_bin_path)
+            print("   * Final state selected =", id_sel, "\n -----------------")
+            res, bin_, datfiles  = self._container.get(id_sel)
+        
+        ## Update the previous result binary
+        self._previous_bin_path = f"previous_wf_{id_sel}.bin"
+        src = "{}/{}".format(self._container.BU_folder, bin_)
+        shutil.copy(src, self._previous_bin_path)
+        
+        return id_sel, res, bin_, datfiles
     
     def _selectStateFromCalculationSetTearDown(self, b20):
         """
@@ -400,39 +500,28 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         """
         self._save_results = True
         
-        ## Select the wavefunciton and files to save..
-        id_min = 0
-        e_min : DataTaurus  = 99999999
-        for id_, res in self._container.getAllResults().items():
-            if res.E_HFB < e_min:
-                id_min = id_
-                e_min  = res.E_HFB
+        ## Select the wavefunciton and files to save..        
+        id_sel, res, bin_, datfiles = self._selectionCriteriaForState()
+        if id_sel != None:        
+            src = "{}/{}.OUT".format(self._container.BU_folder, id_sel)
+            shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
+            src = "{}/{}".format(self._container.BU_folder, bin_)
+            shutil.copy(src, 'final_wf.bin')
+            if datfiles:
+                for file_ in datfiles:
+                    file_2 = file_.replace(f"_{self._current_sp}", "")
+                    shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
+                                file_2)
             
-        res, bin_, datfiles  = self._container.get(id_min)
-        self._current_result = res
-        ## Copy into main folder as in a normal result execution
-        ## id_ format: "sp{}_d{}K{}"
-        self._current_sp = int(id_min.split('_')[0].replace('sp', ''))
-        
-        src = "{}/{}.OUT".format(self._container.BU_folder, id_min)
-        shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
-        src = "{}/{}".format(self._container.BU_folder, bin_)
-        shutil.copy(src, 'final_wf.bin')
-        if datfiles:
-            for file_ in datfiles:
-                file_2 = file_.replace(f"_{self._current_sp}", "")
-                shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
-                            file_2)
-        
-        if self.RUN_PROJECTION: self.runProjection()
-        
-        ## Execute exporting functions as it where the 
-        self.saveFinalWFprocedure(res, False)
-        self.executionTearDown(res, False)
-        self._K_foundActionsTearDown(res)
-        
-        
-        
+            if self.RUN_PROJECTION: self.runProjection()
+            
+            ## Execute exporting functions as it where the normal run
+            self.saveFinalWFprocedure(res, False)
+            self.executionTearDown(res, False)
+            self._K_foundActionsTearDown(res)
+        else:
+            print(" [No Result] found, PAV and coping ignored.")
+                
         ## Reset all  
         self._container.clear()
         self._save_results = False       
@@ -744,7 +833,7 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
             .globalTearDown(self, zip_bufolder=zip_bufolder, *args, **kwargs)       
         
         ## Import the programs if they do not exist
-        importAndCompile_taurus(vap= not os.path.exists(InputTaurusPAV.PROGRAM),
+        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
                                 mix= not os.path.exists(InputTaurusMIX.PROGRAM))
             
         ## Introduce the jobfiles in case of using slurm.

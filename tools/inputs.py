@@ -1017,6 +1017,25 @@ Disable simplifications P     {disable_simplifications_P}"""
             setattr(snd_inp, atr, getattr(self, atr))
         return snd_inp
     
+    def setUpNoPAVCalculation(self, **params):
+        """ 
+        Set up a projection calculation only at mean-field level.
+        Considering com correction and NOT including empty-states.
+        """
+        
+        self.com  = 1
+        for atr in (
+                self.ArgsEnum.alpha,    self.ArgsEnum.beta, self.ArgsEnum.gamma,
+                self.ArgsEnum.z_Mphi,   self.ArgsEnum.n_Mphi, 
+                self.ArgsEnum.parity,
+                self.ArgsEnum.disable_simplifications_JMK, 
+                self.ArgsEnum.disable_simplifications_NZA,
+                self.ArgsEnum.disable_simplifications_P,
+                self.ArgsEnum.empty_states,
+                ):
+            setattr(self, atr, 0)
+        
+        self.setParameters(**params)
 
 
 class InputTaurusMIX(_Input):

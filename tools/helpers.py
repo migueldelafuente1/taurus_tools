@@ -225,14 +225,14 @@ def shellSHO_Notation(n, l, j=0, mj=0):
 
 
 
-def importAndCompile_taurus(use_dens_taurus=True, vap = False, mix = False):
+def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False):
     """
     use_dens_taurus=True uses DD modified taurus_vap, False uses normal taurus_vap
     """
     src_ = GITHUB_DENS_TAURUS_HTTP if use_dens_taurus else GITHUB_TAURUS_VAP_HTTP
     
     programs_ = [src_, ]
-    if vap: programs_.append(GITHUB_TAURUS_PAV_HTTP)
+    if pav: programs_.append(GITHUB_TAURUS_PAV_HTTP)
     if mix: programs_.append(GITHUB_TAURUS_MIX_HTTP)
     
     programs_to_import = [(src_, TAURUS_SRC_FOLDERS[src_]) for src_ in programs_]
