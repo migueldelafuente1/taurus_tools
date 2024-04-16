@@ -1,0 +1,178 @@
+ __________________________________________________________ 
+|                                                          |
+|  (______)                                                |
+|  <(0  0)>   TAURUS_pav, version 2023.12.21               |
+|    (°°)                                                  |
+|                                                          |
+| This code performs the symmetry projections (N,Z,J,MJ,P) |
+| of real general Bogoliubov quasi-particle states         |
+| states represented in a spherical harmonic oscillator    |
+| basis.                                                   |
+|                                                          |
+| Licence: GNU General Public License version 3 or later   |
+| DOI: 10.5281/zenodo.10420261                             |
+| Git: https://github.com/project-taurus/taurus_pav.git    |
+|                                                          |
+| Contributors: B. Bally, T. Rodríguez                     |
+|__________________________________________________________|
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                      INPUT PARAMETERS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Interaction                   
+-----------                   
+Master name hamil. files      B1_MZ3
+Center-of-mass correction     1
+Read reduced hamiltonian      1
+No. of MPI proc per H team    0    
+                              
+Miscellaneous                 
+-------------                 
+Physics case studied          0
+Part of the calc. performed   0
+Read mat. elem. of operators  0
+Write/read rotated mat. elem. 0
+Cutoff for rotated overlaps   1.000E-16 
+Read wavefunctions as text    0
+Cutoff occupied s.-p. states  1.000E-08 
+Include all empty sp states   0
+                              
+Particle Number               
+---------------               
+Number of active protons      12   
+Number of active neutrons     19   
+No. gauge angles: protons     9    
+No. gauge angles: neutrons    9    
+No. gauge angles: nucleons    0    
+Disable simplifications NZA   1
+                              
+Angular Momentum              
+----------------              
+Minimum angular momentum 2J   1    
+Maximum angular momentum 2J   5    
+No. Euler angles: alpha       5    
+No. Euler angles: beta        15   
+No. Euler angles: gamma       5    
+Disable simplifications JMK   1
+                              
+Parity                        
+------                        
+Projection on parity P        0
+Disable simplifications P     0
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                           NUCLEUS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Part \ No.     Z       N       A
+--------------------------------
+Valence       12      19      31
+Core           0       0       0
+Nucleus       12      19      31
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          HO BASIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    Quantity          Value
+---------------------------
+No. of sp states        80
+Max. value of N          3
+Max. value of l          3
+Max. value of 2j         7
+hbar*omega (MeV)    10.578
+Osc. length b (fm)   1.980
+No. of shells           10
+List of shells           1    103    101    205    203
+                     10001    307    305  10103  10101
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         HAMILTONIAN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   Description        Value
+---------------------------
+Main name of files    B1_MZ3
+Name of hamiltonian   D1S  t0=0.. ME evaluated: Force_From_File + Brink_Boeker. Shell(P+SD+S+PF)(B=1.9800fm)
+Type of hamiltonian     4   (J-scheme, K + 2B)
+Read from file          1   (reduced)
+Number of 2BME        73090       
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                       WAVE FUNCTIONS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   Description               Left               Right
+------------------------------------------------------------
+Label of state        158657241359747552  158657241359747552
+Total number parity          -1                  -1
+No. of fully occ. sp         19                  19
+
+                       Left               Right
+                --------------------------------------
+  Symmetry       ?       Average     ?       Average     Action
+---------------------------------------------------------------
+Good overlap    yes     1.00000000  yes     1.00000000    none
+Good Z           no    12.00000000   no    12.00000000    none
+Good N          yes    19.00000000  yes    19.00000000    none (simpl. disabled)
+Good A           no    31.00000000   no    31.00000000    none
+Separate N/Z    yes     0.00000000  yes     0.00000000    none (simpl. disabled)
+Good J           no     1.85885431   no     1.85885431    none
+Good MJ/KJ      yes     0.50000000  yes     0.50000000    none (simpl. disabled)
+Good P          yes     1.00000000  yes     1.00000000    no projection on P
+Good T           no     3.58800979   no     3.58800979    none
+Good MT/KT       no     3.50000000   no     3.50000000    none
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                  PROJECTED MATRIX ELEMENTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+All non-vanishing projected components
+======================================
+
+v(x) = floor(log10(variance(x)))
+
+    J 2*MJ 2*KJ    P |     1     |      E     |     Z       v |     N       v |     A       v |    J    |    Jz     v |    P    |    T    |    Tz     v
+    J   MJ   KJ    P |     1     |      E     |     Z       v |     N       v |     A       v |    J    |    Jz     v |    P    |    T    |    Tz     v
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+    1    1    1        0.09331125   -159.57974  12.0000000 -11  19.0000000 -11  31.0000000 -11   0.50000   0.50000 -16   1.00000   3.50157   3.50000 -12
+    3    1    1        0.26839659   -160.43926  12.0000000 -11  19.0000000 -11  31.0000000 -11   1.50000   0.50000 -16   1.00000   3.50213   3.50000 -12
+    5    1    1        0.03784896   -156.82260  12.0000000 -11  19.0000000 -10  31.0000000 -10   2.50000   0.50000 -15   1.00000   3.50207   3.50000 -12
+
+Sum of projected components for J/P
+===================================
+
+    J    P |           1           |           E
+-----------------------------------------------------------
+    1        0.09331125 -0.00000000   -37.26775    -0.00000
+    3        0.26839659 -0.00000000  -107.77278    -0.00000
+    5        0.03784896 -0.00000000   -14.85539     0.00000
+-----------------------------------------------------------
+    Total    0.39955681 -0.00000000  -159.89593     0.00000
+
+Sum of projected components for KJ/P
+====================================
+
+ 2*KJ    P |           1           |           E
+   KJ    P |           1           |           E
+-----------------------------------------------------------
+    1        0.39955681 -0.00000000  -159.89593     0.00000
+-----------------------------------------------------------
+    Total    0.39955681 -0.00000000  -159.89593     0.00000
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    COMPLEMENTARY FILES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+      Description                File
+------------------------------------------------
+ Proj. mat. elem. states    : projmatelem_states.bin
+ Proj. mat. elem. occ. numb.: projmatelem_occnumb.bin
+ Proj. mat. elem. E1        : projmatelem_E1.bin
+ Proj. mat. elem. E2        : projmatelem_E2.bin
+ Proj. mat. elem. E3        : projmatelem_E3.bin
+ Proj. mat. elem. M1        : projmatelem_M1.bin
+ Proj. mat. elem. M2        : projmatelem_M2.bin
+
+This is the end, my only friend, the end.
