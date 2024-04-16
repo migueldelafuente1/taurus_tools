@@ -1169,12 +1169,17 @@ class DataTaurusPAV(_DataObjectBase):
     # __message_startiter = '                   ITERATIVE MINIMIZATION'
     # __message_endvap    = '                 PROJECTED STATE PROPERTIES'
     __message_endpav     = '                  PROJECTED MATRIX ELEMENTS'
-    __message_components = '    J 2*MJ 2*KJ    P |     1     |      E     |     '\
-                           'Z       v |     N       v |     A       v |    J'\
-                           '    |    Jz     v |    P    |    T    |    Tz     v'
+    # __message_components = '    J 2*MJ 2*KJ    P |     1     |      E     |     '\
+    #                        'Z       v |     N       v |     A       v |    J'\
+    #                        '    |    Jz     v |    P    |    T    |    Tz     v'
+    __message_components = '    J   MJ   KJ    P |     1     |      E     |     Z '\
+                           '      v |     N       v |     A       v |    J    |'\
+                           '    Jz     v |    P    |    T    |    Tz     v'
     __message_sum_JP_components = '    J    P |           1           |           E'
-    __message_sum_KP_components = ' 2*KJ    P |           1           |           E'
+    # __message_sum_KP_components = ' 2*KJ    P |           1           |           E'
+    __message_sum_KP_components = '   KJ    P |           1           |           E'
     
+    __message_properly_finished = 'This is the end, my only friend, the end.'
     
     class HeaderEnum(Enum):
         """ Enumerate for the line headers of every argument to process"""
@@ -1248,6 +1253,10 @@ class DataTaurusPAV(_DataObjectBase):
             # else:
             #     data_evol, data = data_evol.split(self.__message_enditer)
             data      = data.split('\n')
+        if len(data) < 2 or not data[-2] == self.__message_properly_finished:
+            self.properly_finished = False
+            self.broken_execution  = True
+            return           
         
         self._ignorable_block = True
         self._allNVcomp_block = False
@@ -1256,7 +1265,7 @@ class DataTaurusPAV(_DataObjectBase):
         
         self._projecting_JMK  = True
         self._projecting_P    = True
-        for _indx, line in enumerate(data):
+        for indx, line in enumerate(data):
             if self._ignorable_block:
                 if line.startswith(self.__message_endpav):
                     self._ignorable_block  = False
@@ -1264,12 +1273,13 @@ class DataTaurusPAV(_DataObjectBase):
                 continue
             else:
                 if self._sumKPcomp_block and (line.startswith("%%%")):
+                    self.properly_finished = len(self.proj_energy) > 0
                     ## complementary files part, stop
                     return
             
             if len(line) == 0:
                 continue
-            elif ('---' in line) or ('===' in line) or ('Sum of' in line):
+            elif any(map(lambda i: i in line, ("---", "===", 'Sum of', "%%%"))):
                 continue
             else:
                 if   line == self.__message_components:
@@ -1290,6 +1300,8 @@ class DataTaurusPAV(_DataObjectBase):
                 self._getSumJPComponents_blockline(line)
             elif self._sumKPcomp_block:
                 self._getSumKPComponents_blockline(line)
+            else:
+                continue
     
     def _getAllNVComponents_blockline(self, line):
         """
@@ -1312,6 +1324,7 @@ class DataTaurusPAV(_DataObjectBase):
         #     1     |      E     |     Z       v |     N       v |     A       v |
         #    J    |    Jz     v |    P    |    T    |    Tz     v
         _num_indx_val = (3, 5, 7, 10, 14)
+        
         for i, val in enumerate(line):
             if i in _num_indx_val: continue
             ## case select
@@ -2105,6 +2118,10 @@ if __name__ == '__main__':
     #     f.write(res.getAttributesDictLike)
     
     # res = DataTaurusPAV(12, 12, '../OUT_1')
-    res = DataTaurusPAV(11, 20, '../test_obl01_odd_31Na/OUT_m1_m1.OUT')
+    # res = DataTaurusPAV(11, 20, '../test_obl01_odd_31Na/OUT_m1_m1.OUT')
+    # res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_brokenoverlap.txt')
+    res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_1result.txt')
+    
+    _ = 0
     
     
