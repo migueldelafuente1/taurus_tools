@@ -269,7 +269,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             #
             # NOTE: if the function is not valid skip or ignore
             i = self._curr_deform_index
-            b20_  = self.deform_oblate[i] if (i < 0) else self.deform_prolate[i]
+            b20_  = self.deform_oblate[-i-1] if (i < 0) else self.deform_prolate[i]
+            # prolate = 0 if i < 0 else 1 
+            # b20_ = dict(self._deformations_map[prolate]).get(i)
             fndat = f"{b20_:6.3f}".replace('-', '_').strip()
             fnbin = f"{fndat}.bin"
             
