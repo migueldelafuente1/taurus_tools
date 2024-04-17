@@ -203,6 +203,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     setattr(self.inputObj, self.CONSTRAINT, b20_)
                     
                     isNeu = self._sp_dim if self.numberParityOfIsotope[1] else 0
+                    set_energies = []
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
                         self._current_sp = sp_
@@ -227,14 +228,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                             ## no more minimizations for this deformation
                             no_results_for_K *= False
                             self._K_foundActionsTearDown(res)
+                            set_energies.append(f"{res.E_HFB:6.4f}")
                             if not self.FIND_K_FOR_ALL_SPS: break
                         elif sp_ == self._sp_dim:
                             print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
                         else:
                             self._K_notFoundActionsTearDown()
                     
-                    if self.FIND_K_FOR_ALL_SPS and not no_results_for_K:
-                        self._selectStateFromCalculationSetTearDown(b20_)
+                    set_energies = set(set_energies) # only apply if multiple E
+                    if (self.FIND_K_FOR_ALL_SPS and not no_results_for_K):
+                        if (len(set_energies) > 1):
+                            print("   Different results after blocking ... selecting ")
+                            self._selectStateFromCalculationSetTearDown(b20_)
                     ## B20 loop
                 self._previous_bin_path = None
             if no_results_for_K: 
@@ -479,9 +484,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     else:
                         print(f"     *(large) overlap_{id_}= {overl:6.5f}")
                     break
-                
+            
+            ## Highly 
+            if id_sel == None:
+                id_sel = self._container.get(None, list_index_element=0)
+                ## TODO: Other idea is to use the again the E_min criteria.
+                print("   * Final state selected = None / using the first value", 
+                      id_sel, "\n ---------------")
+            else:
+                print("   * Final state selected =", id_sel, "\n ---------------")
             os.remove(self._previous_bin_path)
-            print("   * Final state selected =", id_sel, "\n -----------------")
             res, bin_, datfiles  = self._container.get(id_sel)
         
         ## Update the previous result binary
@@ -494,7 +506,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
     def _selectStateFromCalculationSetTearDown(self, b20):
         """
         After all the results evaluated for each sp for a def/K case:
-            1. choose the best result (minimal E_hfb)
+            1. choose the best result (minimal E_hfb/Overlap) if not unique 
             2. Copy the binary/ output/ selected to main folder.
                 VAP
                 PAV if used.

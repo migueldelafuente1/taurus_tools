@@ -2036,15 +2036,20 @@ class BaseResultsContainer1D(_DataObjectBase):
                 self._dat_files[id_].append(file_2)
                 shutil.copy(file_, f"{self.BU_folder}/{file_2}")
     
-    def get(self, id_):
+    def get(self, id_, list_index_element=None):
         """ 
         Get the i-th element and complementary files.
+        :list_index_element (optional) int for the index to select
         """
-        if not id_ in self._file_id:
+        if not id_ in self._file_id and list_index_element == None:
             print( " [Error] Invalid index for DataContainer1D.")
             return None, None, []
         
-        index_ = self._file_id.index(id_)
+        if list_index_element == None:
+            index_ = self._file_id.index(id_)
+        else:
+            index_ = list_index_element
+        
         args = (
             self._results[index_],
             self._binaries[index_],
