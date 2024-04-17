@@ -510,6 +510,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         shutil.copy('list_outputs.dat', self.DTYPE.BU_folder)
         
         args = [self.z,self.n,self.interaction]+list(args)+list(kwargs.values())
+        shutil.copy(self.EXPORT_LIST_RESULTS, DataTaurus.BU_folder)
         if zip_bufolder:
             if self.CONSTRAINT != None:
                 args.append(self.CONSTRAINT)
