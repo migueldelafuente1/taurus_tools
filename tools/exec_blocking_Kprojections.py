@@ -37,6 +37,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
     BLOCK_ALSO_NEGATIVE_K = False
     RUN_PROJECTION        = False
     
+    _MIN_ENERGY_CRITERIA  = False ## only apply for FIND_K_FOR_ALL_SPS, protocol 
+    
     def __init__(self, z, n, interaction, *args, **kwargs):
         
         ExeTaurus1D_DeformB20.__init__(self, z, n, interaction, *args, **kwargs)
@@ -237,9 +239,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     
                     set_energies = set(set_energies) # only apply if multiple E
                     if (self.FIND_K_FOR_ALL_SPS and not no_results_for_K):
-                        if (len(set_energies) > 1):
-                            print("   Different results after blocking ... selecting ")
-                            self._selectStateFromCalculationSetTearDown(b20_)
+                        dont_select = len(set_energies) > 1
+                        self._selectStateFromCalculationSetTearDown(dont_select)
                     ## B20 loop
                 self._previous_bin_path = None
             if no_results_for_K: 
@@ -400,10 +401,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
     def _selectionCriteriaForState(self):
         """
-        
+        When several blocked K states lead to different energies (FIND_ALL_K=True),
+        stablish a selection for the correct wf for PAV.
         """
-        min_energy_criteria = False
-        if min_energy_criteria:
+        if self._MIN_ENERGY_CRITERIA:
             ## Energy_criteria
             id_min, res, bin_, datfiles = self._energy_CriteriaForStateSelection()
         else:
@@ -503,8 +504,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         return id_sel, res, bin_, datfiles
     
-    def _selectStateFromCalculationSetTearDown(self, b20):
+    def _selectStateFromCalculationSetTearDown(self, dont_select):
         """
+        :dont_select <bool> apply when no selection criteria is needed.
         After all the results evaluated for each sp for a def/K case:
             1. choose the best result (minimal E_hfb/Overlap) if not unique 
             2. Copy the binary/ output/ selected to main folder.
@@ -514,8 +516,21 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         """
         self._save_results = True
         
-        ## Select the wavefunciton and files to save..        
-        id_sel, res, bin_, datfiles = self._selectionCriteriaForState()
+        ## Select the wavefunciton and files to save..
+        if dont_select:
+            print("   Different results after blocking ... selecting ")
+            id_sel = self._container.get(None, list_index_element=0)
+            res, bin_, datfiles  = self._container.get(id_sel)
+            print("   * No selection, got:", id_sel, f" E={res.E_HFB:6.5f}")
+            print("-----------------")
+            # prepare / update the auxiliary wf for Overlap-criteria
+            if not self._MIN_ENERGY_CRITERIA:
+                self._previous_bin_path = f"previous_wf_{id_sel}.bin"
+                src = "{}/{}".format(self._container.BU_folder, bin_)
+                shutil.copy(src, self._previous_bin_path)
+        else:
+            id_sel, res, bin_, datfiles = self._selectionCriteriaForState()
+        
         if id_sel != None:        
             src = "{}/{}.OUT".format(self._container.BU_folder, id_sel)
             shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
