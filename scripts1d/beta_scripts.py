@@ -504,6 +504,11 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION = convergences
         ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = True
     
+    if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
+        ## Import the programs if they do not exist
+        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
+                                mix= not os.path.exists(InputTaurusMIX.PROGRAM))
+    
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)

@@ -441,7 +441,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         MAX_REPETITIONS = 4
         str_rep = f"[{self._preconvergence_steps} / {MAX_REPETITIONS}]"
         
-        if self._preconvergence_steps > MAX_REPETITIONS:
+        if self._preconvergence_steps >= MAX_REPETITIONS:
             ## iteration for preconvergence stops
             raise ExecutionException(f" !! {str_rep} Could not converge to the "
                                      "initial wf., execution process stops.")
