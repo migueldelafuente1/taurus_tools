@@ -173,6 +173,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         else:
             os.system('./{} < {} > {}'.format(program_, inp_fn, out_fn))
         
+        ## In case o
         try:
             res = DataTaurusPAV(self.z, self.n, out_fn)
         except BaseException:
@@ -183,8 +184,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 self.inputObj_PAV.empty_states = -ies_0 + 1 # (change the value)
                 self.runProjection(**params)
                 self.inputObj_PAV.empty_states = ies_0 # (revert the change)
+                return
             else:
                 print("  [PAV error 2], cannot do anything. procced")
+                res = DataTaurusPAV(self.z, self.n, empty_data=True)
         
         self._curr_PAV_result  = res
         ## move the projection results to another folder
