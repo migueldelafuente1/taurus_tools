@@ -15,6 +15,7 @@ from tools.hamiltonianMaker import TBMEXML_Setter, TBME_HamiltonianManager
 from tools.Enums import GognyEnum
 from tools.exec_blocking_Kprojections import \
     ExeTaurus1D_B20_OEblocking_Ksurfaces, ExeTaurus1D_B20_KMixing_OEblocking
+from tools.helpers import importAndCompile_taurus
 
 def run_q20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
@@ -506,8 +507,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     
     if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
         ## Import the programs if they do not exist
-        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
-                                mix= not os.path.exists(InputTaurusMIX.PROGRAM))
+        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM))
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n, 
