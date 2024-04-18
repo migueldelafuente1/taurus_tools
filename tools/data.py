@@ -1218,7 +1218,7 @@ class DataTaurusPAV(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
-                print(" (TC2)>> EXCEPTION from Taurus Constructor >> self::")
+                print(" (TC2)>> resEXCEPTION from Taurus Constructor >> self::")
                 print(self)
                 print(" (TC2)>> exception:: ", e, "<<(TC2)")
                 print(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
@@ -1354,9 +1354,13 @@ class DataTaurusPAV(_DataObjectBase):
         if line.startswith("    Total"): 
             return
         j, p = None, None
-        if self._projecting_JMK: j = int(line[0:5])
-        if self._projecting_P:   p = int(line[5:10])
-        vals = [float(x) for x in line[10:].split()]
+        try:
+            if self._projecting_JMK: j = int(line[0:5])
+            if self._projecting_P:   p = int(line[5:10])
+            vals = [float(x) for x in line[10:].split()]
+        except ValueError as ve:
+            ## There is a problem with the block line, skipping
+            return
         
         self.sum_JP_norm  .append(vals[0])
         self.sum_JP_energy.append(vals[2])
@@ -1368,9 +1372,13 @@ class DataTaurusPAV(_DataObjectBase):
         if line.startswith("    Total"): 
             return
         j, p = None, None
-        if self._projecting_JMK: j = int(line[0:5])
-        if self._projecting_P:   p = int(line[5:10])
-        vals = [float(x) for x in line[10:].split()]
+        try:
+            if self._projecting_JMK: j = int(line[0:5])
+            if self._projecting_P:   p = int(line[5:10])
+            vals = [float(x) for x in line[10:].split()]
+        except ValueError as ve:
+            ## There is a problem with the block line, skipping
+            return
         
         self.sum_KP_norm  .append(vals[0])
         self.sum_KP_energy.append(vals[2])
