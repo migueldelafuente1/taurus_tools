@@ -173,7 +173,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
         print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
         print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
-        print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}")
+        print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
         
         self.inputObj.seed = 1
         self.inputObj.eta_grad  = 0.03 
@@ -239,9 +239,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     
                     set_energies = set(set_energies) # only apply if multiple E
                     if (self.FIND_K_FOR_ALL_SPS and not no_results_for_K):
-                        dont_select = len(set_energies) > 1
+                        dont_select = len(set_energies) == 1
                         self._selectStateFromCalculationSetTearDown(dont_select)
                     ## B20 loop
+                    print()
                 self._previous_bin_path = None
             if no_results_for_K: 
                 print("  [WARNING] No blocked result for 2K=", K)
@@ -371,6 +372,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         sp_index = self._current_sp
         
         if self._save_results:
+            id_, res = self._choosen_state_data
+            sp_index = int(id_.split('_')[0].replace('sp', '')) if id_ else 0
             print("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, res.E_HFB))
@@ -425,7 +428,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         id_min = None
         e_min : DataTaurus  = 99999999
-        print("   * Energy criteria begins ---------------------")
+        print("     Energy criteria begins ---------------------")
         for id_, res in self._container.getAllResults().items():
             if res.E_HFB < e_min:
                 id_min = id_
@@ -433,7 +436,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 print(f"   *( pass) energy_{id_}= {e_min:6.5f}")
             else:
                 print(f"   *(large) energy_{id_}= {res.E_HFB:6.5f}")
-        print("   * Final state selected =", id_min, "\n -----------------")
+        print("     Final state selected =", id_min, "\n -----------------")
         res, bin_, datfiles  = self._container.get(id_min)
         return id_min, res, bin_, datfiles
     
@@ -490,10 +493,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             if id_sel == None:
                 id_sel = self._container.get(None, list_index_element=0)
                 ## TODO: Other idea is to use the again the E_min criteria.
-                print("   * Final state selected = None / using the first value", 
+                print("     Final state selected = None / using the first value", 
                       id_sel, "\n ---------------")
             else:
-                print("   * Final state selected =", id_sel, "\n ---------------")
+                print("     Final state selected =", id_sel, "\n ---------------")
             os.remove(self._previous_bin_path)
             res, bin_, datfiles  = self._container.get(id_sel)
         
@@ -518,18 +521,20 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         ## Select the wavefunciton and files to save..
         if dont_select:
-            print("   Different results after blocking ... selecting ")
-            id_sel = self._container.get(None, list_index_element=0)
-            res, bin_, datfiles  = self._container.get(id_sel)
-            print("   * No selection, got:", id_sel, f" E={res.E_HFB:6.5f}")
-            print("-----------------")
+            aux_ = self._container.get(None, list_index_element=0)
+            res, bin_, datfiles, id_sel = aux_
+            print("     (All equal) No selection, got:", id_sel, 
+                  f" E= {res.E_HFB:6.5f}  -------------")
+            self._choosen_state_data = (id_sel, res)
             # prepare / update the auxiliary wf for Overlap-criteria
             if not self._MIN_ENERGY_CRITERIA:
                 self._previous_bin_path = f"previous_wf_{id_sel}.bin"
                 src = "{}/{}".format(self._container.BU_folder, bin_)
                 shutil.copy(src, self._previous_bin_path)
         else:
+            print("      Different results after blocking ... selecting ")
             id_sel, res, bin_, datfiles = self._selectionCriteriaForState()
+            self._choosen_state_data = (id_sel, res)
         
         if id_sel != None:        
             src = "{}/{}.OUT".format(self._container.BU_folder, id_sel)

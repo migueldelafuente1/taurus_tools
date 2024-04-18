@@ -2020,7 +2020,7 @@ class BaseResultsContainer1D(_DataObjectBase):
         
         return file_2
     
-    def append(self, result : _DataObjectBase, id_=None ,binary=None, datfiles=[]):        
+    def append(self, result : _DataObjectBase, id_=None ,binary=None, datfiles=[]):
         """
         Save the files in the BU folder with an id and store the 
         """
@@ -2047,7 +2047,11 @@ class BaseResultsContainer1D(_DataObjectBase):
     def get(self, id_, list_index_element=None):
         """ 
         Get the i-th element and complementary files.
-        :list_index_element (optional) int for the index to select
+        :list_index_element (optional) int for the index to select.
+        
+        return:
+            res: DataType, bin (filename), [LIST: other datafiles], 
+                (if list_index_element: id_ text for that index)
         """
         if not id_ in self._file_id and list_index_element == None:
             print( " [Error] Invalid index for DataContainer1D.")
@@ -2058,11 +2062,13 @@ class BaseResultsContainer1D(_DataObjectBase):
         else:
             index_ = list_index_element
         
-        args = (
+        args = [
             self._results[index_],
             self._binaries[index_],
             self._dat_files[index_] if index_ in self._dat_files else [],
-        )
+        ]
+        if list_index_element != None: args.append(self._file_id[index_])
+        
         return args
     
     def getAllResults(self):
