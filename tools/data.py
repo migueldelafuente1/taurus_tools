@@ -1166,18 +1166,10 @@ class DataTaurusPAV(_DataObjectBase):
     DEFAULT_OUTPUT_FILENAME = 'aux_output_pav.OUT'
     EXPORT_LIST_RESULTS     = 'export_resultTaurus.txt'
     
-    # __message_startiter = '                   ITERATIVE MINIMIZATION'
-    # __message_endvap    = '                 PROJECTED STATE PROPERTIES'
     __message_endpav     = '                  PROJECTED MATRIX ELEMENTS'
-    # __message_components = '    J 2*MJ 2*KJ    P |     1     |      E     |     '\
-    #                        'Z       v |     N       v |     A       v |    J'\
-    #                        '    |    Jz     v |    P    |    T    |    Tz     v'
-    __message_components = '    J   MJ   KJ    P |     1     |      E     |     Z '\
-                           '      v |     N       v |     A       v |    J    |'\
-                           '    Jz     v |    P    |    T    |    Tz     v'
-    __message_sum_JP_components = '    J    P |           1           |           E'
-    # __message_sum_KP_components = ' 2*KJ    P |           1           |           E'
-    __message_sum_KP_components = '   KJ    P |           1           |           E'
+    __message_components = 'All non-vanishing projected components'
+    __message_sum_JP_components = 'Sum of projected components for J/P'
+    __message_sum_KP_components = 'Sum of projected components for KJ/P'
     
     __message_properly_finished = 'This is the end, my only friend, the end.'
     
@@ -1265,6 +1257,7 @@ class DataTaurusPAV(_DataObjectBase):
         
         self._projecting_JMK  = True
         self._projecting_P    = True
+        skip_ = 0   # Skipping index, jump from the Header_block to the 1st line
         for indx, line in enumerate(data):
             if self._ignorable_block:
                 if line.startswith(self.__message_endpav):
@@ -1277,21 +1270,25 @@ class DataTaurusPAV(_DataObjectBase):
                     ## complementary files part, stop
                     return
             
-            if len(line) == 0:
+            if skip_ > 0:
+                skip_ -= 1
                 continue
-            elif any(map(lambda i: i in line, ("---", "===", 'Sum of', "%%%"))):
+            elif len(line) == 0:
                 continue
             else:
                 if   line == self.__message_components:
                     self._allNVcomp_block = True
+                    skip_ = 6
                     continue
                 elif line == self.__message_sum_JP_components:
                     self._allNVcomp_block = False
                     self._sumJPcomp_block = True
+                    skip_ = 4
                     continue
                 elif line == self.__message_sum_KP_components:
                     self._sumJPcomp_block = False
                     self._sumKPcomp_block = True
+                    skip_ = 4
                     continue
             
             if   self._allNVcomp_block:
