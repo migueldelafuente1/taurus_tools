@@ -34,9 +34,9 @@ if __name__ == '__main__':
         }
         
         inter_ = (4, 0, None)
-        interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
-        interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
-        interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
+        #interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
+        #interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
+        #interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
         # ---------------------------------------------------------------------
         ## Automation for the a range of Z,N to evaluate
         # --------------------------------------------------------------------- 
@@ -70,8 +70,8 @@ if __name__ == '__main__':
     
     args = (nucleus, interactions_B1, GognyEnum.B1)
     kwargs = dict(
-        seed_base=3, ROmega=(0,0), 
-        q_min=-0.6, q_max=0.6, N_max=5, convergences=3, 
+        seed_base=3, ROmega=(0,0),
+        q_min=-0.6, q_max=0.6, N_max=25, convergences=3, 
         parity_2_block=1,
     )
     # run_b20_FalseOE_Kmixing(*args, **kwargs)
