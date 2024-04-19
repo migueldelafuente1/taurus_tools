@@ -32,6 +32,11 @@ if __name__ == '__main__':
             #(12, 19): (4, 0, 1.8), (12, 21): (4, 0, 1.8),
             #(11, 12): (4, 0, 1.8), (12, 11): (4, 0, 1.8),
         }
+        
+        inter_ = (4, 0, None)
+        interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
+        interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
+        interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
         # ---------------------------------------------------------------------
         ## Automation for the a range of Z,N to evaluate
         # --------------------------------------------------------------------- 
