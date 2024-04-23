@@ -73,6 +73,7 @@ if __name__ == '__main__':
         seed_base=3, ROmega=(0,0),
         q_min=-0.6, q_max=0.6, N_max=25, convergences=3, 
         parity_2_block=1,
+        fomenko_points=(7, 7),
     )
     # run_b20_FalseOE_Kmixing(*args, **kwargs)
     # raise Exception("STOP HERE.")

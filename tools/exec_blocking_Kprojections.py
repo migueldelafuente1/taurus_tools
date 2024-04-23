@@ -31,7 +31,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         3. Prepare and export all the components as a surface, also for a later PAV
             in folders "K%%_VAP/"
     '''
-    IGNORE_SEED_BLOCKING  = True
+    IGNORE_SEED_BLOCKING  = True  ## Option to do False Odd-Even variation
     PARITY_TO_BLOCK       = 1
     FIND_K_FOR_ALL_SPS    = False
     BLOCK_ALSO_NEGATIVE_K = False
@@ -160,13 +160,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         print(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
               f"results. saving in [{BU_FLD_KBLOCK}]")
     
-    def run(self):
+    def run(self, fomenko_points=None):
         """
         Modifyed method to obtain the reminization with a blocked state.
         """
         self._blocking_section = False
         ExeTaurus1D_DeformB20.run(self)
         
+        if fomenko_points:
+            self.inputObj.z_Mphi = fomenko_points[0]
+            self.inputObj.n_Mphi = fomenko_points[1]
+            self.inputObj_PAV.z_Mphi = fomenko_points[0]
+            self.inputObj_PAV.n_Mphi = fomenko_points[1]            
         ##  
         self._blocking_section = True
         if self.numberParityOfIsotope == (0, 0): return
@@ -255,6 +260,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             in the blocking section. This method is called from _executeProgram()
         """
         if self._blocking_section and self._save_results:
+            return ExeTaurus1D_DeformB20.runProjection(self, **params)
+        elif self.numberParityOfIsotope == (0, 0):
             return ExeTaurus1D_DeformB20.runProjection(self, **params)
         return
     

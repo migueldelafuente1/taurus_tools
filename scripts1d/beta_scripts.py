@@ -523,31 +523,37 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         
         axial_calc = seed_base in (2, 3, 9)
         
-        input_args_start = {
-            InputTaurus.ArgsEnum.com : 1,
-            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
-            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
-            InputTaurus.ArgsEnum.seed: seed_base,
-            InputTaurus.ArgsEnum.iterations: 1000,
-            InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.0001,
-            InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
-            InputTaurus.ArgsEnum.pair_schm: 1,
+        ## NOTE: fomenko_points are not used for false-oe 1st minimization
+        ##       we store them to be used in the run process to fix them after
+        ##       the false minimization is done, apply afterwards for blocking
+        IArgsEnum = InputTaurus.ArgsEnum
+        vap_args = {IArgsEnum.z_Mphi : 0, IArgsEnum.n_Mphi : 0,}
+        if ((z+n) % 2 == 0 and n % 2 == 0):
+            ## in case of even-even one can do the VAP
+            vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
+                        IArgsEnum.n_Mphi : fomenko_points[1],}
+        
+        input_args_start = {** vap_args,
+            IArgsEnum.com : 1,
+            IArgsEnum.seed: seed_base,
+            IArgsEnum.iterations: 1000,
+            IArgsEnum.grad_type: 1,
+            IArgsEnum.grad_tol : 0.0001,
+            IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
+            IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
         
-        input_args_onrun = {
-            InputTaurus.ArgsEnum.red_hamil: 1,
-            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
-            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
-            InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 800,
-            InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.eta_grad : 0.015,
-            InputTaurus.ArgsEnum.mu_grad  : 0.02, # 0.5
-            InputTaurus.ArgsEnum.grad_tol : 0.0001,
+        input_args_onrun = {** vap_args,
+            IArgsEnum.red_hamil: 1,
+            IArgsEnum.seed: 1,
+            IArgsEnum.iterations: 800,
+            IArgsEnum.grad_type: 1,
+            IArgsEnum.eta_grad : 0.015,
+            IArgsEnum.mu_grad  : 0.02, # 0.5
+            IArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
@@ -573,7 +579,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run()
+            exe_.run(fomenko_points)
             exe_.globalTearDown()
         except ExecutionException as e:
             print(e)
@@ -637,31 +643,36 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         
         axial_calc = seed_base in (2, 3, 9)
         
-        input_args_start = {
-            InputTaurus.ArgsEnum.com : 1,
-            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
-            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
-            InputTaurus.ArgsEnum.seed: seed_base,
-            InputTaurus.ArgsEnum.iterations: 1000,
-            InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.0001,
-            InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
-            InputTaurus.ArgsEnum.pair_schm: 1,
+        ## Note: For false o-e projection, fomenko_points are given in run()
+        ##          see Note in script run_b20_FalseOE_Block1KAndPAV()
+        IArgsEnum = InputTaurus.ArgsEnum
+        vap_args = {IArgsEnum.z_Mphi : 0, IArgsEnum.n_Mphi : 0,}
+        if ((z+n) % 2 == 0 and n % 2 == 0):
+            ## in case of even-even one can do the VAP
+            vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
+                        IArgsEnum.n_Mphi : fomenko_points[1],}
+        
+        input_args_start = {**vap_args,
+            IArgsEnum.com : 1,
+            IArgsEnum.seed: seed_base,
+            IArgsEnum.iterations: 1000,
+            IArgsEnum.grad_type: 1,
+            IArgsEnum.grad_tol : 0.0001,
+            IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
+            IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
         
-        input_args_onrun = {
-            InputTaurus.ArgsEnum.red_hamil: 1,
-            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
-            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
-            InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 800,
-            InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.eta_grad : 0.015,
-            InputTaurus.ArgsEnum.mu_grad  : 0.02, # 0.5
-            InputTaurus.ArgsEnum.grad_tol : 0.0001,
+        input_args_onrun = {**vap_args,
+            IArgsEnum.red_hamil: 1,
+            IArgsEnum.seed: 1,
+            IArgsEnum.iterations: 800,
+            IArgsEnum.grad_type: 1,
+            IArgsEnum.eta_grad : 0.015,
+            IArgsEnum.mu_grad  : 0.02, # 0.5
+            IArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
@@ -686,7 +697,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run()
+            exe_.run(fomenko_points[0])
             exe_.globalTearDown()
         except ExecutionException as e:
             print(e)
