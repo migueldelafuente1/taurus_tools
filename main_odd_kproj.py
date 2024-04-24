@@ -71,7 +71,7 @@ if __name__ == '__main__':
     args = (nucleus, interactions_B1, GognyEnum.B1)
     kwargs = dict(
         seed_base=3, ROmega=(0,0),
-        q_min=-0.6, q_max=0.6, N_max=25, convergences=3, 
+        q_min=-0.8, q_max=0.8, N_max=5, convergences=3,   ## 0.6, 25
         parity_2_block=1,
         fomenko_points=(7, 7),
     )
