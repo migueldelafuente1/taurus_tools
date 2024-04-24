@@ -498,7 +498,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             
             ## Highly 
             if id_sel == None:
-                id_sel = self._container.get(None, list_index_element=0)
+                id_sel = self._container.get(None, list_index_element=0)[-1]
                 ## TODO: Other idea is to use the again the E_min criteria.
                 print("     Final state selected = None / using the first value", 
                       id_sel, "\n ---------------")
