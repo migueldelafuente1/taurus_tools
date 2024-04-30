@@ -1291,6 +1291,10 @@ class DataTaurusPAV(_DataObjectBase):
                     skip_ = 4
                     continue
             
+            if '****' in line: # Line fails (i.e. J < K blocked)
+                print("[WRN]!, excluded line ", line)
+                continue
+        
             if   self._allNVcomp_block:
                 self._getAllNVComponents_blockline(line)
             elif self._sumJPcomp_block:
@@ -1299,6 +1303,13 @@ class DataTaurusPAV(_DataObjectBase):
                 self._getSumKPComponents_blockline(line)
             else:
                 continue
+    
+    def _fixingNanValuesInLine(self, line):
+        """
+        In case of divergences or malfuncitoning, setting all possible numbers
+        for each block.
+        """
+        pass
     
     def _getAllNVComponents_blockline(self, line):
         """
@@ -1318,6 +1329,9 @@ class DataTaurusPAV(_DataObjectBase):
             self.P .append(int(headers[3]))
         
         line = line[20:].split()
+        ## Change to assing norm=0 values (normally with divergences or 1e-150)
+        if abs(float(line[0])) < 1.0e-8: line = [0.000 for i in line]
+        
         #     1     |      E     |     Z       v |     N       v |     A       v |
         #    J    |    Jz     v |    P    |    T    |    Tz     v
         _num_indx_val = (3, 5, 7, 10, 14)
@@ -2034,6 +2048,7 @@ class BaseResultsContainer1D(_DataObjectBase):
         if datfiles:
             self._dat_files[id_] = []
             for file_ in datfiles:
+                if not '.dat' in file_: file_ += '.dat'
                 if not os.path.exists(file_):
                     print(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
                     continue
@@ -2058,11 +2073,12 @@ class BaseResultsContainer1D(_DataObjectBase):
             index_ = self._file_id.index(id_)
         else:
             index_ = list_index_element
+            id_ = self._file_id[index_]
         
         args = [
             self._results[index_],
             self._binaries[index_],
-            self._dat_files[index_] if index_ in self._dat_files else [],
+            self._dat_files[id_] if id_ in self._dat_files else [],
         ]
         if list_index_element != None: args.append(self._file_id[index_])
         

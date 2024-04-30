@@ -125,11 +125,14 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             self.inputObj_PAV.n_Mphi = self.inputObj.n_Mphi
         
         if (self.numberParityOfIsotope in [(0, 0), (1, 1)]):
-            self.inputObj_PAV.j_max = min(16, 2*self._sp_2jmax)
-            self.inputObj_PAV.j_min = 0
+            djmax = min(16, 2*self._sp_2jmax)
+            djmin = 0
         else:
-            self.inputObj_PAV.j_max = self._sp_2jmax
-            self.inputObj_PAV.j_min = self._sp_2jmin
+            djmax = self._sp_2jmax
+            djmin = self._sp_2jmin
+        # if (InputTaurusPAV.ArgsEnum.j_max or InputTaurusPAV.ArgsEnum.j_min):
+        self.inputObj_PAV.j_max = params.get(InputTaurusPAV.ArgsEnum.j_max, djmax)
+        self.inputObj_PAV.j_min = params.get(InputTaurusPAV.ArgsEnum.j_min, djmin)            
             
         self.inputObj_PAV.setParameters(**params)
         self._list_PAV_outputs = []

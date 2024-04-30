@@ -566,7 +566,8 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             InputTaurusPAV.ArgsEnum.beta  : 20,
             InputTaurusPAV.ArgsEnum.gamma : 10,
             InputTaurusPAV.ArgsEnum.empty_states : 0,
-            InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0, 
+            InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0,
+            InputTaurusPAV.ArgsEnum.j_min : K, 
             # PN-PAV and J bound arguments set by the program, P-PAV = no
         }
         ExeTaurus1D_B20_KMixing_OEblocking.EXPORT_LIST_RESULTS = \

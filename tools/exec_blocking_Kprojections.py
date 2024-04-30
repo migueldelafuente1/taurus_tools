@@ -187,8 +187,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self.inputObj.iterations = 500
         
         # Perform the projections to save each K component
-        no_results_for_K = True
         for K in self._valid_Ks:
+            no_results_for_K = True
             self._current_K = K
             self._KComponentSetUp()
             
@@ -275,7 +275,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                 id_ = "sp{}_d{}K{}".format(self._current_sp, 
                                            self._curr_deform_index,
                                            self._current_K)
-                self._container.append(result, id_=id_, binary='final_wf.bin')
+                self._container.append(result, id_=id_, binary='final_wf.bin',
+                                       datfiles=self.SAVE_DAT_FILES)
                 return
                 
             # copy the final wave function and output with the deformation
@@ -293,12 +294,20 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             if _invalid:
                 shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
                             f"{self._exportable_BU_FLD_KBLOCK}/broken_{fndat}.OUT")
+                for dat_f in self.SAVE_DAT_FILES:
+                    dat_f += '.dat'
+                    dat_fn = f"broken_{fndat}_{dat_f}"
+                    shutil.move(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
                 return
             
             shutil.copy("final_wf.bin", 
                         f"{self._exportable_BU_FLD_KBLOCK}/{fnbin}")
             shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
                         f"{self._exportable_BU_FLD_KBLOCK}/{fndat}.OUT")
+            for dat_f in self.SAVE_DAT_FILES:
+                dat_f += '.dat'
+                dat_fn = f"{fndat}_{dat_f}"
+                shutil.move(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
             
             if not fnbin in self._exportable_LISTDAT_forK:
                 self._exportable_LISTDAT_forK.append(fnbin)
@@ -543,14 +552,17 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             id_sel, res, bin_, datfiles = self._selectionCriteriaForState()
             self._choosen_state_data = (id_sel, res)
         
-        if id_sel != None:        
+        if id_sel != None:
+            ## This block export the chosen solution as if the program where 
+            ## executed. 
             src = "{}/{}.OUT".format(self._container.BU_folder, id_sel)
             shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
             src = "{}/{}".format(self._container.BU_folder, bin_)
             shutil.copy(src, 'final_wf.bin')
             if datfiles:
                 for file_ in datfiles:
-                    file_2 = file_.replace(f"_{self._current_sp}", "")
+                    if not '.dat' in file_: file_ += '.dat'
+                    file_2 = file_.replace(f"_{id_sel}", "")
                     shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
                                 file_2)
             
@@ -586,7 +598,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         ## main export
         ExeTaurus1D_DeformB20.globalTearDown(self, zip_bufolder=zip_bufolder, 
                                                   *args, **kwargs)
-
+        
+        ## Remove previous_wf files in main folder
+        prev_bins = filter(lambda x: x.startswith('previous_wf_sp'), os.listdir())
+        for file_ in prev_bins: os.remove(file_)
 
 
 
