@@ -855,15 +855,20 @@ class DataTaurus(_DataObjectBase):
     
     def _processing_data_and_evolution(self, data_inp, data_evol):
         ## Process managed by the EvolTaurus class
-        self._evol_obj = EvolTaurus(None, empty_data=True)
-        self._evol_obj._processing_data_and_evolution(data_inp, data_evol, True)
+        try:
+            self._evol_obj = EvolTaurus(None, empty_data=True)
+            self._evol_obj._processing_data_and_evolution(data_inp, data_evol, True)
+        except BaseException as e_:
+            print(" (TEC)>> EXCEPTION found at Evol Taurus reading. ")
+            print(e_)
+            print(" (TEC)>> seting all _evol_obj values to None.")
         
         _attr2copy = ['date_start', 'date_start_iter', 'date_end_iter',
                       'iter_max', 'iter_time_seconds', 'time_per_iter',
                       'sp_dim', 'MZmax', 'ho_hbaromega', 'ho_b_length', 'sh_dim']
         
         for attr_ in _attr2copy:
-            setattr(self, attr_, getattr(self._evol_obj, attr_))
+            setattr(self, attr_, getattr(self._evol_obj, attr_, None))
     
     
     def get_results(self):
