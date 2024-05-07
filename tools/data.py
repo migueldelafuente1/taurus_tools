@@ -861,7 +861,8 @@ class DataTaurus(_DataObjectBase):
         except BaseException as e_:
             print(" (TEC)>> EXCEPTION found at Evol Taurus reading. ")
             print(e_)
-            print(" (TEC)>> seting all _evol_obj values to None.")
+            print(" (TEC)>> seting unreaded _evol_obj values to None.")
+            self._evol_obj.date_end_iter = self._evol_obj.date_start_iter
         
         _attr2copy = ['date_start', 'date_start_iter', 'date_end_iter',
                       'iter_max', 'iter_time_seconds', 'time_per_iter',
