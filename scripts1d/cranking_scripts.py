@@ -26,7 +26,7 @@ def run_J_surface(nucleus, interactions, J_i,
         :ROmega: <tuple>=(R, Omega) grid of Integration (Default is 10, 10)
         :j_min
         :j_max
-        :N_steps:
+        :N_steps: 
         :convergences: <int> number of random seeds / blocked states to get the global minimum
     """
     assert J_i.startswith('J') and J_i in InputTaurus.ConstrEnum.members(), \
@@ -41,7 +41,7 @@ def run_J_surface(nucleus, interactions, J_i,
         DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     
-    ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = convergences
+    ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_AngMomentum.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     for z, n in nucleus:
