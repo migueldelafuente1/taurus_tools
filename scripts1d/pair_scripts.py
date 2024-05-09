@@ -16,7 +16,7 @@ from tools.helpers import LINE_2, prettyPrintDictionary
 
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs, 
                          seed_base=0, ROmega=(13, 13),
-                         p_min=-0.05, p_max=2.0, N_max=41, convergences=None,
+                         p_min=-0.05, p_max=2.0, N_max=41, convergences=0,
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
@@ -52,10 +52,9 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = 3
-    if convergences != None:
-        ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = True
+    
+    ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     for z, n in nucleus:
         print(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",

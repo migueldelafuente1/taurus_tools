@@ -156,7 +156,7 @@ def run_b20_surface(nucleus, interactions,
 
 def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
-                          q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                          q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                           fomenko_points=(1, 1)):
     """
     Reqire:
@@ -186,10 +186,9 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = 3
-    if convergences != None:
-        ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = True
+    
+    ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n, 
@@ -252,7 +251,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
 
 def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
                                 seed_base=0,
-                                q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                                q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                                 fomenko_points=(1, 1)):
     """
     Reqire:
@@ -280,10 +279,9 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         # DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = 3
-    if convergences != None:
-        ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = True
+    
+    ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     #===========================================================================
     # INTERACTION DEFINITION  (Examples in HAMILTONIAN-MANAGER)
@@ -354,7 +352,7 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
 
 def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
-                          q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                          q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                           fomenko_points=(1, 1), 
                           parity_2_block= 1, ):
     """
@@ -388,12 +386,9 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION = 3
-    ExeTaurus1D_B20_OEblocking_Ksurfaces.PARITY_TO_BLOCK     = parity_2_block
-    
-    if convergences != None:
-        ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_B20_OEblocking_Ksurfaces.GENERATE_RANDOM_SEEDS = True
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.PARITY_TO_BLOCK       = parity_2_block
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n, 
@@ -458,7 +453,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
 
 def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                             seed_base=0, ROmega=(13, 13),
-                            q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                            q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                             fomenko_points=(1, 1), 
                             parity_2_block= 1, ):
     
@@ -498,12 +493,9 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION = 3
-    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK     = parity_2_block
-    
-    if convergences != None:
-        ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = True
+    ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block   
     
     if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
         ## Import the programs if they do not exist

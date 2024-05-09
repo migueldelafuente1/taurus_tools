@@ -14,7 +14,7 @@ from tools.data import DataTaurus
 
 def run_J_surface(nucleus, interactions, J_i, 
                   seed_base=0, ROmega=(13, 13),
-                  j_min= 0.0, j_max=25.0, N_max=50, convergences=None):
+                  j_min= 0.0, j_max=25.0, N_max=50, convergences=0):
     """
     Reqire:
     Args:
@@ -40,10 +40,9 @@ def run_J_surface(nucleus, interactions, J_i,
         DataTaurus.DatFileExportEnum.eigenbasis_h,        
         DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = 5
-    if convergences != None:
-        ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_AngMomentum.GENERATE_RANDOM_SEEDS = True
+    
+    ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION = convergences
+    ExeTaurus1D_AngMomentum.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)

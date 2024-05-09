@@ -50,7 +50,7 @@ class _Base1DTaurusExecutor(object):
     
     SEEDS_RANDOMIZATION = 5 # Number of random seeds for even-even calculation / 
                             # ALSO: Number of blocking sp state for odd calculation
-    GENERATE_RANDOM_SEEDS = False
+    GENERATE_RANDOM_SEEDS = False # If set to false, it will not re-fix the deform grid
     IGNORE_SEED_BLOCKING  = False # Set True to do false odd-even nuclear surfaces
     RUN_PROJECTION        = False # Set True to project PAV the MF - results
     
