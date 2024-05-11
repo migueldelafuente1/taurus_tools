@@ -174,7 +174,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             self.inputObj_PAV.n_Mphi = fomenko_points[1]            
         ##  
         self._blocking_section = True
-        if self.numberParityOfIsotope == (0, 0): return
+        if self.numberParity == (0, 0): return
         print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
         print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
         print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
@@ -209,7 +209,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     #     b20_ = self.deform_oblate[i]
                     setattr(self.inputObj, self.CONSTRAINT, b20_)
                     
-                    isNeu = self._sp_dim if self.numberParityOfIsotope[1] else 0
+                    isNeu = self._sp_dim if self.numberParity[1] else 0
                     set_energies = []
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
@@ -261,7 +261,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         """
         if self._blocking_section and self._save_results:
             return ExeTaurus1D_DeformB20.runProjection(self, **params)
-        elif self.numberParityOfIsotope == (0, 0):
+        elif self.numberParity == (0, 0):
             return ExeTaurus1D_DeformB20.runProjection(self, **params)
         return
     

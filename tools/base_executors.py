@@ -48,8 +48,9 @@ class _Base1DTaurusExecutor(object):
     DTYPE = DataTaurus  # DataType for the outputs to manage
     ITYPE = InputTaurus # Input type for the input management
     
-    SEEDS_RANDOMIZATION = 5 # Number of random seeds for even-even calculation / 
-                            # ALSO: Number of blocking sp state for odd calculation
+    DO_BASE_CALCULATION   = True  # Do at least 1 minimization (indep of SEEDS_RAND) 
+    SEEDS_RANDOMIZATION   = 5     # Number of random seeds for even-even calculation / 
+                                  # ALSO: Number of blocking sp state for odd calculation
     GENERATE_RANDOM_SEEDS = False # If set to false, it will not re-fix the deform grid
     IGNORE_SEED_BLOCKING  = False # Set True to do false odd-even nuclear surfaces
     RUN_PROJECTION        = False # Set True to project PAV the MF - results
@@ -139,7 +140,7 @@ class _Base1DTaurusExecutor(object):
             self._deform_base    = None
             
     @property
-    def numberParityOfIsotope(self):
+    def numberParity(self):
         return (self.z % 2, self.n % 2)
     
     def _checkExecutorSettings(self):
@@ -292,7 +293,7 @@ class _Base1DTaurusExecutor(object):
         
         if not (p_max!=None and p_min!=None) or N_max == 0:
             ## consider as ITERATIVE_METHOD SINGLE EVALUATION (save the deform)
-            q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
+            q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, 0.0)
             self._deform_base = q0
             self.deform_prolate = [q0, ]
             self._deformations_map[1] = [(0, q0)]
@@ -302,7 +303,7 @@ class _Base1DTaurusExecutor(object):
         # p_min = max(p_min, 0.0)
         deform_oblate, deform_prolate = [], []
         dq = round((p_max - p_min) / N_max,  3)
-        q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, None)
+        q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, 0.0)
         if   q0 < p_min: # p0 outside to the left (add the difference to the left)
             p_min = q0 + (q0 - p_min)
         elif q0 > p_max: # p0 outside to the right (add the diff. to the right)
@@ -705,7 +706,7 @@ class _Base1DTaurusExecutor(object):
             
             ## save all the 1st blocked seeds
             ## Extend the condition for general repetitive base-input.
-            if 1 in self.numberParityOfIsotope or self.GENERATE_RANDOM_SEEDS: 
+            if 1 in self.numberParity or self.GENERATE_RANDOM_SEEDS: 
                 s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
                 s_list = list(filter(lambda x: x.endswith("dbase.OUT"), s_list))
                 s_n = len(s_list)
@@ -850,7 +851,6 @@ class _Base1DTaurusExecutor(object):
                          result.E_HFB, result.kin, result.pair, 
                          result.b20_isoscalar)
         print(txt, _iter_str)
-        
     
     @property
     def calculationParameters(self):
@@ -872,7 +872,7 @@ class _Base1DTaurusExecutor(object):
             self.__dict__.items() )))
         prettyPrintDictionary(pub_attr)
         prettyPrintDictionary(priv_attr)
-        print(LINE_2)
+        print(LINE_1)
     
     def executionTearDown(self, result : DataTaurus, base_execution, *args, **kwargs):
         """
@@ -1024,7 +1024,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
             
             ## save all the 1st blocked seeds
             ## Extend the condition for general repetitive base-input.
-            if 1 in self.numberParityOfIsotope or self.GENERATE_RANDOM_SEEDS: 
+            if 1 in self.numberParity or self.GENERATE_RANDOM_SEEDS: 
                 s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
                 s_list = list(filter(lambda x: x.endswith("dbase.OUT"), s_list))
                 s_n = len(s_list)

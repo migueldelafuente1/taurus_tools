@@ -495,6 +495,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block   
     
     if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 

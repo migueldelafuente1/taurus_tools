@@ -76,19 +76,30 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## read the properties of the basis for the interaction
         self._getStatesAndDimensionsOfHamiltonian()
         
-        if self._1stSeedMinima == None or reset_seed:
-            if 1 in self.numberParityOfIsotope and (not self.IGNORE_SEED_BLOCKING):
-                ## procedure to evaluate odd-even nuclei
-                self._oddNumberParitySeedConvergence()
-                ## NOTE: The state blocked is in the seed, no more blocking during the process
-            elif self.GENERATE_RANDOM_SEEDS:
-                ## Procedure to evaluate a set of random states (for even-even)
-                ## to get the lowest energy.
-                self._evenNumberParitySeedConvergence()
+        _DO_ODD = 1 in self.numberParity and (not self.IGNORE_SEED_BLOCKING)
+        if self._1stSeedMinima == None or reset_seed:                
+            if self.GENERATE_RANDOM_SEEDS:
+                if _DO_ODD:
+                    ## procedure to evaluate odd-even nuclei
+                    self._oddNumberParitySeedConvergence()
+                    ## NOTE: The state blocked is in the seed, no more blocking during the process
+                else:
+                    ## Procedure to evaluate a set of random states (for even-even)
+                    ## to get the lowest energy.
+                    self._evenNumberParitySeedConvergence()
             else:
-                ## even-even general case
-                while not self._preconvergenceAccepted(res):
-                    res = self._executeProgram(base_execution=True)
+                if not self.DO_BASE_CALCULATION:
+                    ## Force convergence to point=0
+                    self._deform_base = 0.0
+                    setattr(self.inputObj, self.CONSTRAINT, 0.0)
+                
+                if _DO_ODD:
+                    ## procedure to evaluate odd-even nuclei
+                    self._oddNumberParitySeedConvergence()
+                else:
+                    ## even-even general case
+                    while not self._preconvergenceAccepted(res):
+                        res = self._executeProgram(base_execution=True)
         
         self._final_bin_list_data[1][0] = self._1stSeedMinima._exported_filename
         
@@ -106,6 +117,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             (InputTaurus.ArgsEnum.seed in _new_input_args)):
             self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, 
                                                        None)
+        
+        self.printExecutionResult(None, print_head=True)
     
     def setUpProjection(self, **params):
         """
@@ -124,7 +137,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         if self.inputObj.n_Mphi > 1: 
             self.inputObj_PAV.n_Mphi = self.inputObj.n_Mphi
         
-        if (self.numberParityOfIsotope in [(0, 0), (1, 1)]):
+        if (self.numberParity in [(0, 0), (1, 1)]):
             djmax = min(16, 2*self._sp_2jmax)
             djmin = 0
         else:
@@ -139,7 +152,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         ## Create a folder in BU_ to store the projected results after a VAP-HFB
         if self.RUN_PROJECTION:
-            if self.IGNORE_SEED_BLOCKING and 1 in self.numberParityOfIsotope:
+            if self.IGNORE_SEED_BLOCKING and 1 in self.numberParity:
                 w = "\t[WARNING] Verify runProjection() before performing PAV over NON-Blocked wf!!!\n"*3
                 print(LINE_2, w, LINE_2)
             
@@ -265,7 +278,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
          * export to the BU the (discarded) blocked seeds (done in saveWF method)  
         """
         ## get a sp_space for the state to block 
-        odd_p, odd_n = self.numberParityOfIsotope
+        odd_p, odd_n = self.numberParity
         ## this was set in setUpExecution._getStatesAndDimensionsOfHamiltonian
         sh_states = self._sh_states
         sp_states = self._sp_states
@@ -280,10 +293,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         blocked_energies      = {}
         bk_min, bk_E_min      = 0, 1.0e+69
         bu_results = {}
-        double4OO = sum(self.numberParityOfIsotope) # repeat twice for odd-odd
+        double4OO = sum(self.numberParity) # repeat twice for odd-odd
         print("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
               double4OO*self.SEEDS_RANDOMIZATION, 
-              " #-par:", self.numberParityOfIsotope, LINE_2)
+              " #-par:", self.numberParity, LINE_2)
         for rand_step in range(double4OO * self.SEEDS_RANDOMIZATION):
             bk_sp_p, bk_sp_n = 0, 0
             bk_sh_p, bk_sh_n = 0, 0
