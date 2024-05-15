@@ -240,7 +240,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                         elif sp_ == self._sp_dim:
                             print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
                         else:
-                            self._K_notFoundActionsTearDown()
+                            self._K_notFoundActionsTearDown(res)
                     
                     set_energies = set(set_energies) # only apply if multiple E
                     if (self.FIND_K_FOR_ALL_SPS and not no_results_for_K):
@@ -406,12 +406,21 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         self._sp_blocked_K_already_found[i][sp_index] = self._current_K
     
-    def _K_notFoundActionsTearDown(self):
+    def _K_notFoundActionsTearDown(self, res: DataTaurus):
         """
         Actions to discard or notice invalid result.
         """
+        sp_index = self._current_sp
+        
         if not self._save_results:
+            print("   [xx] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
+                  .format(sp_index, self._sp_states_obj[sp_index].shellState,  
+                          res.Jz, res.b20_isoscalar, res.E_HFB, res.isAxial()))
             return
+        else:
+            print("      X {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
+                  .format(sp_index, self._sp_states_obj[sp_index].shellState,  
+                          res.Jz, res.b20_isoscalar, res.E_HFB, res.isAxial()))
         invalid_fn = self._list_PAV_outputs[self._current_K].pop()
         invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
         
@@ -468,7 +477,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             print("   * Overlap criteria begins ---------------")
             shutil.copy(self._previous_bin_path, 'left_wf.bin')
             
-            id_sel, overlap_max = None, -999999
+            id_sel, overlapm1_min = None, 999999
             for id_, res in self._container.getAllResults().items():
                 bin = self._container.get(id_)[1]
                 shutil.copy(f'{self._container.BU_folder}/{bin}', 'right_wf.bin')
@@ -497,8 +506,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                               empty_states_case)
                         continue
                     overl  = res_ov.proj_norm[0]
-                    if abs(overl) > overlap_max:
-                        overlap_max = abs(overl)
+                    if 1 - abs(overl) < overlapm1_min:  ## ovelap has an arbitrary phase 
+                        overlapm1_min = 1 - abs(overl)
                         id_sel = id_
                         print(f"     *( pass) overlap_{id_}= {overl:6.5f}")
                     else:
@@ -572,6 +581,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             self.saveFinalWFprocedure(res, False)
             self.executionTearDown(res, False)
             self._K_foundActionsTearDown(res)
+            
+            ## Copy all elements in TEMP_BU folder to BU
+            if not dont_select:
+                dst = '/BU_states_d{}K{}'.format(self._curr_deform_index,
+                                                 self._current_K)
+                shutil.move(self._container.BU_folder, self.DTYPE.BU_folder+dst)
         else:
             print(" [No Result] found, PAV and coping ignored.")
                 

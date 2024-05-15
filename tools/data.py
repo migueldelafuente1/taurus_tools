@@ -1189,6 +1189,7 @@ class DataTaurusPAV(_DataObjectBase):
         self.n = n
         self.properly_finished = False
         self.broken_execution  = False
+        self._nanComponentsInResults = False
         self._filename = filename
         
         self.J  = []
@@ -1216,6 +1217,8 @@ class DataTaurusPAV(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
+                if isinstance(e, ValueError):
+                    self._nanComponentsInResults = True
                 print(" (TC2)>> resEXCEPTION from Taurus Constructor >> self::")
                 print(self)
                 print(" (TC2)>> exception:: ", e, "<<(TC2)")
@@ -1225,6 +1228,10 @@ class DataTaurusPAV(_DataObjectBase):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
         return "\n".join(k+' :\t'+str(v) for k,v in aux.items())
     
+    @property
+    def nanComponentsInResults(self):
+        return self._nanComponentsInResults
+        
     def get_results(self):
         """
         Read all the lines and export

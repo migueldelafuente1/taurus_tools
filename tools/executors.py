@@ -196,6 +196,21 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## In case o
         try:
             res = DataTaurusPAV(self.z, self.n, out_fn)
+            ## 
+            if res.nanComponentsInResults:
+                if not getattr(self, '_calling_co_PAV_exception', False):
+                    self._calling_co_PAV_exception = True
+                    print("  [PAV error], changing cutoff-n.ovelap solve Nan components issue")
+                    ies_0 = self.inputObj_PAV.empty_states
+                    self.inputObj_PAV.cutoff_overlap = 1.e-9 # (change the value)
+                    self.runProjection(**params)
+                    self.inputObj_PAV.cutoff_overlap = 0 # (revert the change)
+                    del self._calling_co_PAV_exception
+                    return
+                else:
+                    print("  [PAV error 3], cannot do anything. procced")
+                    res = DataTaurusPAV(self.z, self.n, empty_data=True)
+            
         except BaseException:
             if not getattr(self, '_calling_PAV_exception', False):
                 self._calling_PAV_exception = True
@@ -204,6 +219,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 self.inputObj_PAV.empty_states = -ies_0 + 1 # (change the value)
                 self.runProjection(**params)
                 self.inputObj_PAV.empty_states = ies_0 # (revert the change)
+                del self._calling_PAV_exception
                 return
             else:
                 print("  [PAV error 2], cannot do anything. procced")

@@ -876,7 +876,7 @@ Physics case studied          0
 Part of the calc. performed   0
 Read mat. elem. of operators  0
 Write/read rotated mat. elem. 0
-Cutoff for rotated overlaps   1.000E-16
+Cutoff for rotated overlaps   {cutoff_overlap}
 Read wavefunctions as text    0
 Cutoff occupied s.-p. states  0.000E-00
 Include all empty sp states   {empty_states}
@@ -914,6 +914,7 @@ Disable simplifications P     {disable_simplifications_P}"""
         n        = 'n'
         z_Mphi   = 'z_Mphi'
         n_Mphi   = 'n_Mphi'
+        cutoff_overlap = 'cutoff_overlap'
         empty_states = 'empty_states'
         disable_simplifications_NZA = 'disable_simplifications_NZA'
         disable_simplifications_JMK = 'disable_simplifications_JMK'
@@ -947,6 +948,7 @@ Disable simplifications P     {disable_simplifications_P}"""
         ##    JMK: axial symmetry but do not use it ever
         ##     P : not mixed parity of L/R wf.
         self.empty_states = 1
+        self.cutoff_overlap = 0.0
         self.disable_simplifications_NZA = 1
         self.disable_simplifications_JMK = 1
         self.disable_simplifications_P   = 1
@@ -991,6 +993,9 @@ Disable simplifications P     {disable_simplifications_P}"""
                          self.ArgsEnum.j_max,):
                 assert isinstance(value, int) and value >=0, \
                     f"Value must be non-negative integer [{value}]"
+            elif arg in (self.ArgsEnum.cutoff_overlap,):
+                assert isinstance(value, float) and value >=0, \
+                    f"Value must be non-negative float [{value}]"
             else:
                 assert type(value)==str, "Interaction hamil must be string"
                 
@@ -1006,6 +1011,9 @@ Disable simplifications P     {disable_simplifications_P}"""
         """
         kwargs = [(k_, getattr(self, k_)) for k_ in self.ArgsEnum.members()]
         kwargs = dict(kwargs)
+        if kwargs.get(self.ArgsEnum.cutoff_overlap, 0) > 1.0e-16:
+            x = kwargs[self.ArgsEnum.cutoff_overlap]
+            kwargs[self.ArgsEnum.cutoff_overlap] = "{:5.3e}".format(x).upper()
         
         txt_ = self._TEMPLATE.format(**kwargs)
         return txt_
@@ -1022,7 +1030,6 @@ Disable simplifications P     {disable_simplifications_P}"""
         Set up a projection calculation only at mean-field level.
         Considering com correction and NOT including empty-states.
         """
-        
         self.com  = 1
         for atr in (
                 self.ArgsEnum.alpha,    self.ArgsEnum.beta, self.ArgsEnum.gamma,
