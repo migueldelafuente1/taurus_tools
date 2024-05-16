@@ -156,6 +156,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         print(" Done.")
         os.chdir('..')
     
+    os.chdir('..')
     print("## Script has ended for K=", K)
         
 
