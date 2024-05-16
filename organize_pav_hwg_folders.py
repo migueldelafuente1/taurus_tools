@@ -55,16 +55,16 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     """
     
     if not os.path.exists(MAIN_FLD): 
-        print("Main folder does not exists.")
+        print("Main folder does not exists.", MAIN_FLD)
         return
     
-    if MAIN_FLD: 
+    if MAIN_FLD:
         shutil.copy('taurus_pav.exe', MAIN_FLD)
         shutil.copy('taurus_mix.exe', MAIN_FLD)
     
     os.chdir(MAIN_FLD)
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
-    BU_KVAP = f"{K}_0_VAP/"
+    BU_KVAP      =f"{K}_0_VAP/"
     DEST_FLD     = 'PNPAMP_HWG/'
     DEST_FLD_HWG = 'HWG'
     valid_J_list = [i for i in range(1, Jmax+1, 2)]
@@ -99,10 +99,11 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     }
     
     for z, n in nuclei:
-        
+        print(" Starting for", TEMP_BU.format(interaction, z, n))
         os.chdir(TEMP_BU.format(interaction, z, n))
         #os.mkdir(DEST_FLD)
         bins_ = os.listdir(BU_KVAP)
+        print("  1. creating folders and common files: ", BU_KVAP, bins_)
         bins_ = filter(lambda x: x.endswith('.bin'), bins_)
         bins_ = sort_by_deformation_naming(bins_)
         
@@ -111,12 +112,14 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
             f.write(pav_obj.getText4file())
         
         # clear FLD if exists
+        print("  2. Creating SLUM folder:", DEST_FLD) 
         if os.path.exists(DEST_FLD):
             shutil.rmtree(DEST_FLD)
         os.mkdir(DEST_FLD)
         os.mkdir(DEST_FLD + DEST_FLD_HWG)
         
         # copy pav folders.
+        print("  3. Copying binaries, etc for PAV") 
         bins2copy = []
         for i, b1 in enumerate(bins_):
             for i2 in range(i, len(bins_)):
@@ -133,12 +136,14 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
             os.chmod(fld_i+'/taurus_pav.exe', 0o777)
         
         # hwg stuff
+        print("  3. Preparing MIX folder.") 
         shutil.copy('../taurus_mix.exe', DEST_FLD+'/'+DEST_FLD_HWG)
         mix_obj = InputTaurusMIX(z, n, len(bins2copy), **input_mix_args)
         with open(DEST_FLD+'/'+DEST_FLD_HWG+'/input_mix.txt', 'w+') as f:
             f.write(mix_obj.getText4file())
         
         # create the scripts
+        print("  4. Creating SLURM job scripts.") 
         slurm = _SlurmJob1DPreparation(interaction, len(bins_), valid_J_list,
                                        PAV_input_filename='input_pav.txt',
                                        HWG_input_filename='input_mix.txt')       
@@ -148,8 +153,10 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
                 f.write(scr_)
         
         ## done, go back
+        print(" Done.")
         os.chdir('..')
-        
+    
+    print("## Script has ended for K=", K)
         
 
 
@@ -161,20 +168,20 @@ if __name__ == '__main__':
                             mix = not os.path.exists('taurus_mix.exe'))
     
     ## TESTING_
-    # inter  = 'B1_MZ3' 
-    # nuclei = [(2, 1), (2, 3)]
-    # oddeven_mix_same_K_from_vap(1, 'results', inter, nuclei, 
-    #                             PNP_fomenko=7, Jmax=9, )
-    #
-    # raise Exception("STOP-TEST")
+    inter  = 'B1_MZ3' 
+    nuclei = [(2, 1), (2, 3)]
+    oddeven_mix_same_K_from_vap(1, 'results', inter, nuclei, 
+                                PNP_fomenko=7, Jmax=9, )
+    
+    raise Exception("STOP-TEST")
     ## 
     inter  = 'B1_MZ4' 
-    # nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
+    nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 5)]
     # nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
     
     for K in (1, 3, 5):
-        MAIN_FLD = f'results/MgK{K}/'
+        MAIN_FLD = f'results/MgK{K}'
         oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
                                     PNP_fomenko=7, Jmax=9, )
 
