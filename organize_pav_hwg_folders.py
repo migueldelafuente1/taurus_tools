@@ -57,6 +57,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     if not os.path.exists(MAIN_FLD): 
         print("Main folder does not exists.", MAIN_FLD)
         return
+    RETURN_FLD = "/".join([".." for _ in MAIN_FLD.split('/')])
     
     if MAIN_FLD:
         shutil.copy('taurus_pav.exe', MAIN_FLD)
@@ -103,9 +104,9 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         os.chdir(TEMP_BU.format(interaction, z, n))
         #os.mkdir(DEST_FLD)
         bins_ = os.listdir(BU_KVAP)
-        print("  1. creating folders and common files: ", BU_KVAP, bins_)
         bins_ = filter(lambda x: x.endswith('.bin'), bins_)
         bins_ = sort_by_deformation_naming(bins_)
+        print("  1. creating folders and common files: ", BU_KVAP, bins_)
         
         pav_obj = InputTaurusPAV(z, n, interaction, **input_pav_args)
         with open('input_pav.txt', 'w+') as f:
@@ -156,7 +157,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         print(" Done.")
         os.chdir('..')
     
-    os.chdir('..')
+    os.chdir(RETURN_FLD)
     print("## Script has ended for K=", K)
         
 
