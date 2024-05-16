@@ -53,9 +53,9 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         scripts: 
     
     """
-    
+    print("## Script begins for K=", K, ' *************************** \n')
     if not os.path.exists(MAIN_FLD): 
-        print("Main folder does not exists.", MAIN_FLD)
+        print(" [ERROR] Main folder does not exists:", MAIN_FLD)
         return
     RETURN_FLD = "/".join([".." for _ in MAIN_FLD.split('/')])
     
@@ -158,7 +158,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         os.chdir('..')
     
     os.chdir(RETURN_FLD)
-    print("## Script has ended for K=", K)
+    print("## Script has ended for K=", K, '\n')
         
 
 
