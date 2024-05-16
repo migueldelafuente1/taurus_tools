@@ -2021,7 +2021,8 @@ class BaseResultsContainer1D(_DataObjectBase):
         self._binaries  = []
         self._dat_files = {}
         
-        shutil.rmtree(self.BU_folder)
+        if os.path.exists(self.BU_folder): 
+            shutil.rmtree(self.BU_folder)
         if os.path.exists(self.EXPORT_LIST_RESULTS):
             os.remove(self.EXPORT_LIST_RESULTS)
         self.setUpFolderBackUp(self._container_name)
