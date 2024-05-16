@@ -586,10 +586,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             if not dont_select:
                 dst = '/BU_states_d{}K{}'.format(self._curr_deform_index,
                                                  self._current_K)
-                shutil.move(self._container.BU_folder, self.DTYPE.BU_folder+dst)
+                shutil.copytree(self._container.BU_folder, self.DTYPE.BU_folder+dst)
         else:
             print(" [No Result] found, PAV and coping ignored.")
-                
+            
         ## Reset all  
         self._container.clear()
         self._save_results = False       
