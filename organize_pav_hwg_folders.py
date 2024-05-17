@@ -42,7 +42,7 @@ def basic_eveneven_mix_from_vap(MAIN_FLD):
     pass
 
 def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei, 
-                                PNP_fomenko=1, Jmax=1):
+                                PNP_fomenko=1, Jmax=1, RUN_SBATCH=False):
     """
     Create all the folders with executable, hamil, etc.
         1, 
@@ -81,7 +81,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         InputTaurusPAV.ArgsEnum.j_min: K,
         InputTaurusPAV.ArgsEnum.j_max: Jmax,
         InputTaurusPAV.ArgsEnum.com: 1,
-        # InputTaurusPAV.ArgsEnum.empty_states:   1,
+        InputTaurusPAV.ArgsEnum.empty_states:   0,
         # InputTaurusPAV.ArgsEnum.cutoff_overlap: 1.0e-9,
     }
     input_mix_args = {
@@ -153,6 +153,9 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
             with open(DEST_FLD+'/'+fn_, 'w+') as f:
                 f.write(scr_)
         
+        # run sbatch
+        if RUN_SBATCH: os.system('sbatch sub_1.x')
+        
         ## done, go back
         print(" Done.")
         os.chdir('..')
@@ -186,5 +189,5 @@ if __name__ == '__main__':
     for K in (1, 3, 5):
         MAIN_FLD = f'results/MgK{K}'
         oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
-                                    PNP_fomenko=7, Jmax=9, )
+                                    PNP_fomenko=7, Jmax=9, RUN_SBATCH=True)
 
