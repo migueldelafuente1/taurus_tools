@@ -154,7 +154,10 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
                 f.write(scr_)
         
         # run sbatch
-        if RUN_SBATCH: os.system('sbatch sub_1.x')
+        if RUN_SBATCH: 
+            os.chdir(DEST_FLD)
+            os.system('sbatch sub_1.x')
+            os.chdir('..')
         
         ## done, go back
         print(" Done.")
