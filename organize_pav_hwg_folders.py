@@ -122,9 +122,16 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         # copy pav folders.
         print("  3. Copying binaries, etc for PAV") 
         bins2copy = []
+        k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
         for i, b1 in enumerate(bins_):
             for i2 in range(i, len(bins_)):
+                k += 1
                 bins2copy.append( (b1, bins_[i2]) )
+                gcm_files['gcm_3'].append(f"    {i+1: <6}")
+                gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
+                if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
+                    
+        
         for i, l_r_wf in enumerate(bins2copy):
             fld_i = DEST_FLD+str(i+1)+'/'
             os.mkdir(fld_i)
@@ -150,8 +157,9 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
                                        HWG_input_filename='input_mix.txt')       
         
         for fn_, scr_ in slurm.getScriptsByName().items():
-            with open(DEST_FLD+'/'+fn_, 'w+') as f:
-                f.write(scr_)
+            with open(DEST_FLD+'/'+fn_, 'w+') as f: f.write(scr_)
+        for fn_, scr_ in gcm_files.items():
+            with open(DEST_FLD+'/'+fn_, 'w+') as f: f.write("\n".join(scr_))
         
         # run sbatch
         if RUN_SBATCH: 
@@ -176,7 +184,7 @@ if __name__ == '__main__':
                                 pav = not os.path.exists('taurus_pav.exe'), 
                                 mix = not os.path.exists('taurus_mix.exe'))
     
-    ## TESTING_
+    # # TESTING_
     # inter  = 'B1_MZ3' 
     # nuclei = [(2, 1), (2, 3)]
     # oddeven_mix_same_K_from_vap(1, 'results', inter, nuclei, 
@@ -189,7 +197,7 @@ if __name__ == '__main__':
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 5)]
     # nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
     
-    for K in (1, 3, 5):
+    for K in ( 5,):
         MAIN_FLD = f'results/MgK{K}'
         oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
                                     PNP_fomenko=7, Jmax=9, RUN_SBATCH=True)
