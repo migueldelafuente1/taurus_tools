@@ -89,7 +89,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         InputTaurusMIX.ArgsEnum.opt_convergence_analysis: 1,
         InputTaurusMIX.ArgsEnum.opt_remove_neg_eigen: 1,
         InputTaurusMIX.ArgsEnum.max_energy: 30,
-        InputTaurusMIX.ArgsEnum.j_val : 1,
+        InputTaurusMIX.ArgsEnum.j_val : 'J_VAL',
         InputTaurusMIX.ArgsEnum.parity: 1,
         #
         InputTaurusMIX.CutoffArgsEnum.cutoff_overlap: 1.0e-9,
@@ -157,7 +157,8 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
                                        HWG_input_filename='input_mix.txt')       
         
         for fn_, scr_ in slurm.getScriptsByName().items():
-            with open(DEST_FLD+'/'+fn_, 'w+') as f: f.write(scr_)
+            dst_fld = DEST_FLD if fn_ != 'hw.x' else DEST_FLD+'/'+DEST_FLD_HWG
+            with open(dst_fld+'/'+fn_, 'w+') as f: f.write(scr_)
         for fn_, scr_ in gcm_files.items():
             with open(DEST_FLD+'/'+fn_, 'w+') as f: f.write("\n".join(scr_))
         
@@ -184,13 +185,6 @@ if __name__ == '__main__':
                                 pav = not os.path.exists('taurus_pav.exe'), 
                                 mix = not os.path.exists('taurus_mix.exe'))
     
-    
-    N = 91
-    with open('gcm_3', 'w+') as f:
-        f.write("\n".join([str(i+1) for i in range(N)]))
-    
-    raise Exception("STOP")
-
     # TESTING_
     inter  = 'B1_MZ3' 
     nuclei = [(2, 1), (2, 3)]

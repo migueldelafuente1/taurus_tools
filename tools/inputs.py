@@ -1171,7 +1171,10 @@ Specific cut-off (label)      L  0 +1      941058169115  0"""
                 pass
             elif hasattr(self.ArgsEnum, arg):
                 ## Case selection of the non-constrained parts INLINE TEST
-                if   arg in (self.ArgsEnum.opt_remove_neg_eigen,
+                if isinstance(value, str):
+                    ## Argument is Kwywoerd for other script, assign directly
+                    pass
+                elif   arg in (self.ArgsEnum.opt_remove_neg_eigen,
                              self.ArgsEnum.opt_convergence_analysis):
                     assert value in (0,1, True, False), f"Value must be 1 or 0 [{value}]"
                     value = int(value)
