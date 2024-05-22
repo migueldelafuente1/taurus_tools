@@ -184,13 +184,20 @@ if __name__ == '__main__':
                                 pav = not os.path.exists('taurus_pav.exe'), 
                                 mix = not os.path.exists('taurus_mix.exe'))
     
-    # # TESTING_
-    # inter  = 'B1_MZ3' 
-    # nuclei = [(2, 1), (2, 3)]
-    # oddeven_mix_same_K_from_vap(1, 'results', inter, nuclei, 
-    #                             PNP_fomenko=7, Jmax=9, )
-    #
-    # raise Exception("STOP-TEST")
+    
+    N = 91
+    with open('gcm_3', 'w+') as f:
+        f.write("\n".join([str(i+1) for i in range(N)]))
+    
+    raise Exception("STOP")
+
+    # TESTING_
+    inter  = 'B1_MZ3' 
+    nuclei = [(2, 1), (2, 3)]
+    oddeven_mix_same_K_from_vap(1, 'results', inter, nuclei, 
+                                PNP_fomenko=7, Jmax=9, )
+    
+    raise Exception("STOP-TEST")
     ## 
     inter  = 'B1_MZ4' 
     nuclei = [(12, 11+ 2*i) for i in range(0, 5)]

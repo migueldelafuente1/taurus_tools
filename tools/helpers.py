@@ -6,6 +6,7 @@ Created on Jan 11, 2023
 import os
 import subprocess
 import numpy as np
+import shutil
 
 LINE_1 = "\n================================================================================\n"
 LINE_2 = "\n--------------------------------------------------------------------------------\n"
@@ -242,6 +243,10 @@ def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False):
         try:
             order_ = "git clone {}".format(src_)
             e_ = subprocess.call(order_, shell=True)
+            if src_ == GITHUB_TAURUS_MIX_HTTP:
+                ## B.B., update the module_spectroscopy, please
+                shutil.copy('data_resources/module_spectroscopy.f90', 
+                            folder_path+'/src/')
             
             os.chdir(folder_path)
             if folder_path == 'dens_taurus_vap':

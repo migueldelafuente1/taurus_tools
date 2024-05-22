@@ -701,7 +701,37 @@ cp $var3"/OUT" outputs_PAV"/OUT_"$var3
 done
 
 cp gcm* outputs_PAV"""
+    
+    __TEMPLATE_CAT_ME_STATES_PYTHON = """import shutil, os
 
+OUT_fld  = 'outputs_PAV'
+pme_file = 'projmatelem_states.bin'
+if os.path.exists(OUT_fld):  shutil.rmtree(OUT_fld)
+if os.path.exists(pme_file): os.    remove(pme_file)
+os.mkdir(OUT_fld)
+
+def copy_stuff(dir_list):
+    for fld_ in dir_list:
+        fld_ = fld_.strip()
+        if os.path.exists(fld_):
+            if pme_file in os.listdir(fld_): 
+                os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
+            else: print(" [ERROR] not found for {}".format(fld_))
+            if 'OUT' in os.listdir(fld_):
+                shutil.copy("{}/OUT".format(fld_), 
+                            "{}/OUT_{}".format(OUT_fld, fld_ ))
+            else: print("     [ERROR 2] not found OUT for {}".format(fld_))
+    print("* done for all files")
+
+if os.path.exists('gcm_3'):  # gcm_file
+    with open('gcm_3', 'r') as f:
+        dir_list = f.readlines()
+        print(dir_list)
+        copy_stuff(dir_list)
+else: # without gcm_file
+    dir_list = list(filter(lambda x: os.path.isdir(x) and x.isdigit(), os.listdir()))
+    copy_stuff(dir_list.sort())"""
+    
     __TEMPLATE_JOB_HWX = """#!/bin/bash
 
 ulimit -s unlimited 
@@ -782,6 +812,7 @@ done"""
         self.script_cat = self.__TEMPLATE_CAT_ME_STATES
         self.script_cat = self.script_cat.replace(self.ArgsEnum.JOBS_LENGTH,
                                                   self.jobs_length)
+        
         ## HWG
         J_vals = " ".join([str(j) for j in valid_J_list])
         J_vals = f'LIST="{J_vals}"'
@@ -800,6 +831,7 @@ done"""
             'job_1.x': self.job_1,
             'hw.x': self.script_hwg,
             'cat_states.me.x': self.script_cat,
+            'cat_states.py'  : self.__TEMPLATE_CAT_ME_STATES_PYTHON,
             'run_pnamp.x': self.prepare_pnpamp,
         }
         
