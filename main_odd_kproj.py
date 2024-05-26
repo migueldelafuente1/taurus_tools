@@ -28,12 +28,12 @@ if __name__ == '__main__':
             #(12,  8) : (3, 0, 1.98), 
             #(12, 10): (3, 0, 1.94), (12, 12): (3, 0, 1.92), (12, 14): (3, 0, 1.95), 
             #(12, 16): (3, 0, 1.94), 
-            (8, 11): (3, 0, None),
+            (8, 11): (2, 0, None),
             #(12, 19): (4, 0, 1.8), (12, 21): (4, 0, 1.8),
             #(11, 12): (4, 0, 1.8), (12, 11): (4, 0, 1.8),
         }
         
-        inter_ = (4, 0, None)
+        inter_ = (2, 0, None)
         #interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
@@ -70,13 +70,14 @@ if __name__ == '__main__':
     
     args = (nucleus, interactions_B1, GognyEnum.B1)
     kwargs = dict(
+        valid_Ks = [1, 3, 5], 
         seed_base=3, ROmega=(0,0),
-        q_min=-0.8, q_max=0.8, N_max=5, convergences=3,   ## 0.6, 25
+        q_min=-0.8, q_max=0.8, N_max=5, convergences=0,   ## 0.6, 25
         parity_2_block=1,
         fomenko_points=(7, 7),
     )
-    # run_b20_FalseOE_Kmixing(*args, **kwargs)
-    # raise Exception("STOP HERE.")
+    run_b20_FalseOE_Kmixing(*args, **kwargs)
+    raise Exception("STOP HERE.")
     
     K2block = 1
     args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
