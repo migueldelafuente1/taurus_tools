@@ -424,7 +424,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.eta_grad : 0.015,
             InputTaurus.ArgsEnum.mu_grad  : 0.02, # 0.5
@@ -452,10 +452,10 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
 
 
 def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
-                            seed_base=0, ROmega=(13, 13),
-                            q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
-                            fomenko_points=(1, 1), 
-                            parity_2_block= 1, ):
+                                  seed_base=0, ROmega=(13, 13),
+                                  q_min=-2.0, q_max=2.0, N_max=41, 
+                                  convergences=0, fomenko_points=(1, 1), 
+                                  parity_2_block= 1, ):
     
     """
         This script evaluate the projection after the blocking from a previous
@@ -582,8 +582,9 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     print("End run_b20_surface k-mixing: ", datetime.now().time())
     
 def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
+                            valid_Ks = [], 
                             seed_base=0, ROmega=(13, 13),
-                            q_min=-2.0, q_max=2.0, N_max=41, convergences=None,
+                            q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                             fomenko_points=(1, 1), 
                             parity_2_block= 1, ):
     """
@@ -608,6 +609,8 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
     
     ExeTaurus1D_B20_KMixing_OEblocking.IGNORE_SEED_BLOCKING  = True
     ExeTaurus1D_B20_KMixing_OEblocking.BLOCK_ALSO_NEGATIVE_K = False
+    ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION        = True 
+    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = True
     
     ExeTaurus1D_B20_KMixing_OEblocking.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD
@@ -617,12 +620,14 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
-    ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION = 3
-    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK     = parity_2_block
+    ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
+    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
-    if convergences != None:
-        ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION = convergences
-        ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = True
+    if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
+        ## Import the programs if they do not exist
+        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM))
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n, 
@@ -671,6 +676,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
+            'valid_Ks'   : valid_Ks,
         }
         
         input_args_projection = {
@@ -693,7 +699,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run(fomenko_points[0])
+            exe_.run(fomenko_points)
             exe_.globalTearDown()
         except ExecutionException as e:
             print(e)

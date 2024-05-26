@@ -210,7 +210,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                     setattr(self.inputObj, self.CONSTRAINT, b20_)
                     
                     isNeu = self._sp_dim if self.numberParity[1] else 0
-                    set_energies = []
+                    set_energies = {}
                     ## block the states in order
                     for sp_ in range(1, self._sp_dim +1):
                         self._current_sp = sp_
@@ -235,17 +235,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
                             ## no more minimizations for this deformation
                             no_results_for_K *= False
                             self._K_foundActionsTearDown(res)
-                            set_energies.append(f"{res.E_HFB:6.4f}")
+                            set_energies[sp_] = f"{res.E_HFB:6.4f}"
                             if not self.FIND_K_FOR_ALL_SPS: break
                         elif sp_ == self._sp_dim:
                             print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
                         else:
                             self._K_notFoundActionsTearDown(res)
                     
-                    set_energies = set(set_energies) # only apply if multiple E
                     if (self.FIND_K_FOR_ALL_SPS and not no_results_for_K):
-                        dont_select = len(set_energies) == 1
-                        self._selectStateFromCalculationSetTearDown(dont_select)
+                        # only apply if multiple E
+                        self._selectStateFromCalculationSetTearDown(set_energies)
                     ## B20 loop
                     print()
                 self._previous_bin_path = None
@@ -481,9 +480,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             for id_, res in self._container.getAllResults().items():
                 bin = self._container.get(id_)[1]
                 shutil.copy(f'{self._container.BU_folder}/{bin}', 'right_wf.bin')
-                ## No PAV projection 
+                
+                ## No PAV projection (only PN if VAP wf have it)
                 inp_pav = self.inputObj_PAV.copy()
                 inp_pav.setUpNoPAVCalculation()
+                if self.inputObj.z_Mphi > 0: inp_pav.z_Mphi = self.inputObj.z_Mphi
+                if self.inputObj.n_Mphi > 0: inp_pav.n_Mphi = self.inputObj.n_Mphi 
                 
                 res_ov: DataTaurusPAV = None
                 for empty_states_case in (0, 1):
@@ -532,9 +534,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         return id_sel, res, bin_, datfiles
     
-    def _selectStateFromCalculationSetTearDown(self, dont_select):
+    def _selectStateFromCalculationSetTearDown(self, set_energies):
         """
-        :dont_select <bool> apply when no selection criteria is needed.
+        :set_energies <dict[sp] : E_sp> apply when no selection criteria is needed.
         After all the results evaluated for each sp for a def/K case:
             1. choose the best result (minimal E_hfb/Overlap) if not unique 
             2. Copy the binary/ output/ selected to main folder.
@@ -543,7 +545,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             3. Apply the methods save_WF modified as in the 1st solution case.
         """
         self._save_results = True
-        
+        dont_select = len(set(set_energies.values())) == 1
+        ## NOTE: It's not necessary, attr _container has the results in order.
+                
         ## Select the wavefunciton and files to save..
         if dont_select:
             aux_ = self._container.get(None, list_index_element=0)
@@ -590,7 +594,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         else:
             print(" [No Result] found, PAV and coping ignored.")
             
-        ## Reset all  
+        ## Reset all
         self._container.clear()
         self._save_results = False       
     

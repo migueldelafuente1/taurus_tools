@@ -15,7 +15,7 @@ import shutil
 
 from tools.exec_blocking_Kprojections import _SlurmJob1DPreparation
 from tools.inputs import InputTaurus, InputTaurusPAV, InputTaurusMIX
-from tools.helpers import importAndCompile_taurus
+from tools.helpers import importAndCompile_taurus, elementNameByZ
 
 def sort_by_deformation_naming(def_list):
     """ sorting as [_0.8.bin, _0.6.bin, .. , 0.2.bin, 0.4.bin ...]"""
@@ -198,6 +198,7 @@ if __name__ == '__main__':
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 5)]
     # nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
     
+    # X = elementNameByZ[nuclei[0][0]]
     for K in ( 5,):
         MAIN_FLD = f'results/MgK{K}'
         oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
