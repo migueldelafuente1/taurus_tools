@@ -22,6 +22,7 @@ from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
     getSingleSpaceDegenerations, almostEqual
 from copy import copy
 from tools.Enums import Enum
+from tools.inputs import InputTaurus
 
 class DataObjectException(BaseException):
     pass
@@ -816,8 +817,8 @@ class DataTaurus(_DataObjectBase):
         self.memory_max_KB = 0
         
         self._filename = filename
-        self._evol_obj  = None
-        self._input_obj = None
+        self._evol_obj  : EvolTaurus  = None
+        self._input_obj : InputTaurus = None
         self._exported_filename = ''
         self._is_vap_calculation = False
         if not empty_data:
@@ -1137,6 +1138,10 @@ class DataTaurus(_DataObjectBase):
         self.date_start, self.date_start_iter, self.date_end_iter = d1, d2, d3
         
         return dict_
+    
+    @property
+    def is_vap_calculation(self):
+        return self._is_vap_calculation
     
     def isAxial(self, and_spherical=False):
         """ requires Ji=0 Jz^2=0 and beta20!=0"""

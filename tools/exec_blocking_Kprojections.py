@@ -20,7 +20,7 @@ from tools.Enums import OutputFileTypes
 
 
 
-class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
+class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     '''
     Protocol to export the different projections of the K momenum in odd-even 
     calculations:
@@ -57,6 +57,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self._blocking_section = False
         self._save_results     = True
         self._previous_bin_path= None
+        self._projectionAllowed= self.RUN_PROJECTION
         
         if self.FIND_K_FOR_ALL_SPS:
             self._save_results = False
@@ -184,84 +185,89 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         self.inputObj.eta_grad  = 0.03 
         self.inputObj.mu_grad   = 0.00
         self.inputObj.grad_type = 1
-        self.inputObj.iterations = 500
+        self.inputObj.iterations = 600
         
         # Perform the projections to save each K component
         for K in self._valid_Ks:
-            no_results_for_K = True
+            self._no_results_for_K = True
             self._current_K = K
             self._KComponentSetUp()
             
             self._exportable_txt = {}
             # oblate part
             for prolate in (0, 1):
-                for i, tail_ in self._final_bin_list_data[prolate].items():
+                for i_def, tail_ in self._final_bin_list_data[prolate].items():
                     
-                    self._curr_deform_index = i
+                    self._curr_deform_index = i_def
                     shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
                                 "initial_wf.bin")
                     
-                    ## fijar la deformacion i en la coordenada a constrain
-                    b20_ = dict(self._deformations_map[prolate]).get(i)
-                    # if prolate:
-                    #     b20_ = self.deform_prolate[i]
-                    # else: 
-                    #     b20_ = self.deform_oblate[i]
-                    setattr(self.inputObj, self.CONSTRAINT, b20_)
-                    
-                    isNeu = self._sp_dim if self.numberParity[1] else 0
-                    set_energies = {}
-                    ## block the states in order
-                    for sp_ in range(1, self._sp_dim +1):
-                        self._current_sp = sp_
-                        ## OPTIMIZATION:
-                        # * if state has a previous K skip
-                        # * if state has different jz initial skip
-                        # * the parity is necessary to match a pattern
-                        K_prev  = self._sp_blocked_K_already_found[i][sp_]
-                        parity_ = (-1)**self._sp_states_obj[sp_].l
-                        
-                        if (K_prev != 0) and (K_prev != K) : continue
-                        if self._sp_states_obj[sp_].m != K : continue
-                        if parity_ != self.PARITY_TO_BLOCK : continue 
-                        
-                        self.inputObj.qp_block = sp_ + isNeu
-                        
-                        ## minimize and save only if 2<Jz> = K
-                        res : DataTaurus = self._executeProgram()
-                        if not (res.properly_finished and res.isAxial()):
-                            continue
-                        if almostEqual(2 * res.Jz, K, 1.0e-5):
-                            ## no more minimizations for this deformation
-                            no_results_for_K *= False
-                            self._K_foundActionsTearDown(res)
-                            set_energies[sp_] = f"{res.E_HFB:6.4f}"
-                            if not self.FIND_K_FOR_ALL_SPS: break
-                        elif sp_ == self._sp_dim:
-                            print(f"  [no K={K}] no state for def[{i}]={b20_:>6.3f}")
-                        else:
-                            self._K_notFoundActionsTearDown(res)
-                    
-                    if (self.FIND_K_FOR_ALL_SPS and not no_results_for_K):
-                        # only apply if multiple E
-                        self._selectStateFromCalculationSetTearDown(set_energies)
+                    ## NOTE: Projection is not allowed for the _executeProgram,
+                    ## in order to do it after checking (or not) all sp-K, 
+                    ## PAV is done in _selectStateFromCalculationSetTearDown()
+                    self._projectionAllowed = False
+                    self._spIterationAndSelectionProcedure(i_def)
                     ## B20 loop
                     print()
                 self._previous_bin_path = None
-            if no_results_for_K: 
+            if self._no_results_for_K: 
                 print("  [WARNING] No blocked result for 2K=", K)
             # K-loop
         _ = 0
+    
+    def _spIterationAndSelectionProcedure(self, i_def):
+        ## fijar la deformacion i en la coordenada a constrain
+        prolate = int(i_def >= 0)
+        b20_ = dict(self._deformations_map[prolate]).get(i_def)
+        setattr(self.inputObj, self.CONSTRAINT, b20_)
+        
+        isNeu = self._sp_dim if self.numberParity[1] else 0
+        set_energies = {}
+        ## block the states in order
+        for sp_ in range(1, self._sp_dim +1):
+            self._current_sp = sp_
+            ## OPTIMIZATION:
+            # * if state has a previous K skip
+            # * if state has different jz initial skip
+            # * the parity is necessary to match a pattern
+            K_prev  = self._sp_blocked_K_already_found[i_def][sp_]
+            parity_ = (-1)**self._sp_states_obj[sp_].l
+            
+            if (K_prev != 0) and (K_prev  != self._current_K): continue
+            if self._sp_states_obj[sp_].m != self._current_K : continue
+            if parity_ != self.PARITY_TO_BLOCK : continue 
+            
+            self.inputObj.qp_block = sp_ + isNeu
+            
+            ## minimize and save only if 2<Jz> = K
+            res : DataTaurus = self._executeProgram()
+            if not (res.properly_finished and res.isAxial()):
+                continue
+            if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+                ## no more minimizations for this deformation
+                self._no_results_for_K *= False
+                self._K_foundActionsTearDown(res)
+                set_energies[sp_] = f"{res.E_HFB:6.4f}"
+                if not self.FIND_K_FOR_ALL_SPS: break
+            elif sp_ == self._sp_dim:
+                print(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
+            else:
+                self._K_notFoundActionsTearDown(res)
+        
+        if (self.FIND_K_FOR_ALL_SPS and not self._no_results_for_K):
+            # only apply if multiple E
+            self._selectStateFromCalculationSetTearDown(set_energies)
     
     def runProjection(self, **params):
         """
             NOTE: Projection can only be called for blocked functions, occurring
             in the blocking section. This method is called from _executeProgram()
         """
-        if self._blocking_section and self._save_results:
-            return ExeTaurus1D_DeformB20.runProjection(self, **params)
-        elif self.numberParity == (0, 0):
-            return ExeTaurus1D_DeformB20.runProjection(self, **params)
+        if self._projectionAllowed:
+            if self._blocking_section:
+                return ExeTaurus1D_DeformB20.runProjection(self, **params)
+            elif self.numberParity == (0, 0):
+                return ExeTaurus1D_DeformB20.runProjection(self, **params)
         return
     
     def saveFinalWFprocedure(self, result:DataTaurus, base_execution=False):
@@ -534,6 +540,28 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
         
         return id_sel, res, bin_, datfiles
     
+    def _runningAfterSelection(self, id_sel, bin_, datfiles):
+        """
+        Process of copying the resutls from fully converged results in the main
+        folder for normal process (PAV and teardown organization in BU subfolders
+        
+        Method to be overwritten for unconverged solutions.
+        """
+        ## This block export the chosen solution as if the program where 
+        ## executed. 
+        src = "{}/{}.OUT".format(self._container.BU_folder, id_sel)
+        shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
+        src = "{}/{}".format(self._container.BU_folder, bin_)
+        shutil.copy(src, 'final_wf.bin')
+        if datfiles:
+            for file_ in datfiles:
+                if not '.dat' in file_: file_ += '.dat'
+                file_2 = file_.replace(f"_{id_sel}", "")
+                shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
+                            file_2)
+        if self.RUN_PROJECTION:
+            self.runProjection()
+    
     def _selectStateFromCalculationSetTearDown(self, set_energies):
         """
         :set_energies <dict[sp] : E_sp> apply when no selection criteria is needed.
@@ -566,20 +594,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             self._choosen_state_data = (id_sel, res)
         
         if id_sel != None:
-            ## This block export the chosen solution as if the program where 
-            ## executed. 
-            src = "{}/{}.OUT".format(self._container.BU_folder, id_sel)
-            shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
-            src = "{}/{}".format(self._container.BU_folder, bin_)
-            shutil.copy(src, 'final_wf.bin')
-            if datfiles:
-                for file_ in datfiles:
-                    if not '.dat' in file_: file_ += '.dat'
-                    file_2 = file_.replace(f"_{id_sel}", "")
-                    shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
-                                file_2)
-            
-            if self.RUN_PROJECTION: self.runProjection()
+            self._runningAfterSelection(id_sel, bin_, datfiles)
             
             ## Execute exporting functions as it where the normal run
             self.saveFinalWFprocedure(res, False)
@@ -596,7 +611,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
             
         ## Reset all
         self._container.clear()
-        self._save_results = False       
+        self._save_results = False
     
     def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
         """
@@ -624,11 +639,149 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_DeformB20):
 
 
 
-# class ExeTaurus1D_B20_OEblocking_Ksurfaces_pro(ExeTaurus1D_B20_OEblocking_Ksurfaces):
-#
-#     pass
-
-
+class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
+    
+    """
+    Accelerated way to obtain the blocking-overlap comparison,
+        1. first swap of sp-states is done for rather small number of iterations
+           minimization is not achieved but enought to evaluate <ref | 1 | sp phi>
+           this is ommited for starting case.
+        2. With the overlap results, reevaluate the optimal solution for the 
+           convergence precission. After that evaluate the PAV over itself.
+    """
+    
+    def run(self, fomenko_points=None):
+        """
+        Modifyed method to obtain the reminization with a blocked state.
+        """
+        self._blocking_section = False
+        ExeTaurus1D_DeformB20.run(self)
+        
+        if fomenko_points:
+            self.inputObj.z_Mphi = fomenko_points[0]
+            self.inputObj.n_Mphi = fomenko_points[1]
+            self.inputObj_PAV.z_Mphi = fomenko_points[0]
+            self.inputObj_PAV.n_Mphi = fomenko_points[1]            
+        ##  
+        self._blocking_section = True
+        if self.numberParity == (0, 0): return
+        print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
+        print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
+        print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
+        
+        self.inputObj.seed = 1
+        self.inputObj.eta_grad  = 0.03 
+        self.inputObj.mu_grad   = 0.00
+        self.inputObj.grad_type = 1
+        _default_vap_iters = self.inputObj.iterations
+        
+        # Perform the projections to save each K component
+        for K in self._valid_Ks:
+            self._no_results_for_K = True
+            self._current_K = K
+            self._KComponentSetUp()
+            
+            self._exportable_txt = {}
+            # oblate part
+            for prolate in (0, 1):
+                for i_def, tail_ in self._final_bin_list_data[prolate].items():
+                    
+                    self._curr_deform_index = i_def
+                    shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
+                                "initial_wf.bin")
+                    
+                    self.inputObj.iterations = _default_vap_iters
+                    if not i_def in (-1, 0): self.inputObj.iterations = 60 
+                    ## NOTE: Projection is not allowed for the _executeProgram,
+                    ## in order to do it after checking (or not) all sp-K, 
+                    ## PAV is done in _selectStateFromCalculationSetTearDown()
+                    self._projectionAllowed = False
+                    self._spIterationAndSelectionProcedure(i_def)
+                    
+                self._previous_bin_path = None
+            if self._no_results_for_K: 
+                print("  [WARNING] No blocked result for 2K=", K)
+            # K-loop
+        _ = 0
+    
+    def _spIterationAndSelectionProcedure(self, i_def):
+        ## fijar la deformacion i en la coordenada a constrain
+        prolate = int(i_def >= 0)
+        b20_ = dict(self._deformations_map[prolate]).get(i_def)
+        setattr(self.inputObj, self.CONSTRAINT, b20_)
+        
+        isNeu = self._sp_dim if self.numberParity[1] else 0
+        set_energies = {}
+        ## block the states in order
+        for sp_ in range(1, self._sp_dim +1):
+            self._current_sp = sp_
+            ## OPTIMIZATION:
+            # * if state has a previous K skip
+            # * if state has different jz initial skip
+            # * the parity is necessary to match a pattern
+            K_prev  = self._sp_blocked_K_already_found[i_def][sp_]
+            parity_ = (-1)**self._sp_states_obj[sp_].l
+            
+            if (K_prev != 0) and (K_prev  != self._current_K): continue
+            if self._sp_states_obj[sp_].m != self._current_K : continue
+            if parity_ != self.PARITY_TO_BLOCK : continue 
+            
+            self.inputObj.qp_block = sp_ + isNeu
+            
+            ## minimize and save only if 2<Jz> = K
+            res : DataTaurus = self._executeProgram()
+            valid_ = abs(res._evol_obj.e_hfb[-2] - res._evol_obj.e_hfb[-1]) < 0.1
+            valid_ = valid_ or res._evol_obj.grad[-1] < 0.1
+            if self._curr_deform_index in (0, -1):
+                valid_ = valid_ and res.properly_finished
+            
+            if not (valid_ and res.isAxial()):
+                continue
+            if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+                ## no more minimizations for this deformation
+                self._no_results_for_K *= False
+                self._K_foundActionsTearDown(res)
+                set_energies[sp_] = f"{res.E_HFB:6.4f}"
+                if not self.FIND_K_FOR_ALL_SPS: break
+            elif sp_ == self._sp_dim:
+                print(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
+            else:
+                self._K_notFoundActionsTearDown(res)
+        
+        if (self.FIND_K_FOR_ALL_SPS and not self._no_results_for_K):
+            # only apply if multiple E
+            self._selectStateFromCalculationSetTearDown(set_energies)
+    
+    def _runningAfterSelection(self, id_sel, bin_, datfiles):
+        """
+        Process of copying the resutls from fully converged results in the main
+        folder for normal process (PAV and teardown organization in BU subfolders
+        
+        Method to be overwritten for unconverged solutions.
+        """
+        if self._curr_deform_index in (0, -1):
+            ## First states are converged to ensure a good starting value
+            ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
+                _runningAfterSelection(self, id_sel, bin_, datfiles)
+            return
+        ## This block export the chosen solution as if the program where 
+        ## executed.
+        src = "{}/{}".format(self._container.BU_folder, bin_)
+        shutil.copy(src, 'initial_wf.bin')
+                
+        self.inputObj.iterations = 1000
+        with open(self.ITYPE.DEFAULT_INPUT_FILENAME, 'w+') as f:
+            f.write(self.inputObj.getText4file())
+        ## NOTE: Run taurus_vap this way to avoid save-results tear down stuff.
+        os.system('./taurus_vap.exe < {} > {}'
+                  .format(self.ITYPE.DEFAULT_INPUT_FILENAME,
+                          self.DTYPE.DEFAULT_OUTPUT_FILENAME))
+        ## NOTE: .dat files are generated and not to be copied
+        
+        if self.RUN_PROJECTION: self.runProjection()
+        
+        shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
 
 
 class _SlurmJob1DPreparation():
