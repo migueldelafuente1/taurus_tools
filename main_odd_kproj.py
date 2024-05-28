@@ -97,7 +97,7 @@ if __name__ == '__main__':
         seed_base=3, ROmega=(0,0),
         q_min=-0.8, q_max=0.8, N_max=5, convergences=0,   ## 0.6, 25
         parity_2_block=-1,
-        fomenko_points=(7, 7),
+        fomenko_points=(0, 7),
         fully_converge_blocking_sts=True,
     )
     run_b20_FalseOE_Kmixing(*args, **kwargs)
