@@ -671,6 +671,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
         print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
         print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
+        print(f"   Valid Ks = {self._valid_Ks}")
         
         self.inputObj.seed = 1
         self.inputObj.eta_grad  = 0.03 

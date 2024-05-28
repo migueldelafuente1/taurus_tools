@@ -76,11 +76,28 @@ if __name__ == '__main__':
         parity_2_block=1,
         fomenko_points=(7, 7),
     )
+    # run_b20_FalseOE_Kmixing(*args, **kwargs)
+    # raise Exception("STOP HERE.")
+    #
+    # K2block = 1
+    # args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
+    # run_b20_FalseOE_Block1KAndPAV(*args, **kwargs, )
+    #
+    # raise Exception("STOP HERE.")
+
+    ## TEST with the h11/2 state
+    
+    interactions_B1 = {(0, 1): 'B1_h11o2', }
+    nucleus = sorted(list(interactions_B1.keys()))
+    
+    args = (nucleus, interactions_B1, GognyEnum.B1)
+    kwargs = dict(
+        valid_Ks = [1, 3, 5, 7, 9, 11], 
+        seed_base=3, ROmega=(0,0),
+        q_min=-0.8, q_max=0.8, N_max=5, convergences=0,   ## 0.6, 25
+        parity_2_block=-1,
+        fomenko_points=(7, 7),
+    )
     run_b20_FalseOE_Kmixing(*args, **kwargs)
-    raise Exception("STOP HERE.")
     
-    K2block = 1
-    args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
-    run_b20_FalseOE_Block1KAndPAV(*args, **kwargs, )
     
-    raise Exception("STOP HERE.")
