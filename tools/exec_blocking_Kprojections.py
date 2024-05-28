@@ -64,14 +64,14 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             self._container    = BaseResultsContainer1D()
             # self._contaienrPAV = BaseResultsContainer1D("TEMP_BU_PAV")
     
-    def setInputCalculationArguments(self, core_calc=False, axial_calc=False, 
-                                           spherical_calc=False, **input_kwargs):
-        
-        ExeTaurus1D_DeformB20.setInputCalculationArguments(self, 
-                                                           core_calc=core_calc, 
-                                                           axial_calc=axial_calc, 
-                                                           spherical_calc=spherical_calc, 
-                                                           **input_kwargs)
+    # def setInputCalculationArguments(self, core_calc=False, axial_calc=False, 
+    #                                        spherical_calc=False, **input_kwargs):
+    #
+    #     ExeTaurus1D_DeformB20.setInputCalculationArguments(self, 
+    #                                                        core_calc=core_calc, 
+    #                                                        axial_calc=axial_calc, 
+    #                                                        spherical_calc=spherical_calc, 
+    #                                                        **input_kwargs)
     
     def setUpExecution(self, reset_seed=False, valid_Ks=[], *args, **kwargs):
         """

@@ -55,7 +55,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         for ext_ in OutputFileTypes.members():
             if os.path.exists(self.interaction+ext_):
                 shutil.copy(self.interaction+ext_,  self.DTYPE.BU_folder)
-        
+        _=0
     
     def setUpExecution(self, reset_seed=False,  *args, **kwargs):
         """
@@ -73,8 +73,6 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         res = None
         self._preconvergence_steps = 0
         self.printExecutionResult(None, print_head=True)
-        ## read the properties of the basis for the interaction
-        self._getStatesAndDimensionsOfHamiltonian()
         
         _DO_ODD = 1 in self.numberParity and (not self.IGNORE_SEED_BLOCKING)
         if self._1stSeedMinima == None or reset_seed:                
@@ -249,42 +247,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         if not outfn in self._list_PAV_outputs:
             self._list_PAV_outputs.append(outfn)
         
-        shutil.move(DataTaurusPAV.DEFAULT_OUTPUT_FILENAME, outpth)
-    
-    def _getStatesAndDimensionsOfHamiltonian(self):
-        """
-        Read the hamiltonian and get the sp states/shell for the calculation
-        """
-        ## the hamiltonian is already copied in CWD for execution
-        sh_states, l_ge_10 = [], True
-        with open(self.interaction+OutputFileTypes.sho, 'r') as f:
-            data = f.readlines()
-            hmty = data[1].strip().split()
-            if int(hmty[0]) ==  1:
-                sh_states = hmty[2:] # Antoine_ v.s. hamiltonians 
-                l_ge_10 = False
-            else:
-                line = data[2].strip().split()
-                sh_states = line[1:]
-        sh_states = [int(st) for st in sh_states]
-        
-        ## construct sp_dim for index randomization (sh_state, deg(j))
-        sp_states = map(lambda x: (int(x), readAntoine(x, l_ge_10)[2] + 1), sh_states)
-        sp_states = dict(list(sp_states))
-        sp_dim    = sum(list(sp_states.values()))
-        
-        self._sh_states = sh_states
-        self._sp_states = sp_states
-        self._sp_dim    = sp_dim
-        
-        sp_2j = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[2]), sh_states))
-        self._sp_2jmax = max(sp_2j.values())
-        self._sp_2jmin = min(sp_2j.values())
-        
-        sp_n = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[0]), sh_states))
-        self._sp_n_max = max(sp_n.values())
-        self._sp_n_min = min(sp_n.values())
-        
+        shutil.move(DataTaurusPAV.DEFAULT_OUTPUT_FILENAME, outpth)        
     
     def _oddNumberParitySeedConvergence(self):
         """

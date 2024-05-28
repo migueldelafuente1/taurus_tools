@@ -14,8 +14,8 @@ from random import random
 from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
 from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS
-from tools.Enums import Enum
+    OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS, readAntoine
+from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 
 
@@ -184,6 +184,9 @@ class _Base1DTaurusExecutor(object):
         !! Values given will be checked by the inputSetter when instanced.
         """
         
+        ## read the properties of the basis for the interaction
+        self._getStatesAndDimensionsOfHamiltonian()
+        
         assert not(core_calc and axial_calc), ExecutionException(
             "No-core Axial and valence set ups are mutually exclusive")
         if self.CONSTRAINT in input_kwargs.keys():
@@ -199,7 +202,14 @@ class _Base1DTaurusExecutor(object):
             if spherical_calc:
                 self.sphericalSymmetryRequired = True
                 input_kwargs[InputTaurus.ArgsEnum.seed] = 2
-                
+            
+            ## check if there is only one parity-shell states to supress odd-Q constraints
+            parities = [readAntoine(i, l_ge_10=True)[1] for i in self._sh_states]
+            parities = set([(-1)**i for i in parities])
+            if len(parities) == 1:
+                for q_const in self.inputObj.ConstrEnum.members():
+                    if q_const.startswith('b1') or q_const.startswith('b3'):
+                        setattr(self.inputObj, q_const, None)                
         
         _check = [(hasattr(self.ITYPE.ArgsEnum,k) or 
                    hasattr(self.ITYPE.ConstrEnum,k)) for k in input_kwargs.keys()]
@@ -213,6 +223,40 @@ class _Base1DTaurusExecutor(object):
         self._base_seed_type = self.inputObj.seed
         # NOTE:  by assign the _DD (class) dictionary in input, changes in the
         # attribute _DDparams is transfered to the input.
+    
+    def _getStatesAndDimensionsOfHamiltonian(self):
+        """
+        Read the hamiltonian and get the sp states/shell for the calculation
+        """
+        ## the hamiltonian is already copied in CWD for execution
+        sh_states, l_ge_10 = [], True
+        with open(self.interaction+OutputFileTypes.sho, 'r') as f:
+            data = f.readlines()
+            hmty = data[1].strip().split()
+            if int(hmty[0]) ==  1:
+                sh_states = hmty[2:] # Antoine_ v.s. hamiltonians 
+                l_ge_10 = False
+            else:
+                line = data[2].strip().split()
+                sh_states = line[1:]
+        sh_states = [int(st) for st in sh_states]
+        
+        ## construct sp_dim for index randomization (sh_state, deg(j))
+        sp_states = map(lambda x: (int(x), readAntoine(x, l_ge_10)[2] + 1), sh_states)
+        sp_states = dict(list(sp_states))
+        sp_dim    = sum(list(sp_states.values()))
+        
+        self._sh_states = sh_states
+        self._sp_states = sp_states
+        self._sp_dim    = sp_dim
+        
+        sp_2j = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[2]), sh_states))
+        self._sp_2jmax = max(sp_2j.values())
+        self._sp_2jmin = min(sp_2j.values())
+        
+        sp_n = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[0]), sh_states))
+        self._sp_n_max = max(sp_n.values())
+        self._sp_n_min = min(sp_n.values())
     
     def setUpExecution(self, *args, **kwargs):
         """
