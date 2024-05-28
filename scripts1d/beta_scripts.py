@@ -668,7 +668,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         input_args_onrun = {**vap_args,
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
-            IArgsEnum.iterations: 800,
+            IArgsEnum.iterations: 1000,
             IArgsEnum.grad_type: 1,
             IArgsEnum.eta_grad : 0.015,
             IArgsEnum.mu_grad  : 0.02, # 0.5
