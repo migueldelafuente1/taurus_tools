@@ -216,7 +216,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         _ = 0
     
     def _spIterationAndSelectionProcedure(self, i_def):
-        ## fijar la deformacion i en la coordenada a constrain
+        """
+        Iteration over all the single-particle states until getting a correct 
+        solution (axial and same K)
+        * Getting the first solution or try over all the possible blockings
+        """
+        ## fix the deformation i to the main constraint
         prolate = int(i_def >= 0)
         b20_ = dict(self._deformations_map[prolate]).get(i_def)
         setattr(self.inputObj, self.CONSTRAINT, b20_)
@@ -652,12 +657,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
            convergence precission. After that evaluate the PAV over itself.
     """
     
-    def run(self, fomenko_points=None):
+    FULLY_CONVERGE_BLOCKING_ITER = False  ## Get the final blocked-states solution
+    
+    def run(self, fomenko_points=None, fully_converge_blocking_sts=False):
         """
         Modifyed method to obtain the reminization with a blocked state.
         """
         self._blocking_section = False
         ExeTaurus1D_DeformB20.run(self)
+        
+        self.FULLY_CONVERGE_BLOCKING_ITER = fully_converge_blocking_sts
         
         if fomenko_points:
             self.inputObj.z_Mphi = fomenko_points[0]
@@ -709,6 +718,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         _ = 0
     
     def _spIterationAndSelectionProcedure(self, i_def):
+        """
+        Iteration over all the single-particle states until getting a correct 
+        solution (axial and same K)
+        * Getting the first solution or try over all the possible blockings
+        """
+        if self.FULLY_CONVERGE_BLOCKING_ITER:
+            ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
+                _spIterationAndSelectionProcedure(self, i_def)
+            return
+        
         ## fijar la deformacion i en la coordenada a constrain
         prolate = int(i_def >= 0)
         b20_ = dict(self._deformations_map[prolate]).get(i_def)
@@ -765,7 +784,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         
         Method to be overwritten for unconverged solutions.
         """
-        if self._curr_deform_index in (0, -1):
+        
+        if self.FULLY_CONVERGE_BLOCKING_ITER or self._curr_deform_index in (0,-1):
             ## First states are converged to ensure a good starting value
             ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
                 _runningAfterSelection(self, id_sel, bin_, datfiles)

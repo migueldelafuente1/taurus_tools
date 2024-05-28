@@ -455,7 +455,8 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   seed_base=0, ROmega=(13, 13),
                                   q_min=-2.0, q_max=2.0, N_max=41, 
                                   convergences=0, fomenko_points=(1, 1), 
-                                  parity_2_block= 1, ):
+                                  parity_2_block= 1, 
+                                  fully_converge_blocking_sts=False,):
     
     """
         This script evaluate the projection after the blocking from a previous
@@ -574,7 +575,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run(fomenko_points)
+            exe_.run(fomenko_points, fully_converge_blocking_sts)
             exe_.globalTearDown()
         except ExecutionException as e:
             print(e)
@@ -586,7 +587,8 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
                             seed_base=0, ROmega=(13, 13),
                             q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                             fomenko_points=(1, 1), 
-                            parity_2_block= 1, ):
+                            parity_2_block= 1, fully_converge_blocking_sts=False,
+                            ):
     """
     Reqire:
     Args:
@@ -699,7 +701,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run(fomenko_points)
+            exe_.run(fomenko_points, fully_converge_blocking_sts)
             exe_.globalTearDown()
         except ExecutionException as e:
             print(e)
