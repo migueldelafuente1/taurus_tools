@@ -542,6 +542,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     
     def _runningAfterSelection(self, id_sel, bin_, datfiles):
         """
+            To be run in _selectStateFromCalculationSetTearDown()
+        
         Process of copying the resutls from fully converged results in the main
         folder for normal process (PAV and teardown organization in BU subfolders
         
@@ -692,7 +694,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
                                 "initial_wf.bin")
                     
                     self.inputObj.iterations = _default_vap_iters
-                    if not i_def in (-1, 0): self.inputObj.iterations = 60 
+                    if not i_def in (-1, 0): self.inputObj.iterations = 100
                     ## NOTE: Projection is not allowed for the _executeProgram,
                     ## in order to do it after checking (or not) all sp-K, 
                     ## PAV is done in _selectStateFromCalculationSetTearDown()
@@ -755,6 +757,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
     
     def _runningAfterSelection(self, id_sel, bin_, datfiles):
         """
+            to be run in _selectStateFromCalculationSetTearDown()
+        
         Process of copying the resutls from fully converged results in the main
         folder for normal process (PAV and teardown organization in BU subfolders
         
@@ -771,6 +775,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         shutil.copy(src, 'initial_wf.bin')
                 
         self.inputObj.iterations = 1000
+        self.inputObj.qp_block   = 0 # The 1st result has already been blocked
         with open(self.ITYPE.DEFAULT_INPUT_FILENAME, 'w+') as f:
             f.write(self.inputObj.getText4file())
         ## NOTE: Run taurus_vap this way to avoid save-results tear down stuff.
@@ -780,9 +785,6 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         ## NOTE: .dat files are generated and not to be copied
         
         if self.RUN_PROJECTION: self.runProjection()
-        
-        shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
-
 
 class _SlurmJob1DPreparation():
     
