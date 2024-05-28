@@ -649,7 +649,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         ##          see Note in script run_b20_FalseOE_Block1KAndPAV()
         IArgsEnum = InputTaurus.ArgsEnum
         vap_args = {IArgsEnum.z_Mphi : 0, IArgsEnum.n_Mphi : 0,}
-        if ((z+n) % 2 == 0 and n % 2 == 0):
+        if ((z+n) % 2 == 0 and n % 2 == 0 and not 1 in (z, n)):
             ## in case of even-even one can do the VAP
             vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
                         IArgsEnum.n_Mphi : fomenko_points[1],}
