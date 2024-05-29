@@ -7,6 +7,8 @@ import os
 import subprocess
 import numpy as np
 import shutil
+from datetime import datetime
+from debugpy._vendored.pydevd._pydevd_bundle.pydevd_cython import self
 
 LINE_1 = "\n================================================================================\n"
 LINE_2 = "\n--------------------------------------------------------------------------------\n"
@@ -362,3 +364,52 @@ class QN_1body_jj(object):
         lab_ = self._particleLabels[self.m_t]
         return "(n:{},l:{},j:{}/2){}".format(self.n, self.l, self.j, lab_)
     
+
+#===============================================================================
+#  LOGGING - Object
+#===============================================================================
+
+class _Log(object):
+    
+    _instance = None
+    
+    LOG_FILENAME = "__taurus_tools.LOG"
+    
+    @classmethod
+    def __new__(cls):
+        if cls._instance == None:
+            cls._instance = super(_Log, cls).__new__(cls)
+            # clean existing LOG file to indexed file __taurus.LOG -> __
+            if os.path.exists(cls.LOG_FILENAME):
+                prev_logs = filter(lambda f: f.endswith(cls.LOG_FILENAME), os.listdir())
+                prev_logs = prev_logs.__len__()
+                shutil.move(cls.LOG_FILENAME, '__{}{}'.format(len(prev_logs), 
+                                                              cls.LOG_FILENAME))
+            
+            with open(cls.LOG_FILENAME, 'w+') as f:
+                now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                f.write(LINE_1+" LOGGING TAURUS-TOOLS [{}]".format(now_)+LINE_1)
+            
+        return cls._instance
+    
+    def write(self, *str_args):
+        if not hasattr(self._instance, 'log'):
+            self._instance.log = []
+        now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        str_args.insert(0, "[{}]::".format(now_))
+        self._instance.log.append(" ".join([str(x) for x in str_args]))
+        
+        with open(self.LOG_FILENAME, 'w+') as f:
+            f.write('\n'.join(self._instance.log))
+        
+    
+__log_file = _Log()
+
+def printf(*args):
+    """
+    Function to log prints from python, prints after saving.
+    """
+    __log_file.write(*args)
+    print(*args)
+    
+        
