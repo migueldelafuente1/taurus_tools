@@ -82,8 +82,10 @@ class _Log(object):
         
         if os.getcwd().startswith('C:'): return
         
+        # with open(self.LOG_FILENAME, 'w') as f:
+            # f.write('\n'.join(self._instance.log))
         with open(self.LOG_FILENAME, 'a') as f:
-            f.write('\n'.join(self._instance.log) + '\n')
+            f.write(self._instance.log[-1] + '\n')
 
 
 __log_file = _Log()
