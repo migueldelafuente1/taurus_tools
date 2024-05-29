@@ -1179,10 +1179,7 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                         f_.write(self.inputObj_PAV.getText4file())
                     shutil.copy(InputTaurusPAV.PROGRAM, FLD_2)
                     
-                    
                 _  = 0
-                
-                
         ## Execute projection.
         _ = 0
 

@@ -638,6 +638,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
+        printf("pito")
         InputTaurus.set_inputDDparamsFile(
             **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
                InputTaurus.InpDDEnum.r_dim     : ROmega[0],

@@ -8,7 +8,7 @@ from tools.Enums import GognyEnum
 from scripts1d.beta_scripts import run_b20_FalseOE_Kprojections_Gogny, \
     run_b20_FalseOE_Kmixing, run_b20_FalseOE_Block1KAndPAV
 from tools.inputs import InputTaurus
-from tools.helpers import importAndCompile_taurus, printf
+from tools.helpers import importAndCompile_taurus, printf, __log_file
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 

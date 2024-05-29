@@ -4,7 +4,7 @@ Created on Jan 10, 2023
 @author: Miguel
 '''
 import os
-from tools.helpers import importAndCompile_taurus, TBME_SUITE
+from tools.helpers import importAndCompile_taurus, TBME_SUITE, __log_file
 
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
