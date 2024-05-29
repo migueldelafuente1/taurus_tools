@@ -61,9 +61,10 @@ class _Log(object):
             # clean existing LOG file to indexed file __taurus.LOG -> __
             if os.path.exists(cls.LOG_FILENAME):
                 prev_logs = filter(lambda f: f.endswith(cls.LOG_FILENAME), os.listdir())
-                prev_logs = list(prev_logs).__len__()
-                shutil.move(cls.LOG_FILENAME, '__{}{}'.format(len(prev_logs), 
-                                                              cls.LOG_FILENAME))
+                prev_logs = list(prev_logs)
+                dest_file = '__{}{}'.format(len(prev_logs), cls.LOG_FILENAME)
+                print("... moving previous log file to [{}]".format(dest_file))
+                shutil.move(cls.LOG_FILENAME, dest_file)
             with open(cls.LOG_FILENAME, 'w+') as f:
                 now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 f.write(LINE_1+" LOGGING TAURUS-TOOLS [{}]".format(now_)+LINE_1)
@@ -81,10 +82,10 @@ class _Log(object):
         
         if os.getcwd().startswith('C:'): return
         
-        with open(self.LOG_FILENAME, 'w+') as f:
-            f.write('\n'.join(self._instance.log))
-        
-    
+        with open(self.LOG_FILENAME, 'a') as f:
+            f.write('\n'.join(self._instance.log) + '\n')
+
+
 __log_file = _Log()
 
 def printf(*args):
@@ -419,6 +420,5 @@ class QN_1body_jj(object):
     def __str__(self):
         lab_ = self._particleLabels[self.m_t]
         return "(n:{},l:{},j:{}/2){}".format(self.n, self.l, self.j, lab_)
-
     
-        
+
