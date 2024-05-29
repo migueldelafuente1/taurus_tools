@@ -43,7 +43,6 @@ OUTPUT_HEADER_SEPARATOR  = ' ## '
 #===============================================================================
 #  LOGGING - Object
 #===============================================================================
-
 class _Log(object):
     
     _instance = None
@@ -51,16 +50,20 @@ class _Log(object):
     LOG_FILENAME = "__taurus_tools.LOG"
     
     @classmethod
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance == None:
-            cls._instance = super(_Log, cls).__new__(cls)
+            inst = super().__new__(*args, **kwargs)
+            cls._instance = inst
+            if os.getcwd().startswith('C:'):
+                ## Do not save in file for Windows.
+                return cls._instance
+            
             # clean existing LOG file to indexed file __taurus.LOG -> __
             if os.path.exists(cls.LOG_FILENAME):
                 prev_logs = filter(lambda f: f.endswith(cls.LOG_FILENAME), os.listdir())
                 prev_logs = prev_logs.__len__()
                 shutil.move(cls.LOG_FILENAME, '__{}{}'.format(len(prev_logs), 
                                                               cls.LOG_FILENAME))
-            
             with open(cls.LOG_FILENAME, 'w+') as f:
                 now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 f.write(LINE_1+" LOGGING TAURUS-TOOLS [{}]".format(now_)+LINE_1)
@@ -68,11 +71,15 @@ class _Log(object):
         return cls._instance
     
     def write(self, *str_args):
+        
         if not hasattr(self._instance, 'log'):
             self._instance.log = []
+        
         now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        str_args.insert(0, "[{}]::".format(now_))
+        str_args = ("[{}]::".format(now_), *str_args)
         self._instance.log.append(" ".join([str(x) for x in str_args]))
+        
+        if os.getcwd().startswith('C:'): return
         
         with open(self.LOG_FILENAME, 'w+') as f:
             f.write('\n'.join(self._instance.log))
