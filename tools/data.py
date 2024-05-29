@@ -23,6 +23,7 @@ from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
 from copy import copy
 from tools.Enums import Enum
 from tools.inputs import InputTaurus
+from tools.helpers import printf
 
 class DataObjectException(BaseException):
     pass
@@ -153,10 +154,10 @@ class EvolTaurus(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
-                print(" (TEvC)>> EXCEPTION from Taurus Constructor >> self::")
-                print(self)
-                print(" (TEvC)>> exception:: ", e, "<<(TC)")
-                print(" (TEvC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
+                printf(" (TEvC)>> EXCEPTION from Taurus Constructor >> self::")
+                printf(self)
+                printf(" (TEvC)>> exception:: ", e, "<<(TC)")
+                printf(" (TEvC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
     
     def get_results(self):
         
@@ -180,18 +181,18 @@ class EvolTaurus(_DataObjectBase):
             
         self._processing_data_and_evolution(data_inp, data_evol, True)
         
-        print()
-        print("ITER MAX: ", self.iter_max, self.z, self.n)
-        print("LEN GRAD: ", self.grad.__len__())
-        print("LEN EHFB: ", self.e_hfb.__len__())
-        print("LEN ETA: ", self.eta.__len__())
-        print("LEN MU: ", self.mu.__len__())
-        print("LEN VAR Z:", self.var_Z.__len__())
-        print("LEN VAR N:", self.var_N.__len__())
+        printf()
+        printf("ITER MAX: ", self.iter_max, self.z, self.n)
+        printf("LEN GRAD: ", self.grad.__len__())
+        printf("LEN EHFB: ", self.e_hfb.__len__())
+        printf("LEN ETA: ", self.eta.__len__())
+        printf("LEN MU: ", self.mu.__len__())
+        printf("LEN VAR Z:", self.var_Z.__len__())
+        printf("LEN VAR N:", self.var_N.__len__())
         if self.top_h2:
-            print("LEN htop_h2: ", self.top_h2.__len__())
+            printf("LEN htop_h2: ", self.top_h2.__len__())
         if self.sp_dens:
-            print("LEN sp_dens: ", self.sp_dens.__len__())
+            printf("LEN sp_dens: ", self.sp_dens.__len__())
     
     # def __str__(self):
     #     aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
@@ -232,7 +233,7 @@ class EvolTaurus(_DataObjectBase):
                 line = line.replace(_TR_TEST_STARTKEY, '').split()
                 tr_ratio = float(line[-1]) - 6
                 if abs(tr_ratio) > 1.0e-3:
-                    print("[WARNING] Trace Test went wrong (not 6.0), got", line[-1])
+                    printf("[WARNING] Trace Test went wrong (not 6.0), got", line[-1])
             
             else:
                 line = line.split()
@@ -257,7 +258,7 @@ class EvolTaurus(_DataObjectBase):
                 elif "---" in line[0]: # hline for the table, dismiss
                     continue
                 else:
-                    print("[TEvol. Parse WARNING]: unknown case (skip):", line)
+                    printf("[TEvol. Parse WARNING]: unknown case (skip):", line)
         
     
     def _read_HO_prop(self, line):
@@ -347,7 +348,7 @@ class EvolTaurus(_DataObjectBase):
             self.get_results()
         
         if self.iter_max <= 1:
-            print("[Warning DD evol] Cannot print revolution results for void calculation.")
+            printf("[Warning DD evol] Cannot print revolution results for void calculation.")
             return 
         import matplotlib.pyplot as plt
         
@@ -825,10 +826,10 @@ class DataTaurus(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
-                print(" (TC)>> EXCEPTION from Taurus Constructor >> self::")
-                print(self)
-                print(" (TC)>> exception:: ", e, "<<(TC)")
-                print(" (TC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
+                printf(" (TC)>> EXCEPTION from Taurus Constructor >> self::")
+                printf(self)
+                printf(" (TC)>> exception:: ", e, "<<(TC)")
+                printf(" (TC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
                 
         
     def __str__(self):
@@ -860,9 +861,9 @@ class DataTaurus(_DataObjectBase):
             self._evol_obj = EvolTaurus(None, empty_data=True)
             self._evol_obj._processing_data_and_evolution(data_inp, data_evol, True)
         except BaseException as e_:
-            print(" (TEC)>> EXCEPTION found at Evol Taurus reading. ")
-            print(e_)
-            print(" (TEC)>> seting unreaded _evol_obj values to None.")
+            printf(" (TEC)>> EXCEPTION found at Evol Taurus reading. ")
+            printf(e_)
+            printf(" (TEC)>> seting unreaded _evol_obj values to None.")
             self._evol_obj.date_end_iter = self._evol_obj.date_start_iter
         
         _attr2copy = ['date_start', 'date_start_iter', 'date_end_iter',
@@ -909,7 +910,7 @@ class DataTaurus(_DataObjectBase):
         self._processing_data_and_evolution(data_inp, data_evol)
         
         for line in data:            
-            # print(line)
+            # printf(line)
             if 'Number of' in line:
                 self._getNumberNucleons(line)
             elif self.HeaderEnum.Parity in line:
@@ -1020,7 +1021,7 @@ class DataTaurus(_DataObjectBase):
             vals = self._getValues(line, self.HeaderEnum.Q_44)
             self.q44_p, self.q44_n  = vals[0], vals[1]
             self.q44_isoscalar, self.q44_isovector = vals[2], vals[3]
-        #print("deform results :: [{}]".format(vals))
+        #printf("deform results :: [{}]".format(vals))
     
     def _roundGamma0(self, vals):
         if abs(vals[2] - 180) < 1.e-5 or abs(vals[2] - 360) < 1.e-5:
@@ -1224,10 +1225,10 @@ class DataTaurusPAV(_DataObjectBase):
             except Exception as e:
                 if isinstance(e, ValueError):
                     self._nanComponentsInResults = True
-                print(" (TC2)>> resEXCEPTION from Taurus Constructor >> self::")
-                print(self)
-                print(" (TC2)>> exception:: ", e, "<<(TC2)")
-                print(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
+                printf(" (TC2)>> resEXCEPTION from Taurus Constructor >> self::")
+                printf(self)
+                printf(" (TC2)>> exception:: ", e, "<<(TC2)")
+                printf(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
     
     def __str__(self):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
@@ -1310,7 +1311,7 @@ class DataTaurusPAV(_DataObjectBase):
                     continue
             
             if '****' in line: # Line fails (i.e. J < K blocked)
-                print("[WRN]!, excluded line ", line)
+                printf("[WRN]!, excluded line ", line)
                 continue
         
             if   self._allNVcomp_block:
@@ -1393,8 +1394,8 @@ class DataTaurusPAV(_DataObjectBase):
         
         self.sum_JP_norm  .append(vals[0])
         self.sum_JP_energy.append(vals[2])
-        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(J,P)=", j, p)
-        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(J,P)=", j, p)
+        if abs(vals[1]) > 2.e-7: printf("[ERROR]Imaginary part of 1(J,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: printf("[ERROR]Imaginary part of E(J,P)=", j, p)
     
     def _getSumKPComponents_blockline(self, line):
         """ Block for K components"""
@@ -1411,8 +1412,8 @@ class DataTaurusPAV(_DataObjectBase):
         
         self.sum_KP_norm  .append(vals[0])
         self.sum_KP_energy.append(vals[2])
-        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(K,P)=", j, p)
-        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(K,P)=", j, p)
+        if abs(vals[1]) > 2.e-7: printf("[ERROR]Imaginary part of 1(K,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: printf("[ERROR]Imaginary part of E(K,P)=", j, p)
     
 
 class DataTaurusMIX(_DataObjectBase):
@@ -1468,10 +1469,10 @@ class DataTaurusMIX(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
-                print(" (TC2)>> EXCEPTION from Taurus Constructor >> self::")
-                print(self)
-                print(" (TC2)>> exception:: ", e, "<<(TC2)")
-                print(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
+                printf(" (TC2)>> EXCEPTION from Taurus Constructor >> self::")
+                printf(self)
+                printf(" (TC2)>> exception:: ", e, "<<(TC2)")
+                printf(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
     
     def __str__(self):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
@@ -1602,8 +1603,8 @@ class DataTaurusMIX(_DataObjectBase):
         
         self.sum_JP_norm  .append(vals[0])
         self.sum_JP_energy.append(vals[2])
-        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(J,P)=", j, p)
-        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(J,P)=", j, p)
+        if abs(vals[1]) > 2.e-7: printf("[ERROR]Imaginary part of 1(J,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: printf("[ERROR]Imaginary part of E(J,P)=", j, p)
     
     def _getSumKPComponents_blockline(self, line):
         """ Block for K components"""
@@ -1616,8 +1617,8 @@ class DataTaurusMIX(_DataObjectBase):
         
         self.sum_KP_norm  .append(vals[0])
         self.sum_KP_energy.append(vals[2])
-        if abs(vals[1]) > 2.e-7: print("[ERROR]Imaginary part of 1(K,P)=", j, p)
-        if abs(vals[3]) > 2.e-7: print("[ERROR]Imaginary part of E(K,P)=", j, p)
+        if abs(vals[1]) > 2.e-7: printf("[ERROR]Imaginary part of 1(K,P)=", j, p)
+        if abs(vals[3]) > 2.e-7: printf("[ERROR]Imaginary part of E(K,P)=", j, p)
 
 
 
@@ -1707,10 +1708,10 @@ class DataAxial(DataTaurus):
             try:
                 self.get_results()
             except Exception as e:
-                print(" (AC)>> EXCEPTION from AxialData Constructor >> self::")
-                print(self)
-                print(" (AC)>> exception:: ", e, "<<(AC)")
-                print(" (AC)<< EXCEPTION from AxialData Constructor <<<<<<<< ")
+                printf(" (AC)>> EXCEPTION from AxialData Constructor >> self::")
+                printf(self)
+                printf(" (AC)>> exception:: ", e, "<<(AC)")
+                printf(" (AC)<< EXCEPTION from AxialData Constructor <<<<<<<< ")
     
     # --------------------------------------------------------------------------
     ## Ban DataTaurus invalid methods for this class by overwriting 
@@ -1740,7 +1741,7 @@ class DataAxial(DataTaurus):
                 line = line.replace('OSC LENGTHS FROM DATA FILE', '').strip().split()
                 b_values = float(line[0]), float(line[1])
                 if b_values[0] != b_values[1]:
-                    print(f"[WARNING] DataAxial register has b_perp != b_z: {b_values}")
+                    printf(f"[WARNING] DataAxial register has b_perp != b_z: {b_values}")
         
         
         self.ho_b_length = b_values[0]
@@ -1792,7 +1793,7 @@ class DataAxial(DataTaurus):
                 if self.__endSummary in line:
                     break
             
-            # print(line)
+            # printf(line)
             if   self.HeaderEnum.N in line:
                 vals = self._getValues(line, self.HeaderEnum.N)
                 self.proton_numb, self.neutron_numb = vals[0], vals[1]
@@ -1926,12 +1927,12 @@ class DataAttributeHandler(object):
                         var_n)
     
     res = DataTaurus(z, n, 'file2import') ## Defines all the attributes
-    print(complex_attr.getValue(res)) 
+    printf(complex_attr.getValue(res)) 
         >> 1.5321684 (i.e.)
     
     
     res = DataAxial(z, n, 'file2import') ## Note, DataAxial has no 'pair_pn'
-    print(complex_attr.getValue(res)) 
+    printf(complex_attr.getValue(res)) 
         >> AttributeError: 'DataAxial' object has no attribute 'pair_pn'
     """
     def __init__(self, function_, *attrs2use):
@@ -2019,7 +2020,7 @@ class BaseResultsContainer1D(_DataObjectBase):
         """
         Reseting the Container Object and deleting the temporal folder.
         """
-        print(f" * Reseting _DataTaurusContainer1D, deleted [{len(self._results)}] elements")
+        printf(f" * Reseting _DataTaurusContainer1D, deleted [{len(self._results)}] elements")
         
         self._results   = []
         self._file_id   = []
@@ -2069,7 +2070,7 @@ class BaseResultsContainer1D(_DataObjectBase):
             for file_ in datfiles:
                 if not '.dat' in file_: file_ += '.dat'
                 if not os.path.exists(file_):
-                    print(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
+                    printf(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
                     continue
                 file_2 = self._dat_filenaming(file_, id_)
                 self._dat_files[id_].append(file_2)
@@ -2085,7 +2086,7 @@ class BaseResultsContainer1D(_DataObjectBase):
                 (if list_index_element: id_ text for that index)
         """
         if not id_ in self._file_id and list_index_element == None:
-            print( " [Error] Invalid index for DataContainer1D.")
+            printf( " [Error] Invalid index for DataContainer1D.")
             return None, None, []
         
         if list_index_element == None:
@@ -2126,7 +2127,7 @@ class BaseResultsContainer1D(_DataObjectBase):
                 self._dat_files[id_] = []
                 for file_ in datfiles:
                     if not os.path.exists(file_):
-                        print(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
+                        printf(f"[WARNING DATACONTAINER] dat file {file_} not found, skip.")
                         continue
                     file_2 = self._dat_filenaming(file_, id_)
                     self._dat_files[id_][i] = file_2

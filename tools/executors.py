@@ -16,7 +16,7 @@ from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     zipBUresults, readAntoine, OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS,\
     ValenceSpacesDict_l_ge10_byM, TAURUS_EXECUTABLE_BY_FOLDER,\
-    GITHUB_TAURUS_PAV_HTTP, TAURUS_SRC_FOLDERS
+    GITHUB_TAURUS_PAV_HTTP, TAURUS_SRC_FOLDERS, printf
 from tools.Enums import OutputFileTypes
 
 from tools.base_executors import _Base1DAxialExecutor, _Base1DTaurusExecutor, \
@@ -152,14 +152,14 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         if self.RUN_PROJECTION:
             if self.IGNORE_SEED_BLOCKING and 1 in self.numberParity:
                 w = "\t[WARNING] Verify runProjection() before performing PAV over NON-Blocked wf!!!\n"*3
-                print(LINE_2, w, LINE_2)
+                printf(LINE_2, w, LINE_2)
             
             DataTaurusPAV.BU_folder = self.DTYPE.BU_folder + '/PNAMP'
             DataTaurusPAV.setUpFolderBackUp()
         
-        print("Will use the following PAV input optiones:")
-        print(self.inputObj_PAV)
-        print("EOF.\n\n")
+        printf("Will use the following PAV input optiones:")
+        printf(self.inputObj_PAV)
+        printf("EOF.\n\n")
     
     def runProjection(self, **params):
         """
@@ -172,10 +172,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         program_ = TAURUS_EXECUTABLE_BY_FOLDER[program_]
         
         if not (self._current_result and self._current_result.properly_finished):
-            print(" [WARNING] Previous result is invalid for PAV. Skipping")
+            printf(" [WARNING] Previous result is invalid for PAV. Skipping")
             return
         if not os.path.exists(program_):
-            print(" [WARNING] PAV executable is missing. Skipping")
+            printf(" [WARNING] PAV executable is missing. Skipping")
             return
             
         shutil.copy('final_wf.bin', 'left_wf.bin')
@@ -198,7 +198,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             if res.nanComponentsInResults:
                 if not getattr(self, '_calling_co_PAV_exception', False):
                     self._calling_co_PAV_exception = True
-                    print("  [PAV error], changing cutoff-n.ovelap solve Nan components issue")
+                    printf("  [PAV error], changing cutoff-n.ovelap solve Nan components issue")
                     ies_0 = self.inputObj_PAV.empty_states
                     self.inputObj_PAV.cutoff_overlap = 1.e-9 # (change the value)
                     self.runProjection(**params)
@@ -206,13 +206,13 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                     del self._calling_co_PAV_exception
                     return
                 else:
-                    print("  [PAV error 3], cannot do anything. procced")
+                    printf("  [PAV error 3], cannot do anything. procced")
                     res = DataTaurusPAV(self.z, self.n, empty_data=True)
             
         except BaseException:
             if not getattr(self, '_calling_PAV_exception', False):
                 self._calling_PAV_exception = True
-                print("  [PAV error], changing the empty states to solve the issue")
+                printf("  [PAV error], changing the empty states to solve the issue")
                 ies_0 = self.inputObj_PAV.empty_states
                 self.inputObj_PAV.empty_states = -ies_0 + 1 # (change the value)
                 self.runProjection(**params)
@@ -220,7 +220,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 del self._calling_PAV_exception
                 return
             else:
-                print("  [PAV error 2], cannot do anything. procced")
+                printf("  [PAV error 2], cannot do anything. procced")
                 res = DataTaurusPAV(self.z, self.n, empty_data=True)
         
         self._curr_PAV_result  = res
@@ -230,7 +230,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             self.saveProjectedWFProcedure(res)
             self.projectionExecutionTearDown()
         else:
-            print(" [ERROR-PAV] PAV could not be achieved. Skipping")
+            printf(" [ERROR-PAV] PAV could not be achieved. Skipping")
     
     def saveProjectedWFProcedure(self, result: DataTaurusPAV):
         """
@@ -273,7 +273,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         bk_min, bk_E_min      = 0, 1.0e+69
         bu_results = {}
         double4OO = sum(self.numberParity) # repeat twice for odd-odd
-        print("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
+        printf("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
               double4OO*self.SEEDS_RANDOMIZATION, 
               " #-par:", self.numberParity, LINE_2)
         for rand_step in range(double4OO * self.SEEDS_RANDOMIZATION):
@@ -294,7 +294,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 bk_sh = (bk_sh, sh_states[bk_sh_n]) if bk_sh else sh_states[bk_sh_n]
             
             if bk_sp in blocked_states:
-                print(rand_step, f"  * Blocked state [{bk_sp}] is already calculated [SKIP]")
+                printf(rand_step, f"  * Blocked state [{bk_sp}] is already calculated [SKIP]")
                 continue
             self.inputObj.qp_block = bk_sp if type(bk_sp)==int else [*bk_sp]
             
@@ -312,10 +312,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             while not self._preconvergenceAccepted(res):
                 if res != None:
                     ## otherwise the state is "re- blocked"
-                    print(" ** * [Not Converged] Repeating loop.")
+                    printf(" ** * [Not Converged] Repeating loop.")
                     self.inputObj.qp_block = None
                 res = self._executeProgram(base_execution=True)
-            print(" ** * [OK] Result accepted. Saving result.")
+            printf(" ** * [OK] Result accepted. Saving result.")
             
             blocked_seeds_results[bk_sp] = deepcopy(res)
             blocked_energies     [bk_sp] = res.E_HFB
@@ -327,18 +327,18 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             if res.E_HFB < bk_E_min:
                 bk_min, bk_E_min = bk_sp, res.E_HFB
         
-            print(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+            printf(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
             
             ## NOTE: If convergence is iterated, inputObj seed is turned 1, refresh!
             self.inputObj.seed = self._base_seed_type
         
-        print("\n  ** Blocking minimization process [FINISHED], Results:")
-        print(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")
+        printf("\n  ** Blocking minimization process [FINISHED], Results:")
+        printf(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")
         for bk_st in blocked_states:
-            print(f"  {str(bk_st):>12}  {str(blocked_sh_states[bk_st]):>16}   "
+            printf(f"  {str(bk_st):>12}  {str(blocked_sh_states[bk_st]):>16}   "
                   f"{blocked_energies[bk_st]:>9.4f}")
-        print("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
-        print(LINE_2)
+        printf("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
+        printf(LINE_2)
         
         ## after the convegence, remove the blocked states and copy the 
         # copy the lowest energy solution and output.
@@ -377,9 +377,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             while not self._preconvergenceAccepted(res):
                 if res != None:
                     ## otherwise the state is "re- blocked"
-                    print(" ** * [Not Converged] Repeating loop.")
+                    printf(" ** * [Not Converged] Repeating loop.")
                 res = self._executeProgram(base_execution=True)
-            #print(" ** * [OK] Result accepted. Saving result.")
+            #printf(" ** * [OK] Result accepted. Saving result.")
             bu_results[bk_sp] = res
             converged_seeds.append(bk_sp)
             
@@ -394,18 +394,18 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             if res.E_HFB < bk_E_min:
                 bk_min, bk_E_min = bk_sp, res.E_HFB
         
-            print(f" ** * [OK] Seed [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+            printf(f" ** * [OK] Seed [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
             
             ## NOTE: If convergence is iterated, inputObj seed is turned 1, refresh!
             self.inputObj.seed = self._base_seed_type
         
-        print("\n  ** Blocking minimization process [FINISHED], Results:")
-        print(f"  [  ]     [ E HFB ] [ E pair] [beta, gamma]")
+        printf("\n  ** Blocking minimization process [FINISHED], Results:")
+        printf(f"  [  ]     [ E HFB ] [ E pair] [beta, gamma]")
         for bk_st in converged_seeds:
-            print(f"   {bk_st:>2}      {energies[bk_st]:>9.4f} {pairing_E[bk_st]:>9.4f}"
+            printf(f"   {bk_st:>2}      {energies[bk_st]:>9.4f} {pairing_E[bk_st]:>9.4f}"
                   f" ({beta_gamma[bk_st][0]:>4.3f}, {beta_gamma[bk_st][1]:>4.1f})")
-        print("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
-        print(LINE_2)
+        printf("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
+        printf(LINE_2)
         
         ## after the convegence, remove the blocked states and copy the 
         # copy the lowest energy solution and output.
@@ -433,7 +433,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         with open('BASE-'+self.EXPORT_LIST_RESULTS, 'w+') as f:
             f.writelines(write_lines)
-        print(f" [DONE] Exported [{len(write_lines)}] convergence results in "
+        printf(f" [DONE] Exported [{len(write_lines)}] convergence results in "
               f"[BASE-{self.EXPORT_LIST_RESULTS}]")
         
     def _preconvergenceAccepted(self, result: DataTaurus):
@@ -461,7 +461,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                                      "initial wf., execution process stops.")
         
         if result == None or result.broken_execution:
-            print(f" ** {str_rep} Seed convergence procedure:")
+            printf(f" ** {str_rep} Seed convergence procedure:")
             return False
         else:
             ## there is no critical problem for the result, might be garbage or
@@ -474,9 +474,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 shutil.copy('fort.11', 'fort.10')
             
             if result.properly_finished:
-                print(f" ** {str_rep} Seed convergence procedure [DONE]:")
+                printf(f" ** {str_rep} Seed convergence procedure [DONE]:")
             else:
-                print(f" ** {str_rep} Seed convergence procedure [FAIL]: repeating ")
+                printf(f" ** {str_rep} Seed convergence procedure [FAIL]: repeating ")
             return result.properly_finished
         
         return False # if not valid 2 repeat
@@ -498,10 +498,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
-        print(f"\n  [globalTearDown] Export by [{self.CONSTRAINT_DT}]\n")
+        printf(f"\n  [globalTearDown] Export by [{self.CONSTRAINT_DT}]\n")
         ## exportar oblate-reverse order
-        print("self._final_bin_list_data[0]=\n", self._final_bin_list_data[0])
-        print("self._final_bin_list_data[1]=\n", self._final_bin_list_data[1])
+        printf("self._final_bin_list_data[0]=\n", self._final_bin_list_data[0])
+        printf("self._final_bin_list_data[1]=\n", self._final_bin_list_data[1])
         for k in range(-len(self._final_bin_list_data[0]), 0, 1):
             tail = self._final_bin_list_data[0][k]
             constr_val = getattr(self._results[0][-k-1], self.CONSTRAINT_DT)
@@ -533,21 +533,21 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## Create a list of wf to do the VAP calculations:
         if self.DTYPE is DataTaurus:
             os.chdir(self.DTYPE.BU_folder)
-            print(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
+            printf(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
             os.mkdir('PNVAP')
             list_dat = []
             for i, bin_ in enumerate(bins_):
                 fn, def_ = bin_.split()
                 shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
                 fno, _ = outs_[i].split()
-                print(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
+                printf(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
                 shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
                 list_dat.append(def_ + '.bin')
             with open('list.dat', 'w+') as f:
                 f.write("\n".join(list_dat))
             shutil.move('list.dat', 'PNVAP/')
             os.chdir('..')
-        print( "  [globalTearDown] Done.\n")
+        printf( "  [globalTearDown] Done.\n")
     
     def projectionExecutionTearDown(self):
         """

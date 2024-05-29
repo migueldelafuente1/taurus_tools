@@ -8,7 +8,7 @@ from tools.Enums import GognyEnum
 from scripts1d.beta_scripts import run_b20_FalseOE_Kprojections_Gogny, \
     run_b20_FalseOE_Kmixing, run_b20_FalseOE_Block1KAndPAV
 from tools.inputs import InputTaurus
-from tools.helpers import importAndCompile_taurus
+from tools.helpers import importAndCompile_taurus, printf
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
@@ -58,9 +58,9 @@ if __name__ == '__main__':
                     elif CASE == 'EE' and (Z % 2 == 1 or N % 2 == 1):
                         continue
                     i += 1
-                    print("[{:2}] z{:2} n{:2} A[{}]".format(i, Z, N, Z+N))
+                    printf("[{:2}] z{:2} n{:2} A[{}]".format(i, Z, N, Z+N))
                     interactions_B1[(Z,N)] = (4, 0, None)
-                print()
+                printf()
     
     nucleus = sorted(list(interactions_B1.keys()))
     # run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions_B1, GognyEnum.B1,

@@ -15,7 +15,7 @@ from tools.hamiltonianMaker import TBMEXML_Setter, TBME_HamiltonianManager
 from tools.Enums import GognyEnum
 from tools.exec_blocking_Kprojections import \
     ExeTaurus1D_B20_OEblocking_Ksurfaces, ExeTaurus1D_B20_KMixing_OEblocking
-from tools.helpers import importAndCompile_taurus
+from tools.helpers import importAndCompile_taurus, printf
 
 def run_q20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
@@ -36,7 +36,7 @@ def run_q20_surface(nucleus, interactions,
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -78,9 +78,9 @@ def run_q20_surface(nucleus, interactions,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_q20_surface: ", datetime.now().time())
+    printf("End run_q20_surface: ", datetime.now().time())
 
 
 def run_b20_surface(nucleus, interactions,
@@ -104,7 +104,7 @@ def run_b20_surface(nucleus, interactions,
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -149,9 +149,9 @@ def run_b20_surface(nucleus, interactions,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_q20_surface: ", datetime.now().time())
+    printf("End run_q20_surface: ", datetime.now().time())
 
 
 def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
@@ -194,7 +194,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -244,9 +244,9 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_b20_surface: ", datetime.now().time())
+    printf("End run_b20_surface: ", datetime.now().time())
 
 
 def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
@@ -303,7 +303,7 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
         interaction = exe_.hamil_filename
         
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         axial_calc = seed_base in (2, 3, 9)
         
@@ -345,9 +345,9 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_b20_surface: ", datetime.now().time())
+    printf("End run_b20_surface: ", datetime.now().time())
 
 
 def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
@@ -394,7 +394,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -446,9 +446,9 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_b20_surface: ", datetime.now().time())
+    printf("End run_b20_surface: ", datetime.now().time())
 
 
 def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
@@ -507,7 +507,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -578,9 +578,9 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             exe_.run(fomenko_points, fully_converge_blocking_sts)
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_b20_surface k-mixing: ", datetime.now().time())
+    printf("End run_b20_surface k-mixing: ", datetime.now().time())
     
 def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
                             valid_Ks = [], 
@@ -635,7 +635,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -704,6 +704,6 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             exe_.run(fomenko_points, fully_converge_blocking_sts)
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_b20_surface k-mixing: ", datetime.now().time())
+    printf("End run_b20_surface k-mixing: ", datetime.now().time())

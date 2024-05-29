@@ -8,7 +8,6 @@ import subprocess
 import numpy as np
 import shutil
 from datetime import datetime
-from debugpy._vendored.pydevd._pydevd_bundle.pydevd_cython import self
 
 LINE_1 = "\n================================================================================\n"
 LINE_2 = "\n--------------------------------------------------------------------------------\n"
@@ -41,6 +40,56 @@ TBME_RESULT_FOLDER = 'results/'
 
 OUTPUT_HEADER_SEPARATOR  = ' ## '
 
+#===============================================================================
+#  LOGGING - Object
+#===============================================================================
+
+class _Log(object):
+    
+    _instance = None
+    
+    LOG_FILENAME = "__taurus_tools.LOG"
+    
+    @classmethod
+    def __new__(cls):
+        if cls._instance == None:
+            cls._instance = super(_Log, cls).__new__(cls)
+            # clean existing LOG file to indexed file __taurus.LOG -> __
+            if os.path.exists(cls.LOG_FILENAME):
+                prev_logs = filter(lambda f: f.endswith(cls.LOG_FILENAME), os.listdir())
+                prev_logs = prev_logs.__len__()
+                shutil.move(cls.LOG_FILENAME, '__{}{}'.format(len(prev_logs), 
+                                                              cls.LOG_FILENAME))
+            
+            with open(cls.LOG_FILENAME, 'w+') as f:
+                now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                f.write(LINE_1+" LOGGING TAURUS-TOOLS [{}]".format(now_)+LINE_1)
+            
+        return cls._instance
+    
+    def write(self, *str_args):
+        if not hasattr(self._instance, 'log'):
+            self._instance.log = []
+        now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        str_args.insert(0, "[{}]::".format(now_))
+        self._instance.log.append(" ".join([str(x) for x in str_args]))
+        
+        with open(self.LOG_FILENAME, 'w+') as f:
+            f.write('\n'.join(self._instance.log))
+        
+    
+__log_file = _Log()
+
+def printf(*args):
+    """
+    Function to log prints from python, prints after saving.
+    """
+    __log_file.write(*args)
+    print(*args)
+
+#===============================================================================
+
+
 def zipBUresults(folder, z,n,interaction, *args):
     """
     This method export BU_folder results and outputs into a .zip, adding an 
@@ -60,17 +109,17 @@ def zipBUresults(folder, z,n,interaction, *args):
         _e = subprocess.call(order, shell=True)
         os.remove('ZIP_PRINT_KK.gut')
     except BaseException as be:
-        print("[ERROR] zipping of the BUresults cannot be done:: $",order)
-        print(">>>", be.__class__.__name__, ":", be)
+        printf("[ERROR] zipping of the BUresults cannot be done:: $",order)
+        printf(">>>", be.__class__.__name__, ":", be)
 
 def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
     
     header = ''.join([delimiter]*level)
     for k, val in dictionary.items():
         if isinstance(val, dict):
-            print(header+str(k)+': {')
+            printf(header+str(k)+': {')
             prettyPrintDictionary(val, level + 1, delimiter)
-            print(header+'}')
+            printf(header+'}')
         else:
             if isinstance(val, (list,tuple)) and len(val) > 0:
                 if isinstance(val[0], float):
@@ -78,7 +127,7 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
                 str_ = '[{}]'.format(', '.join(str_))
             else:
                 str_ = str(val)
-            print(header+str(k)+':'+str_)
+            printf(header+str(k)+':'+str_)
 
 def linear_regression(X, Y, get_errors=False):
     """ Get the linear regression for an array of [Y] = A*[X] + B """
@@ -267,8 +316,8 @@ def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False):
             os.chdir('..')
             
         except Exception as e:
-            print("Exception:", e.__class__.__name__)
-            print(e)
+            printf("Exception:", e.__class__.__name__)
+            printf(e)
         
 
 #===============================================================================
@@ -363,53 +412,6 @@ class QN_1body_jj(object):
     def __str__(self):
         lab_ = self._particleLabels[self.m_t]
         return "(n:{},l:{},j:{}/2){}".format(self.n, self.l, self.j, lab_)
-    
 
-#===============================================================================
-#  LOGGING - Object
-#===============================================================================
-
-class _Log(object):
-    
-    _instance = None
-    
-    LOG_FILENAME = "__taurus_tools.LOG"
-    
-    @classmethod
-    def __new__(cls):
-        if cls._instance == None:
-            cls._instance = super(_Log, cls).__new__(cls)
-            # clean existing LOG file to indexed file __taurus.LOG -> __
-            if os.path.exists(cls.LOG_FILENAME):
-                prev_logs = filter(lambda f: f.endswith(cls.LOG_FILENAME), os.listdir())
-                prev_logs = prev_logs.__len__()
-                shutil.move(cls.LOG_FILENAME, '__{}{}'.format(len(prev_logs), 
-                                                              cls.LOG_FILENAME))
-            
-            with open(cls.LOG_FILENAME, 'w+') as f:
-                now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                f.write(LINE_1+" LOGGING TAURUS-TOOLS [{}]".format(now_)+LINE_1)
-            
-        return cls._instance
-    
-    def write(self, *str_args):
-        if not hasattr(self._instance, 'log'):
-            self._instance.log = []
-        now_ = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        str_args.insert(0, "[{}]::".format(now_))
-        self._instance.log.append(" ".join([str(x) for x in str_args]))
-        
-        with open(self.LOG_FILENAME, 'w+') as f:
-            f.write('\n'.join(self._instance.log))
-        
-    
-__log_file = _Log()
-
-def printf(*args):
-    """
-    Function to log prints from python, prints after saving.
-    """
-    __log_file.write(*args)
-    print(*args)
     
         

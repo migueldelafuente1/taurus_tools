@@ -11,7 +11,7 @@ from tools.executors import ExeTaurus1D_PairCoupling, ExecutionException
 from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
-from tools.helpers import LINE_2, prettyPrintDictionary
+from tools.helpers import LINE_2, prettyPrintDictionary, printf
 
 
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs, 
@@ -57,12 +57,12 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     for z, n in nucleus:
-        print(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
+        printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
               datetime.now().time(), "\n")
         
         interaction = getInteractionFile4D1S(interactions, z, n)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -102,9 +102,9 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             exe_.setUpExecution(**input_args_onrun)
             exe_.globalTearDown(zip_bufolder=True, _='BASE')
         except ExecutionException as e:
-            print("[PAIR_SCRIPT ERROR] :: Execution Exception rose:")
-            print(e)
-            print("[PAIR_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
+            printf("[PAIR_SCRIPT ERROR] :: Execution Exception rose:")
+            printf(e)
+            printf("[PAIR_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
             continue
         
         for ip, pair_constr in enumerate(pair_constrs):
@@ -129,9 +129,9 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
                 exe_.run()
                 exe_.globalTearDown()
             except ExecutionException as e:
-                print(e)
+                printf(e)
             
-            print("End run_pair_surface: ", pair_constr, datetime.now().time(), "\n")
+            printf("End run_pair_surface: ", pair_constr, datetime.now().time(), "\n")
         
-        print("End all run_pair_surfaces: ", datetime.now().time(), "\n\n")
+        printf("End all run_pair_surfaces: ", datetime.now().time(), "\n\n")
 

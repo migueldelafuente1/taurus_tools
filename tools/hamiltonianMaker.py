@@ -18,7 +18,7 @@ from time import time
 
 from tools.helpers import GITHUB_2BME_HTTP, ValenceSpacesDict_l_ge10_byM,\
     PATH_COUL_IN_2BMESUITE, PATH_LSSR_IN_2BMESUITE, PATH_COM2_IN_2BMESUITE,\
-    TBME_SUITE, TBME_RESULT_FOLDER
+    TBME_SUITE, TBME_RESULT_FOLDER, printf
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters, Constants,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes, Enum,\
@@ -196,8 +196,8 @@ class TBMEXML_Setter(object):
         f2.text = _TT
         for part_dict in force_part_list:
             attr_dict = TBMEXML_Setter.__checkPotentialArguments(part_dict)
-            print(' *** part dict i')
-            print(attr_dict)
+            printf(' *** part dict i')
+            printf(attr_dict)
             _ = et.SubElement(f2, PotentialSeriesParameters.part, attrib=attr_dict)
             _.tail=_TT
         f2.tail = '\n\t'
@@ -294,13 +294,13 @@ class TBME_HamiltonianManager(object):
             e_ = subprocess.call(order_, shell=True, timeout=180)
             
         except Exception as e:
-            print("Exception clonning:", e.__class__.__name__)
-            print(e)
+            printf("Exception clonning:", e.__class__.__name__)
+            printf(e)
     
     def _set_valenceSpace(self):
         """ define the valence space from MZmin to MZmax """
         if len(self.sp_states_list) > 0:
-            print(f"[WARNING] Reseting the valence space MZ={self.MZmin}, {self.MZmax}")
+            printf(f"[WARNING] Reseting the valence space MZ={self.MZmin}, {self.MZmax}")
             self.sp_states_list = []
         
         for MZ in range(self.MZmin, self.MZmax+1):
@@ -365,7 +365,7 @@ class TBME_HamiltonianManager(object):
         
         ## *********************************************************************    
         ls_const = W_ls / (self.b_length**5)
-        print(f" > doing LS m.e.: active=", self.do_LS, f"Wls/b^5= {ls_const:8.3f}")
+        printf(f" > doing LS m.e.: active=", self.do_LS, f"Wls/b^5= {ls_const:8.3f}")
         f1  = et.SubElement(forces, ForceEnum.Force_From_File,
                             attrib={AttributeArgs.ForceArgs.active : str(self.do_LS)})
         f1.text = _TT
@@ -380,7 +380,7 @@ class TBME_HamiltonianManager(object):
         f1.tail = '\n\t'
         ## *********************************************************************
         cou_const = 1 / self.b_length  # e^2 were in the interaction constant
-        print(f" > doing Coul m.e.", self.do_coulomb, f"1/b= {cou_const:8.3f}")
+        printf(f" > doing Coul m.e.", self.do_coulomb, f"1/b= {cou_const:8.3f}")
         f2  = et.SubElement(forces, ForceEnum.Force_From_File,  
                             attrib={AttributeArgs.ForceArgs.active : str(self.do_coulomb)})
         f2.text = _TT
@@ -394,7 +394,7 @@ class TBME_HamiltonianManager(object):
         _.tail='\n\t'
         f2.tail = '\n\t'
         ## *********************************************************************
-        print(f" > doing BB m.e.: active= True")
+        printf(f" > doing BB m.e.: active= True")
         f3  = et.SubElement(forces, ForceEnum.Brink_Boeker, 
                             attrib={AttributeArgs.ForceArgs.active : 'True'})
         f3.text = _TT
@@ -410,7 +410,7 @@ class TBME_HamiltonianManager(object):
         _.tail = '\n\t'
         f3.tail = '\n\t'
         ## *********************************************************************
-        print(f" > doing DD m.e.: if core. Core=", self.inner_core)
+        printf(f" > doing DD m.e.: if core. Core=", self.inner_core)
         self.do_DD = bool(self.inner_core!=None) or self.do_DD
         f4 = et.SubElement(forces, ForceEnum.Density_Dependent,
                 attrib={AttributeArgs.ForceArgs.active : str(self.do_DD)})
@@ -537,7 +537,7 @@ class TBME_HamiltonianManager(object):
         self._path_xml = 'data_resources/input_D1S.xml'
         if os.getcwd().endswith(TBME_SUITE):
             self._path_xml = '../'+self._path_xml
-        print(os.getcwd())
+        printf(os.getcwd())
         tree = et.parse(self._path_xml)
         root = tree.getroot()
         
@@ -570,7 +570,7 @@ class TBME_HamiltonianManager(object):
         if (os.getcwd().endswith(TBME_SUITE) 
             or os.getcwd().endswith('tools') ): ## testing
             self._path_xml = '../'+self._path_xml
-        print("Evaluating hamiltonian from:\n", os.getcwd())
+        printf("Evaluating hamiltonian from:\n", os.getcwd())
         tree = et.parse(self._path_xml)
         root = tree.getroot()
         
@@ -603,7 +603,7 @@ class TBME_HamiltonianManager(object):
         """
         assert os.getcwd().endswith("taurus_tools"), f"Invalid CWD: {os.getcwd()}"
         if specific_xml_file:
-            print(" [WARNING] modifying the xml_input source:",
+            printf(" [WARNING] modifying the xml_input source:",
                   f"[{self.xml_input_filename}] to: [{specific_xml_file}]")
             self.xml_input_filename = specific_xml_file
         
@@ -611,7 +611,7 @@ class TBME_HamiltonianManager(object):
         os.chdir(TBME_SUITE)
         
         c_time = time()
-        print(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
+        printf(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
         if os.getcwd().startswith('C:'):
             py3 = 'C:/ProgramData/anaconda3/python.exe'
             e_ = subprocess.call(f'{py3} main.py {self.xml_input_filename} > temp.txt',
@@ -621,7 +621,7 @@ class TBME_HamiltonianManager(object):
             e_ = subprocess.call(f'python3 main.py {self.xml_input_filename} > temp.txt',
                                  timeout=86400, # 1 day timeout
                                  shell=True)
-        print(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]: ",
+        printf(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]: ",
               time() - c_time," (s)")
         
         ## copy the hamiltonian file to the main folder
@@ -632,7 +632,7 @@ class TBME_HamiltonianManager(object):
                 shutil.copy(hamil_path + fl_ext,     '..')
                 test_count_ += 1
         if test_count_ == 0: 
-            print(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
+            printf(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
         
         os.chdir('..') # return to the main folder
         

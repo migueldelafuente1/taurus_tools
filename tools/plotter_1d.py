@@ -9,7 +9,7 @@ from tools.data import DataTaurus, DataAxial, _DataObjectBase, EigenbasisData,\
     OccupationNumberData, DataAttributeHandler
 from tools.Enums import Enum
 from tools.executors import _Base1DAxialExecutor, _Base1DTaurusExecutor
-from tools.helpers import OUTPUT_HEADER_SEPARATOR
+from tools.helpers import OUTPUT_HEADER_SEPARATOR, printf
 from copy import copy, deepcopy
 import zipfile
 import shutil
@@ -20,7 +20,7 @@ try:
     import matplotlib.pyplot as plt
 except ImportError as err:
     MATPLOTLIB_INSTALLED = False
-    print("WARNING :: "+str(err)+" (i.e) Do not evaluate plot modules.")
+    printf("WARNING :: "+str(err)+" (i.e) Do not evaluate plot modules.")
 
 _taurus_object_test = DataTaurus(0, 0, None, empty_data=True)
 _axial_object_test  = DataAxial (0, 0, None, empty_data=True)
@@ -61,7 +61,7 @@ class _PlotterBase(object):
             if val in _taurus_object_test.__dict__:
                 self.constraints.append(val)
             else:
-                print(f"[PLT WARNING] variable [{val}] not a data "
+                printf(f"[PLT WARNING] variable [{val}] not a data "
                       f"attribute [{self.DYPE.__class__.__name__}]")
         
     
@@ -70,7 +70,7 @@ class _PlotterBase(object):
         Constructor
         '''
         if not MATPLOTLIB_INSTALLED:
-            print("[PLT WARNING] Matplotlib not installed")
+            printf("[PLT WARNING] Matplotlib not installed")
             return 
         
         self._title   = ''
@@ -115,7 +115,7 @@ class _PlotterBase(object):
             if os.path.exists(self.FOLDER_PATH+file_):
                 self.import_files.append(file_)
             else:
-                print(f"[PLT WARNING] file_[{file_}] not found, Skipping.")
+                printf(f"[PLT WARNING] file_[{file_}] not found, Skipping.")
                 continue
             
             header_ = []
@@ -205,7 +205,7 @@ class _PlotterBase(object):
                 dataObjClass_ = val
         
         if not dataObjClass_:
-            print("[PLT WARNING] Undefined DataObject to import, continue with [DataTaurus]")
+            printf("[PLT WARNING] Undefined DataObject to import, continue with [DataTaurus]")
             dataObjClass_ = 'DataTaurus'
         
         return constr_, dataObjClass_
@@ -307,14 +307,14 @@ class _PlotterBase(object):
                                    zorder=2.5, )
         
         if len(self.import_files) == 0:
-            print("[WARNING] Not founded any file to plot, Exiting")
+            printf("[WARNING] Not founded any file to plot, Exiting")
             return
         # Global Labels.
         if self._title   == '':
             lab_ = self.import_files[0].replace("export", '').replace(".txt", "")
             self._title = self._getVariableStringForDisplay(lab_.replace("_", " "))        
         if self._x_label == '':
-            print("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
+            printf("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
             lab_ = self.constraints_str[self.constraints[0]]
             self._x_label = lab_
         if self._y_label == '':
@@ -337,7 +337,7 @@ class _PlotterBase(object):
     def mergeFiguresInto1PDF(self, *pdf_title):
         
         if not self.EXPORT_PDF_AND_MERGE:
-            print("[WARNING] To merge pdfs activate EXPORT_PDF_AND_MERGE before"
+            printf("[WARNING] To merge pdfs activate EXPORT_PDF_AND_MERGE before"
                   " calling self.defaultPlot() (Skipping)")
             return
                 
@@ -353,7 +353,7 @@ class _PlotterBase(object):
         
         # for fn_pdf in self._figures_titles_pdf:
         #     os.remove(fn_pdf) ## Permission errors
-        print(f"   [DONE] Exporting merged PDF into [{pdf_title}]")
+        printf(f"   [DONE] Exporting merged PDF into [{pdf_title}]")
     
     
     def setTitle(self, title):
@@ -381,7 +381,7 @@ class _PlotterBase(object):
     def setExportFigureFilename(self, output_filename):
         """ set output filename: formats ('.pdf', '.png', '.jpeg') """
         if not any([output_filename.endswith(ext_) for ext_ in ('.pdf', '.png', '.jpeg')]):
-            print(f"[PLT WARNGING] invalid output file for figure: [{output_filename}]. Skip saving.")
+            printf(f"[PLT WARNGING] invalid output file for figure: [{output_filename}]. Skip saving.")
             return
         
         if self.EXPORT_PDF_AND_MERGE:
@@ -499,7 +499,7 @@ class _Plotter1D(_PlotterBase):
             if val in _taurus_object_test.__dict__:
                 self.constraints.append(val)
             else:
-                print(f"[PLT WARNING] variable [{val}] not a data "
+                printf(f"[PLT WARNING] variable [{val}] not a data "
                       f"attribute [{self.DTYPE.__class__.__name__}]")
         
     
@@ -508,7 +508,7 @@ class _Plotter1D(_PlotterBase):
         Constructor
         '''
         if not MATPLOTLIB_INSTALLED:
-            print("[PLT WARNING] Matplotlib not installed")
+            printf("[PLT WARNING] Matplotlib not installed")
             return 
         
         self._title   = ''
@@ -553,7 +553,7 @@ class _Plotter1D(_PlotterBase):
             if os.path.exists(self.FOLDER_PATH+file_):
                 self.import_files.append(file_)
             else:
-                print(f"[PLT WARNING] file_[{file_}] not found, Skipping.")
+                printf(f"[PLT WARNING] file_[{file_}] not found, Skipping.")
                 continue
             
             header_ = []
@@ -613,7 +613,7 @@ class _Plotter1D(_PlotterBase):
         for file_, label in labels_by_files.items():
             assert isinstance(label, str), "Labels must be strings."
             if file_ not in self._results:
-                print("[WARNING] file [", file_, 
+                printf("[WARNING] file [", file_, 
                       "] is not in results data, skipping label")
                 continue
             self._legend_labels[file_] = label
@@ -635,7 +635,7 @@ class _Plotter1D(_PlotterBase):
                 dataObjClass_ = val
         
         if not dataObjClass_:
-            print("[PLT WARNING] Undefined DataObject to import, continue with [DataTaurus]")
+            printf("[PLT WARNING] Undefined DataObject to import, continue with [DataTaurus]")
             dataObjClass_ = 'DataTaurus'
         
         return constr_, dataObjClass_
@@ -733,14 +733,14 @@ class _Plotter1D(_PlotterBase):
                                color=self._kwargs_for_plot[file_].get('color'))
         
         if len(self.import_files) == 0:
-            print("[WARNING] Not founded any file to plot, Exiting")
+            printf("[WARNING] Not founded any file to plot, Exiting")
             return
         # Global Labels.
         if self._title   == '':
             lab_ = self.import_files[0].replace("export", '').replace(".txt", "")
             self._title = self._getVariableStringForDisplay(lab_.replace("_", " "))        
         if self._x_label == '':
-            print("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
+            printf("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
             lab_ = self.constraints_str[self.constraints[0]]
             self._x_label = lab_
         if self._y_label == '':
@@ -759,7 +759,7 @@ class _Plotter1D(_PlotterBase):
             exp_file = f'{self.FOLDER_PATH}{self.attr2plot}.pdf'
             self._figures_titles_pdf.append(exp_file)
             fig.savefig(self._figures_titles_pdf[-1])
-            print(f"   [DONE] Image for attr [{self.attr2plot}] saved in [{exp_file}]")
+            printf(f"   [DONE] Image for attr [{self.attr2plot}] saved in [{exp_file}]")
         
     
     
@@ -830,14 +830,14 @@ class Plotter1D_Taurus(_Plotter1D):
                                color=self._kwargs_for_plot[file_].get('color'))
         
         if len(self.import_files) == 0:
-            print("[WARNING] Not founded any file to plot, Exiting")
+            printf("[WARNING] Not founded any file to plot, Exiting")
             return
         # Global Labels.
         if self._title   == '':
             lab_ = self.import_files[0].replace("export", '').replace(".txt", "")
             self._title = self._getVariableStringForDisplay(lab_.replace("_", " "))        
         if self._x_label == '':
-            print("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
+            printf("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
             lab_ = self.constraints_str[self.constraints[0]]
             self._x_label = lab_
         if self._y_label == '':
@@ -856,7 +856,7 @@ class Plotter1D_Taurus(_Plotter1D):
             exp_file = f'{self.FOLDER_PATH}{self.attr2plot}.pdf'
             self._figures_titles_pdf.append(exp_file)
             fig.savefig(self._figures_titles_pdf[-1])
-            print(f"   [DONE] Image for attr [{self.attr2plot}] saved in [{exp_file}]")
+            printf(f"   [DONE] Image for attr [{self.attr2plot}] saved in [{exp_file}]")
         
         
 
@@ -981,7 +981,7 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
         
         if os.path.exists(fold_path):
             assert os.path.isdir(fold_path), f"[{fold_path}] Must be folder!"
-            print("[WARNING] Option folder chosen, so all the files must be there")
+            printf("[WARNING] Option folder chosen, so all the files must be there")
             return fold_path
         if os.path.exists(zip_path):
             ## decompress a zip file.
@@ -1161,7 +1161,7 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
                                                  zorder=2.5, )
             
             if len(self.import_files) == 0:
-                print("[WARNING] Not founded any file to plot, Exiting")
+                printf("[WARNING] Not founded any file to plot, Exiting")
                 return
             # Global Labels.
             if self._title   == '':
@@ -1169,7 +1169,7 @@ class Plotter1D_CanonicalBasis(_Plotter1D):
                 lab_ = "{}  {}".format(datfile, lab_)
                 self._title = self._getVariableEigenStringForDisplay(lab_.replace("_", " "))        
             if self._x_label == '':
-                print("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
+                printf("[PLT WARNINGN] Several constraints for X-axis, Suggestion: setXlabel()")
                 lab_ = self.constraints_str[self.constraints[0]]
                 self._x_label = lab_
             if self._y_label == '':

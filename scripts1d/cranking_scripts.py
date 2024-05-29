@@ -11,6 +11,7 @@ from tools.executors import ExecutionException, ExeTaurus1D_AngMomentum
 from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
+from tools.helpers import printf
 
 def run_J_surface(nucleus, interactions, J_i, 
                   seed_base=0, ROmega=(13, 13),
@@ -47,7 +48,7 @@ def run_J_surface(nucleus, interactions, J_i,
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -86,8 +87,8 @@ def run_J_surface(nucleus, interactions, J_i,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
-    print("End run_J_surface: ", datetime.now().time())
+    printf("End run_J_surface: ", datetime.now().time())
 
 

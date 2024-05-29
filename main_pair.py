@@ -4,7 +4,7 @@ Created on Jan 10, 2023
 @author: Miguel
 '''
 import os
-from tools.helpers import importAndCompile_taurus, TBME_SUITE
+from tools.helpers import importAndCompile_taurus, TBME_SUITE, printf
 
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
@@ -53,4 +53,4 @@ if __name__ == '__main__':
                          p_min=-0.05, p_max=2.0, N_max=41,
                          **constr_onrun
                          )
-    print("I finished!")
+    printf("I finished!")

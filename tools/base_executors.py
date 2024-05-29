@@ -14,7 +14,7 @@ from random import random
 from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
 from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS, readAntoine
+    OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS, readAntoine, printf
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 
@@ -160,7 +160,7 @@ class _Base1DTaurusExecutor(object):
                 raise ExecutionException("Must be a defined observable for the result to",
                                          " evaluate the deformations. None set.")
         if self._base_seed_type == None:
-            print("[WARNING Executor] Seed was not defined, it will be copied (s=1).")
+            printf("[WARNING Executor] Seed was not defined, it will be copied (s=1).")
         
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False,
                                      spherical_calc=False,
@@ -308,7 +308,7 @@ class _Base1DTaurusExecutor(object):
         """
         if self.ITERATIVE_METHOD == self.IterativeEnum.SINGLE_EVALUATION:
             frame = inspect.currentframe()
-            print(" [NOTE] Single evaluation process do not require this process [{}], continue"
+            printf(" [NOTE] Single evaluation process do not require this process [{}], continue"
                   .format(frame.f_code.co_name))
             return
         
@@ -355,7 +355,7 @@ class _Base1DTaurusExecutor(object):
             p_max = q0 + (q0 - p_max)
         
         if  q0 == None: 
-            print("[WARNING] _set_pair could not get the main Constraint [",
+            printf("[WARNING] _set_pair could not get the main Constraint [",
                   self.CONSTRAINT_DT, "]. Default setting it to 0.00")
             q0 = 0.00
         deform_prolate.append(q0)
@@ -407,17 +407,17 @@ class _Base1DTaurusExecutor(object):
             return  res
         
         if res == None:
-            print(f"         [WRN] result broken or invalid, repeating [{MAX_STEPS}/tot]")
+            printf(f"         [WRN] result broken or invalid, repeating [{MAX_STEPS}/tot]")
             res = self._runUntilConvergence(MAX_STEPS-1)
         elif not res.properly_finished:
-            print(f"         [WRN] result not finished, continue from last point [{MAX_STEPS}/tot]")
+            printf(f"         [WRN] result not finished, continue from last point [{MAX_STEPS}/tot]")
             _base_seed = self.inputObj.seed
             self.inputObj.seed = 1
             res = self._runUntilConvergence(MAX_STEPS-1)
             self.inputObj.seed = _base_seed
         elif not self._acceptanceCriteria(res):
             ## not axial calculation
-            print(f"         [WRN] result is not axial, repeating smaller eta-mu G0 [{MAX_STEPS}/tot]")
+            printf(f"         [WRN] result is not axial, repeating smaller eta-mu G0 [{MAX_STEPS}/tot]")
             self.inputObj.grad_type = 0
             self.inputObj.eta_grad  = min(0.03, self.inputObj.eta_grad - 0.007)
             self.inputObj.mu_grad   = min(0.2, self.inputObj.mu_grad - 0.01)
@@ -430,7 +430,7 @@ class _Base1DTaurusExecutor(object):
         if self.ITERATIVE_METHOD == self.IterativeEnum.VARIABLE_STEP:
             self._runVariableStep()
         else:
-            print(" ** oblate:")
+            printf(" ** oblate:")
             for k, val in self._deformations_map[0]: # oblate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
@@ -447,7 +447,7 @@ class _Base1DTaurusExecutor(object):
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backwardsSweeping(oblate_part=True)
             start_from_ = 0
-            print(" ** prolate:   start_from_ = ", start_from_, "")
+            printf(" ** prolate:   start_from_ = ", start_from_, "")
             for k, val in self._deformations_map[1][start_from_:]: # prolate
                 ## exclude the first state since it is the original seed
                 self._curr_deform_index = k
@@ -470,7 +470,7 @@ class _Base1DTaurusExecutor(object):
             raise ExecutionException("Specify the oblate or prolate part")
            
         if oblate_part:
-            print(" ** oblate (back):")
+            printf(" ** oblate (back):")
             for k, val in reversed(self._deformations_map[0]): # oblate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
@@ -482,7 +482,7 @@ class _Base1DTaurusExecutor(object):
                     self._results[0][indx_] =  res
                     self._final_bin_list_data[0][k] = res._exported_filename
         else:
-            print(" ** prolate (back):")
+            printf(" ** prolate (back):")
             ## exclude the first state since it is the original seed
             ## UPDATE, repeat that solution, the 1st minimum could not be the exact one 
             start_from_ = 0
@@ -575,7 +575,7 @@ class _Base1DTaurusExecutor(object):
         
         self.inputObj.seed = 1 
         b20_base = self._deform_base
-        print(f" ** Variable Step Running start point {self.CONSTRAINT}={b20_base:7.3f}")
+        printf(f" ** Variable Step Running start point {self.CONSTRAINT}={b20_base:7.3f}")
         
         for prolate, b_lim in enumerate((self._deform_lim_min, 
                                          self._deform_lim_max)):
@@ -609,7 +609,7 @@ class _Base1DTaurusExecutor(object):
                     if div < dqDivisionMax:
                         # reject(increase division)
                         div += 1
-                        print("  * reducing b20 increment(1): [{}] Ei{:9.2f} - Eim1{:9.2f} ={:8.5f} > {:8.5f}"
+                        printf("  * reducing b20 increment(1): [{}] Ei{:9.2f} - Eim1{:9.2f} ={:8.5f} > {:8.5f}"
                               .format(div, curr_energ, energ, curr_energ-energ, e_diff))
                         continue
                     else:
@@ -619,7 +619,7 @@ class _Base1DTaurusExecutor(object):
                         e_diff = curr_energ - energ
                         energ = curr_energ
                         b20_i = b20
-                        print("  * Failed but continue: DIV{} DIFF{:10.4f} ENER{:10.4f} B{:5.3f}"
+                        printf("  * Failed but continue: DIV{} DIFF{:10.4f} ENER{:10.4f} B{:5.3f}"
                               .format(div, e_diff, energ, b20_i))
                         continue # cannot evaluate next Step or save results
                 
@@ -634,12 +634,12 @@ class _Base1DTaurusExecutor(object):
                          or (not res.properly_finished))):
                     # reject(increase division)
                     div += 1
-                    print("  * reducing b20 increment(2)[i{}]: [{}] Ei{:9.2f} - Eim1{:9.2f} ={:8.5f} >  ({:8.5f}, {:8.5f})"
+                    printf("  * reducing b20 increment(2)[i{}]: [{}] Ei{:9.2f} - Eim1{:9.2f} ={:8.5f} >  ({:8.5f}, {:8.5f})"
                           .format(self._iter,div, curr_energ, energ, curr_energ-energ, e_diff,
                                   3.0*e_diff, 2.0*e_diff))
                     continue
                 else:
-                    print("  * [OK] step accepted DIV:{} CE{:10.4} C.DIFF:{:10.4}"
+                    printf("  * [OK] step accepted DIV:{} CE{:10.4} C.DIFF:{:10.4}"
                           .format(div, curr_energ, curr_energ - energ))
                     # accept and continue (copy final function)
                     _e = subprocess.call('cp final_wf.bin initial_wf.bin', shell=True)
@@ -648,7 +648,7 @@ class _Base1DTaurusExecutor(object):
                     e_diff = curr_energ - energ
                     energ = curr_energ
                     b20_i = b20
-                    print("  * [OK] WF directly copied  [i{}]: DIV:{} DIFF{:10.4f} ENER{:10.4f} B{:5.3f}"
+                    printf("  * [OK] WF directly copied  [i{}]: DIV:{} DIFF{:10.4f} ENER{:10.4f} B{:5.3f}"
                           .format(self._iter, div, e_diff, energ, b20_i))
                 
                 if prolate == 0: #grow in order [-.5, -.4, .., 0, ..., +.5]
@@ -857,9 +857,9 @@ class _Base1DTaurusExecutor(object):
             if self.RUN_PROJECTION and not base_execution: self.runProjection()
             
         except Exception as e:
-            print(f"  [FAIL]: {self.__class__}._executeProgram()")
+            printf(f"  [FAIL]: {self.__class__}._executeProgram()")
             if isinstance(res, DataTaurus):
-                print(f"  [FAIL]: result=", str(res))
+                printf(f"  [FAIL]: result=", str(res))
             # TODO:  manage exceptions from execution
             raise e
         
@@ -883,7 +883,7 @@ class _Base1DTaurusExecutor(object):
         """
         HEAD = "  z  n  (st) ( d)       E_HFB        Kin     Pair       b2"
         if print_head:
-            print('\n'+HEAD+LINE_2)
+            printf('\n'+HEAD+LINE_2)
             return
         
         status_fin = 'X' if not result.properly_finished  else '.'
@@ -895,7 +895,7 @@ class _Base1DTaurusExecutor(object):
                          str(self._curr_deform_index),
                          result.E_HFB, result.kin, result.pair, 
                          result.b20_isoscalar)
-        print(txt, _iter_str)
+        printf(txt, _iter_str)
     
     @property
     def calculationParameters(self):
@@ -905,9 +905,9 @@ class _Base1DTaurusExecutor(object):
         """
         if not self.PRINT_CALCULATION_PARAMETERS:
             return
-        print(LINE_2)
-        print(f" ** Executor 1D [{self.__class__.__name__}] Parameters:")
-        print(LINE_1)
+        printf(LINE_2)
+        printf(f" ** Executor 1D [{self.__class__.__name__}] Parameters:")
+        printf(LINE_1)
         priv_attr = ('_1stSeedMinima', '_DDparams', '_deform_base', 
                      '_N_steps', '_iter', '_output_filename')
         priv_attr = dict([(k,getattr(self, k, None)) for k in priv_attr])
@@ -917,7 +917,7 @@ class _Base1DTaurusExecutor(object):
             self.__dict__.items() )))
         prettyPrintDictionary(pub_attr)
         prettyPrintDictionary(priv_attr)
-        print(LINE_1)
+        printf(LINE_1)
     
     def executionTearDown(self, result : DataTaurus, base_execution, *args, **kwargs):
         """
@@ -1038,7 +1038,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
         """
         HEAD = "  z  n  (st) ( d)       E_HFB        Kin     Pair       b2"
         if print_head:
-            print('\n'+HEAD+LINE_2)
+            printf('\n'+HEAD+LINE_2)
             return
         
         status_fin = 'X' if not result.properly_finished  else '.'
@@ -1050,7 +1050,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
                          str(self._curr_deform_index),
                          result.E_HFB, result.kin, result.pair, 
                          result.b20_isoscalar)
-        print(txt, _iter_str)
+        printf(txt, _iter_str)
         
     def saveFinalWFprocedure(self, result,  base_execution=False):
         """ 
@@ -1148,7 +1148,7 @@ class _BaseParallelTaurusExecutor(_Base1DTaurusExecutor):
         Setting number of processes
         """
         if nodes >= cpu_count():
-            print("[Warning] The maximum number of nodes for the computer is",
+            printf("[Warning] The maximum number of nodes for the computer is",
                   cpu_count(), ", setting to that -1.")
             nodes = cpu_count() - 1
         cls.MAX_PARALLEL_NODES = nodes

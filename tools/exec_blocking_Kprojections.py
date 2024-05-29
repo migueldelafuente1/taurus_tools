@@ -11,7 +11,7 @@ import numpy as np
 import os
 
 from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj,\
-    importAndCompile_taurus
+    importAndCompile_taurus, printf
 from tools.data import DataTaurus, DataTaurusPAV, BaseResultsContainer1D,\
     DataObjectException
 from tools.inputs import InputTaurusPAV, InputTaurusMIX
@@ -158,7 +158,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
         self._exportable_LISTDAT_forK = []
         self._list_PAV_outputs[self._current_K] = []
-        print(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
+        printf(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
               f"results. saving in [{BU_FLD_KBLOCK}]")
     
     def run(self, fomenko_points=None):
@@ -176,10 +176,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         ##  
         self._blocking_section = True
         if self.numberParity == (0, 0): return
-        print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
-        print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
-        print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
-        print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
+        printf(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        printf(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
+        printf(f"   Doing also Projection:    {self.RUN_PROJECTION}")
+        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
         
         self.inputObj.seed = 1
         self.inputObj.eta_grad  = 0.03 
@@ -208,10 +208,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                     self._projectionAllowed = False
                     self._spIterationAndSelectionProcedure(i_def)
                     ## B20 loop
-                    print()
+                    printf()
                 self._previous_bin_path = None
             if self._no_results_for_K: 
-                print("  [WARNING] No blocked result for 2K=", K)
+                printf("  [WARNING] No blocked result for 2K=", K)
             # K-loop
         _ = 0
     
@@ -255,7 +255,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 set_energies[sp_] = f"{res.E_HFB:6.4f}"
                 if not self.FIND_K_FOR_ALL_SPS: break
             elif sp_ == self._sp_dim:
-                print(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
+                printf(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
             else:
                 self._K_notFoundActionsTearDown(res)
         
@@ -400,11 +400,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         if self._save_results:
             id_, res = self._choosen_state_data
             sp_index = int(id_.split('_')[0].replace('sp', '')) if id_ else 0
-            print("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
+            printf("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, res.E_HFB))
         else:
-            print("      . {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
+            printf("      . {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, res.E_HFB))
         ## Append the exportable result file
@@ -423,12 +423,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         sp_index = self._current_sp
         
         if not self._save_results:
-            print("   [xx] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
+            printf("   [xx] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, res.E_HFB, res.isAxial()))
             return
         else:
-            print("      X {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
+            printf("      X {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, res.E_HFB, res.isAxial()))
         invalid_fn = self._list_PAV_outputs[self._current_K].pop()
@@ -463,15 +463,15 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         
         id_min = None
         e_min : DataTaurus  = 99999999
-        print("     Energy criteria begins ---------------------")
+        printf("     Energy criteria begins ---------------------")
         for id_, res in self._container.getAllResults().items():
             if res.E_HFB < e_min:
                 id_min = id_
                 e_min  = res.E_HFB
-                print(f"   *( pass) energy_{id_}= {e_min:6.5f}")
+                printf(f"   *( pass) energy_{id_}= {e_min:6.5f}")
             else:
-                print(f"   *(large) energy_{id_}= {res.E_HFB:6.5f}")
-        print("     Final state selected =", id_min, "\n -----------------")
+                printf(f"   *(large) energy_{id_}= {res.E_HFB:6.5f}")
+        printf("     Final state selected =", id_min, "\n -----------------")
         res, bin_, datfiles  = self._container.get(id_min)
         return id_min, res, bin_, datfiles
     
@@ -482,9 +482,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         if not self._previous_bin_path:
             ## No result, use the minimum energy result or first result
             id_sel, res, bin_, datfiles = self._energy_CriteriaForStateSelection()
-            print("   * Initial state selected =", id_sel, "\n ---------------")
+            printf("   * Initial state selected =", id_sel, "\n ---------------")
         else:
-            print("   * Overlap criteria begins ---------------")
+            printf("   * Overlap criteria begins ---------------")
             shutil.copy(self._previous_bin_path, 'left_wf.bin')
             
             id_sel, overlapm1_min = None, 999999
@@ -511,30 +511,30 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                         res_ov = DataTaurusPAV(self.z, self.n, f'{fn_}.out')
                     except BaseException:
                         if res_ov == None:
-                            print("      [Err] No solution")
+                            printf("      [Err] No solution")
                         continue
                     
                     if res_ov.broken_execution or len(res_ov.proj_norm) == 0:
-                        print("      [Err] Solution is broken, emptyst =",
+                        printf("      [Err] Solution is broken, emptyst =",
                               empty_states_case)
                         continue
                     overl  = res_ov.proj_norm[0]
                     if 1 - abs(overl) < overlapm1_min:  ## ovelap has an arbitrary phase 
                         overlapm1_min = 1 - abs(overl)
                         id_sel = id_
-                        print(f"     *( pass) overlap_{id_}= {overl:6.5f}")
+                        printf(f"     *( pass) overlap_{id_}= {overl:6.5f}")
                     else:
-                        print(f"     *(large) overlap_{id_}= {overl:6.5f}")
+                        printf(f"     *(large) overlap_{id_}= {overl:6.5f}")
                     break
             
             ## Highly 
             if id_sel == None:
                 id_sel = self._container.get(None, list_index_element=0)[-1]
                 ## TODO: Other idea is to use the again the E_min criteria.
-                print("     Final state selected = None / using the first value", 
+                printf("     Final state selected = None / using the first value", 
                       id_sel, "\n ---------------")
             else:
-                print("     Final state selected =", id_sel, "\n ---------------")
+                printf("     Final state selected =", id_sel, "\n ---------------")
             os.remove(self._previous_bin_path)
             res, bin_, datfiles  = self._container.get(id_sel)
         
@@ -587,7 +587,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         if dont_select:
             aux_ = self._container.get(None, list_index_element=0)
             res, bin_, datfiles, id_sel = aux_
-            print("     (All equal) No selection, got:", id_sel, 
+            printf("     (All equal) No selection, got:", id_sel, 
                   f" E= {res.E_HFB:6.5f}  -------------")
             self._choosen_state_data = (id_sel, res)
             # prepare / update the auxiliary wf for Overlap-criteria
@@ -596,7 +596,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 src = "{}/{}".format(self._container.BU_folder, bin_)
                 shutil.copy(src, self._previous_bin_path)
         else:
-            print("      Different results after blocking ... selecting ")
+            printf("      Different results after blocking ... selecting ")
             id_sel, res, bin_, datfiles = self._selectionCriteriaForState()
             self._choosen_state_data = (id_sel, res)
         
@@ -614,7 +614,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                                                  self._current_K)
                 shutil.copytree(self._container.BU_folder, self.DTYPE.BU_folder+dst)
         else:
-            print(" [No Result] found, PAV and coping ignored.")
+            printf(" [No Result] found, PAV and coping ignored.")
             
         ## Reset all
         self._container.clear()
@@ -676,11 +676,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         ##  
         self._blocking_section = True
         if self.numberParity == (0, 0): return
-        print(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
-        print(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
-        print(f"   Doing also Projection:    {self.RUN_PROJECTION}")
-        print(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
-        print(f"   Valid Ks = {self._valid_Ks}")
+        printf(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        printf(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
+        printf(f"   Doing also Projection:    {self.RUN_PROJECTION}")
+        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
+        printf(f"   Valid Ks = {self._valid_Ks}")
         
         self.inputObj.seed = 1
         self.inputObj.eta_grad  = 0.03 
@@ -713,7 +713,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
                     
                 self._previous_bin_path = None
             if self._no_results_for_K: 
-                print("  [WARNING] No blocked result for 2K=", K)
+                printf("  [WARNING] No blocked result for 2K=", K)
             # K-loop
         _ = 0
     
@@ -767,7 +767,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
                 set_energies[sp_] = f"{res.E_HFB:6.4f}"
                 if not self.FIND_K_FOR_ALL_SPS: break
             elif sp_ == self._sp_dim:
-                print(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
+                printf(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
             else:
                 self._K_notFoundActionsTearDown(res)
         

@@ -5,6 +5,7 @@ Created on Mar 17, 2023
 '''
 from tools.executors import ExeTaurus0D_EnergyMinimum, ExecutionException
 from tools.data import DataTaurus
+from tools.helpers import printf
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.inputs import InputTaurus
 import os
@@ -47,7 +48,7 @@ def run_symmetry_restricted_for_hamiltonian(nucleus, MZmax=6,
         ## TODO: define the hamiltonian b=empirical formula
         interaction = getInteractionFile4D1S(interactions, z, n)
         if interaction == None or not os.path.exists(interaction+'.sho'):
-            print(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
         InputTaurus.set_inputDDparamsFile(
@@ -82,7 +83,7 @@ def run_symmetry_restricted_for_hamiltonian(nucleus, MZmax=6,
             # exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            print(e)
+            printf(e)
         
         ## Maybe to use a single evaluation of a 1d script. Then read the 
         # zip BASE for the seed results.

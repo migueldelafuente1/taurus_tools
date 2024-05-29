@@ -7,12 +7,12 @@ from tools.data import _DataObjectBase, OccupationNumberData
 from tools.plotter_1d import PlotException, _taurus_object_test,\
     MATPLOTLIB_INSTALLED
 import os
-
+from tools.helpers import printf
 if MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt
 else:
     MATPLOTLIB_INSTALLED = False
-    print("WARNING :: Matplotlib not installed. Do not evaluate plot modules.")
+    printf("WARNING :: Matplotlib not installed. Do not evaluate plot modules.")
     
 
 class _Plotter0D(object):
@@ -46,7 +46,7 @@ class _Plotter0D(object):
             if val in _taurus_object_test.__dict__:
                 self.constraints.append(val)
             else:
-                print(f"[PLT WARNING] variable [{val}] not a data "
+                printf(f"[PLT WARNING] variable [{val}] not a data "
                       f"attribute [{self.DYPE.__class__.__name__}]")
         
     def setTitle(self, title):
@@ -63,7 +63,7 @@ class _Plotter0D(object):
         Constructor
         '''
         if not MATPLOTLIB_INSTALLED:
-            print("[PLT WARNING] Matplotlib not installed")
+            printf("[PLT WARNING] Matplotlib not installed")
             return 
         
         self._title   = ''
@@ -181,7 +181,7 @@ class Plotter0D_OccupationNumbers(_Plotter0D):
             if os.path.exists(self.FOLDER_PATH+file_):
                 self.import_files.append(file_)
             else:
-                print(f"[PLT WARNING] file_[{file_}] not found, Skipping.")
+                printf(f"[PLT WARNING] file_[{file_}] not found, Skipping.")
                 continue
             
             # with open(self.FOLDER_PATH+file_, 'r') as f:

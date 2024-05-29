@@ -11,7 +11,7 @@ from tools.executors import ExeTaurus0D_EnergyMinimum, ExeAxial1D_DeformB20, \
     ExecutionException, ExeAxial0D_EnergyMinimum
 from tools.data import DataTaurus, DataAxial
 from tools.plotter_1d import Plotter1D_Axial, Plotter1D_Taurus
-from tools.helpers import prettyPrintDictionary
+from tools.helpers import prettyPrintDictionary, printf
 
 def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75, 
                                    Nsteps=6, MZmin=0):
@@ -81,7 +81,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
                 
                 line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
-                print(e)
+                printf(e)
             
             
             if line not in  ('', '\n'):
@@ -104,7 +104,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
         plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
         plot.EXPORT_PDF_AND_MERGE = False
     
-    print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
+    printf("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
                 
 
@@ -143,7 +143,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
     for z, n in nucleus:
         b_Ehfb_min = (0, 999999)
         if z % 2 == 1 or n % 2 == 1:
-            print(f"[WARNING] isotope :z{z}, n{n} is not even-even, no blocking applied")
+            printf(f"[WARNING] isotope :z{z}, n{n} is not even-even, no blocking applied")
             
         summary_results = f'export_HO_TES_axial_z{z}n{n}.txt'
         if summary_results in os.listdir():
@@ -175,7 +175,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
                                 
                 line = exe_._1stSeedMinima.getAttributesDictLike
             except ExecutionException as e:
-                print(e)
+                printf(e)
             
             if line not in  ('', '\n'):
                 # register the Optimal length
@@ -197,7 +197,7 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
         plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
         plot.EXPORT_PDF_AND_MERGE = False
         
-    print("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
+    printf("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
 
 if __name__ == '__main__':

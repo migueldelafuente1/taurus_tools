@@ -18,7 +18,7 @@ from scripts1d.script_helpers import getInteractionFile4D1S,\
 from tools.data import DataTaurus
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, getSingleSpaceDegenerations,\
     prettyPrintDictionary, importAndCompile_taurus, linear_regression,\
-    LEBEDEV_GRID_POINTS
+    LEBEDEV_GRID_POINTS, printf
 from copy import deepcopy
 
 if os.getcwd().startswith("C:"):
@@ -156,7 +156,7 @@ def _test_execution(z, n, hamil_fn, repetitions=3, iterations=50, ROmega=(10,10)
         dd_params_[InputTaurus.InpDDEnum.eval_dd ] = 1
         dd_params_[InputTaurus.InpDDEnum.eval_rea] = 1
         InputTaurus.set_inputDDparamsFile(**dd_params_)
-        print("   * doing D1S_t0 + DD + Rea")
+        printf("   * doing D1S_t0 + DD + Rea")
         for iter_ in range(repetitions):
             out_t = files_[0].replace('.txt', f'_{iter_}.txt')
             res   = __execute_taurus_diagnose(inp_t, out_t)
@@ -167,7 +167,7 @@ def _test_execution(z, n, hamil_fn, repetitions=3, iterations=50, ROmega=(10,10)
         dd_params_[InputTaurus.InpDDEnum.eval_dd ] = 1
         dd_params_[InputTaurus.InpDDEnum.eval_rea] = 0
         InputTaurus.set_inputDDparamsFile(**dd_params_)
-        print("   * doing D1S_t0 + DD")
+        printf("   * doing D1S_t0 + DD")
         for iter_ in range(repetitions):
             out_t = files_[0].replace('.txt', f'_{iter_}.txt')
             res   = __execute_taurus_diagnose(inp_t, out_t)
@@ -178,7 +178,7 @@ def _test_execution(z, n, hamil_fn, repetitions=3, iterations=50, ROmega=(10,10)
         dd_params_[InputTaurus.InpDDEnum.eval_dd ] = 0
         dd_params_[InputTaurus.InpDDEnum.eval_rea] = 0
         InputTaurus.set_inputDDparamsFile(**dd_params_)
-        print("   * doing D1S_t0")
+        printf("   * doing D1S_t0")
         for iter_ in range(repetitions):
             out_t = files_[0].replace('.txt', f'_{iter_}.txt')
             res   = __execute_taurus_diagnose(inp_t, out_t)
@@ -283,9 +283,9 @@ def __execute_taurus_diagnose(inp_taurus: DataTaurus, output_fn):
         res.memory_max_KB = vals['memory_max']
         
     except Exception as e:
-        print(f"  [FAIL]: _executeProgram()")
+        printf(f"  [FAIL]: _executeProgram()")
         if isinstance(res, DataTaurus):
-            print(f"  [FAIL]: result=", str(res.getAttributesDictLike))
+            printf(f"  [FAIL]: result=", str(res.getAttributesDictLike))
         
     return res
     
@@ -317,9 +317,9 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
     ## 2) Iterate the shells to evaluate (reversed to clean)
     for iter_, MZ in enumerate(range(Mzmax+1, 0, -1)):
         sh_, sp_dim = getSingleSpaceDegenerations(MZ)
-        print(f"[STEP {iter_:2}] Running MZ={MZ} dimens({sh_},{sp_dim}) for z{z_numb}n{n_numb}" )
+        printf(f"[STEP {iter_:2}] Running MZ={MZ} dimens({sh_},{sp_dim}) for z{z_numb}n{n_numb}" )
         if z_numb >= sp_dim or n_numb >= sp_dim:
-            print("[WARNING] Process STOP!, reached the occupation for the N,Z")
+            printf("[WARNING] Process STOP!, reached the occupation for the N,Z")
             break
         
         new_hamil_fn = f'hamil_noMZ{MZ}' 
@@ -330,9 +330,9 @@ def run_IterTimeAndMemory_from_Taurus_byShellsAndIntegrationMesh(
         ## Get precision markers to validate the integration.
         results_sh = _test_execution(z_numb, n_numb, new_hamil_fn, 
                                      repetitions, iterations, ROmegaMax)
-        print()
+        printf()
         prettyPrintDictionary(results_sh[1]) # Times and shit !
-        print()
+        printf()
         
         data_results.append(results_sh[0])
         data_times.  append(results_sh[1])

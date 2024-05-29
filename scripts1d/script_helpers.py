@@ -7,7 +7,7 @@ import os
 import shutil
 from tools.Enums import OutputFileTypes, GognyEnum
 from tools.hamiltonianMaker import TBME_HamiltonianManager
-
+from tools.helpers import printf
 
 
 def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
@@ -64,7 +64,7 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
             assert type(MZmax)==int and type(MZmin) == int and type(b_length)==float, MSG_
             assert MZmax >= MZmin and MZmin >= 0, "MZmax >= Mzmin >= 0"
             
-            print(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}"
+            printf(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}"
                   f"  Major shells: [{MZmin}, {MZmax}]")
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
             exe_.do_coulomb = do_Coulomb
@@ -72,7 +72,7 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
             
             exe_.setAndRun_Gogny_xml(gogny_interaction)
             interaction = exe_.hamil_filename
-            print(f" ** [DONE] Interaction: [{interaction}]")
+            printf(f" ** [DONE] Interaction: [{interaction}]")
             
             return interaction
         
@@ -94,7 +94,7 @@ def parseTimeVerboseCommandOutputFile(time_filename):
         'memory_max': 'Maximum resident set size (kbytes)'}
     
     if not os.path.exists(time_filename):
-        print(f" [WARNING] Could not found timing file [{time_filename}]")
+        printf(f" [WARNING] Could not found timing file [{time_filename}]")
         return None
     
     aux = {}
@@ -106,7 +106,7 @@ def parseTimeVerboseCommandOutputFile(time_filename):
             return aux
         for key_, indx in vals.items():
             if headers_checks[key_] not in lines[indx]:
-                print(f"[WARNING TIME OUTPUT PARSING] line [{indx}] for parameter [{key_}]",
+                printf(f"[WARNING TIME OUTPUT PARSING] line [{indx}] for parameter [{key_}]",
                       f" does not match expected header [{headers_checks[key_]}].\n",
                       f"Got: [{lines[indx]}]")
             line = lines[indx].split(' ')[-1] # no argument after the last ":" has spaces

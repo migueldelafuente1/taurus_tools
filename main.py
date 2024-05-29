@@ -6,7 +6,7 @@ Created on Jan 10, 2023
 import os, shutil
 from scripts1d.beta_scripts import run_q20_surface, run_b20_Gogny_surface,\
     run_b20_composedInteraction, run_b20_surface
-from tools.helpers import importAndCompile_taurus, TBME_SUITE
+from tools.helpers import importAndCompile_taurus, TBME_SUITE, printf
 
 from tools.hamiltonianMaker import TBME_HamiltonianManager, TBMEXML_Setter
 from tools.inputs import InputTaurus
@@ -35,14 +35,14 @@ if __name__ == '__main__':
     #
     #     MAIN_HAMIL_FOLDER = 'FOLDER_GDD/'
     #     curr_hamil = f'hamil_gdd_{trf:03}'
-    #     print(" Execute for Hamil:", curr_hamil)
+    #     printf(" Execute for Hamil:", curr_hamil)
     #     if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
     #         for extension in OutputFileTypes.members():
     #             file_ = MAIN_HAMIL_FOLDER+curr_hamil+extension
     #             if os.path.exists(file_): 
     #                 shutil.copy(file_, curr_hamil+extension)
     #     else:
-    #         print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
+    #         printf(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
     #         continue
     #
     #     nucleus = [(12, 12), ]
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     #         MAIN_HAMIL_FOLDER = f'FOLDER_GDD_A{aa}/'
     #
     #         curr_hamil = f'hamil_gdd_{trf:03}'
-    #         print(" Copying for Hamil:", curr_hamil)
+    #         printf(" Copying for Hamil:", curr_hamil)
     #         if (curr_hamil+'.sho' in os.listdir(MAIN_HAMIL_FOLDER)):
     #             new_aa_hamil = curr_hamil.replace('gdd_', f'gdd_{aa}_')
     #             for extension in OutputFileTypes.members():
@@ -76,7 +76,7 @@ if __name__ == '__main__':
     #                 if os.path.exists(file_): 
     #                     shutil.copy(file_, new_aa_hamil+extension)
     #                 else:
-    #                     print(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
+    #                     printf(" [ERROR] could not find it:", MAIN_HAMIL_FOLDER+curr_hamil)
     #                     continue
     #
     #             interactions [(zz, nn)] = new_aa_hamil

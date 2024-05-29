@@ -10,7 +10,7 @@ import numpy as np
 from copy import deepcopy, copy
 import os
 from tools.Enums import Enum
-from tools.helpers import readAntoine
+from tools.helpers import readAntoine, printf
 
 class _Input(object):
     '''
@@ -450,7 +450,7 @@ eval/export Valence.Space   = {export_vs}
                     if m_j in _j_sts:
                         index_ = total_deg + _j_sts.index(m_j) + 1
                     else:
-                        print(f"Warning!, m_j state[{sh_state}, {m_j}] not in the j={j}/2 shell. Setting m=-j" )
+                        printf(f"Warning!, m_j state[{sh_state}, {m_j}] not in the j={j}/2 shell. Setting m=-j" )
                         index_ = total_deg + 1
             total_deg += deg
         
@@ -500,7 +500,7 @@ eval/export Valence.Space   = {export_vs}
         
         for arg, val in params.items():
             if arg not in cls.InpDDEnum.members():
-                print(f"[WARNING] parameter DD unidentified: [{arg}, {val}]")
+                printf(f"[WARNING] parameter DD unidentified: [{arg}, {val}]")
                 continue
             ## valid argument, check invalid value
             if arg.startswith('eval_'):
@@ -547,7 +547,7 @@ eval/export Valence.Space   = {export_vs}
             params[self.InpDDEnum.omega_dim] = omega_dim
                     
         if (params[self.InpDDEnum.eval_export_h] == 1):
-            print("[WARNING] eval_calculations will use explicit evaluation of "
+            printf("[WARNING] eval_calculations will use explicit evaluation of "
                   "the matrix elements and the time required will grow exponentially.")
         
         txt_ = self._TEMPLATE_INPUT_DD.format(**params)
@@ -1151,7 +1151,7 @@ Specific cut-off (label)      L  0 +1      941058169115  0"""
         D = (-1 + np.sqrt(1 + 8*_N)) / 2
         if abs(D - int(D)) > 1.0e-9:
             D1, D2 = int(D)*int(D+1)//2, int(D+1)*int(D+2)//2
-            print("[WARNING] Input Taurus Mix, # matrix elements is not 'Pascal':", 
+            printf("[WARNING] Input Taurus Mix, # matrix elements is not 'Pascal':", 
                   f"{_N} -> {D} ({D1} or {D2}?)", )
             ## TODO: This should be an exception.
         self._inner_gcm_coordinates_dim = int(D)
