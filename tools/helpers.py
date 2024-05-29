@@ -61,7 +61,7 @@ class _Log(object):
             # clean existing LOG file to indexed file __taurus.LOG -> __
             if os.path.exists(cls.LOG_FILENAME):
                 prev_logs = filter(lambda f: f.endswith(cls.LOG_FILENAME), os.listdir())
-                prev_logs = prev_logs.__len__()
+                prev_logs = list(prev_logs).__len__()
                 shutil.move(cls.LOG_FILENAME, '__{}{}'.format(len(prev_logs), 
                                                               cls.LOG_FILENAME))
             with open(cls.LOG_FILENAME, 'w+') as f:
