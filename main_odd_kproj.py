@@ -77,6 +77,7 @@ if __name__ == '__main__':
             parity_2_block=1,
             fomenko_points=(7, 7),
             preconverge_blocking_sts=130,
+            find_Kfor_all_sps = False
         )
         run_b20_FalseOE_Kmixing(*args, **kwargs)
         raise Exception("STOP HERE.")

@@ -456,7 +456,8 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   q_min=-2.0, q_max=2.0, N_max=41, 
                                   convergences=0, fomenko_points=(1, 1), 
                                   parity_2_block= 1, 
-                                  preconverge_blocking_sts=False,):
+                                  preconverge_blocking_sts=False,
+                                  find_Kfor_all_sps=True):
     
     """
         This script evaluate the projection after the blocking from a previous
@@ -473,10 +474,12 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         :j_min
         :j_max
         :N_steps:
+        
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :fomenko_points: (M protons, M neutron), default is HFB
         :parity_2_block: parity of the states to block
         :preconverge_blocking_sts <int> = 0  :fully converge, > 0 -> number of steps
+        :find_Kfor_all_sps =True, evaluate all valid sps (recomended but slower)
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -485,7 +488,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     ExeTaurus1D_B20_KMixing_OEblocking.IGNORE_SEED_BLOCKING  = True
     ExeTaurus1D_B20_KMixing_OEblocking.BLOCK_ALSO_NEGATIVE_K = False
     ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION        = True 
-    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = True
+    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = find_Kfor_all_sps
         
     ExeTaurus1D_B20_KMixing_OEblocking.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD
@@ -594,6 +597,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
                             q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                             fomenko_points=(1, 1), 
                             parity_2_block= 1, preconverge_blocking_sts=False,
+                            find_Kfor_all_sps= True,
                             ):
     """
     Reqire:
@@ -607,10 +611,12 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         :j_min
         :j_max
         :N_steps:
+        
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :fomenko_points: (M protons, M neutron), default is HFB
         :parity_2_block: parity of the states to block
         :preconverge_blocking_sts <int> = 0  :fully converge, > 0 -> number of steps
+        :find_Kfor_all_sps =True, evaluate all valid sps (recomended but slower)
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -619,7 +625,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
     ExeTaurus1D_B20_KMixing_OEblocking.IGNORE_SEED_BLOCKING  = True
     ExeTaurus1D_B20_KMixing_OEblocking.BLOCK_ALSO_NEGATIVE_K = False
     ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION        = True 
-    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = True
+    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = find_Kfor_all_sps
     
     ExeTaurus1D_B20_KMixing_OEblocking.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD
