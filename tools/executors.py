@@ -495,6 +495,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             exporting the list of results-wf final in a list.dat for BMF calculations
             
             export the constrained value as well (from CONSTRAINT_DT)
+            
+            save results in the PNVAP.
         """
         ## export of the list.dat file
         bins_, outs_ = [], []

@@ -258,7 +258,7 @@ eval/export Valence.Space   = {export_vs}
         self.eta_grad   = 0.001
         self.mu_grad    = 0.2
         self.grad_tol   = 0.01
-        self.beta_schm  = 1
+        self.beta_schm  = 1        # 0 = Q_lm.  1 = b_lm   2 = beta, b_lm. gamma
         self.pair_schm  = 1
         
         ## default constraints (b1 constraints = 1 lead to w.f to slide by the 

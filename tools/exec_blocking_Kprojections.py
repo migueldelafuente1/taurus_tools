@@ -37,15 +37,16 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     BLOCK_ALSO_NEGATIVE_K = False
     RUN_PROJECTION        = False
     
-    _MIN_ENERGY_CRITERIA  = False ## only apply for FIND_K_FOR_ALL_SPS, protocol 
+    _MIN_ENERGY_CRITERIA  = False ## only apply for FIND_K_FOR_ALL_SPS, protocol
+    
+    FULLY_CONVERGE_BLOCKING_ITER_MODE  = True  ## Get the final blocked-states solution
+    PRECONVERNGECE_BLOCKING_ITERATIONS = 100
     
     def __init__(self, z, n, interaction, *args, **kwargs):
         
         ExeTaurus1D_DeformB20.__init__(self, z, n, interaction, *args, **kwargs)
         
         self._valid_Ks : list = []
-        self._K_results : dict = {}   # not used
-        self._K_seed_list : dict = {} # not used
         
         ## Optimization to skip already found sp for a previous K;
         ##   NOTE: for that deformation, we already know that sp will end into 
@@ -57,21 +58,13 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         self._blocking_section = False
         self._save_results     = True
         self._previous_bin_path= None
-        self._projectionAllowed= self.RUN_PROJECTION
+        self._projectionAllowed = self.RUN_PROJECTION
+        self._exportable_results_forK = {} ## i_def: <DataTaurus> (all, broken or not)
         
         if self.FIND_K_FOR_ALL_SPS:
             self._save_results = False
             self._container    = BaseResultsContainer1D()
             # self._contaienrPAV = BaseResultsContainer1D("TEMP_BU_PAV")
-    
-    # def setInputCalculationArguments(self, core_calc=False, axial_calc=False, 
-    #                                        spherical_calc=False, **input_kwargs):
-    #
-    #     ExeTaurus1D_DeformB20.setInputCalculationArguments(self, 
-    #                                                        core_calc=core_calc, 
-    #                                                        axial_calc=axial_calc, 
-    #                                                        spherical_calc=spherical_calc, 
-    #                                                        **input_kwargs)
     
     def setUpExecution(self, reset_seed=False, valid_Ks=[], *args, **kwargs):
         """
@@ -79,7 +72,6 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, 
                                                    *args, **kwargs)
-        
         ## organization only sorted: in the range of valid j
         # self._valid_Ks = [k for k in range(-self._sp_2jmax, self._sp_2jmax+1, 2)]
         # # skip invalid K for the basis, i.e. _sp_2jmin=3/2 -> ..., 5,3,-3,-5 ...
@@ -101,7 +93,6 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                         assert not sp_ in self._sp_states_obj, "Already found"
                         self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
         
-        
         ## optimal organization of the K: 1, -1, 3, -3, ...
         for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
             if not k in valid_states_KP: 
@@ -112,15 +103,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             if self.BLOCK_ALSO_NEGATIVE_K:
                 self._valid_Ks.append(-k)
         
-        
         for k in self._valid_Ks:
             def_dct = list(map(lambda x: x[0], self._deformations_map[0]))
             def_dct+= list(map(lambda x: x[0], self._deformations_map[1]))
             def_dct.sort()
             def_dct = dict((kk, None) for kk in def_dct)
-            
-            self._K_results[k]   = def_dct
-            self._K_seed_list[k] = deepcopy(def_dct)
             
             self._sp_blocked_K_already_found = deepcopy(def_dct)
             for kk in self._sp_blocked_K_already_found:
@@ -157,6 +144,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         os.mkdir(BU_FLD_KBLOCK)
         self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
         self._exportable_LISTDAT_forK = []
+        self._exportable_results_forK = {}
         self._list_PAV_outputs[self._current_K] = []
         printf(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
               f"results. saving in [{BU_FLD_KBLOCK}]")
@@ -167,7 +155,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         self._blocking_section = False
         ExeTaurus1D_DeformB20.run(self)
-        
+                
         if fomenko_points:
             self.inputObj.z_Mphi = fomenko_points[0]
             self.inputObj.n_Mphi = fomenko_points[1]
@@ -179,13 +167,14 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         printf(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
         printf(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
         printf(f"   Doing also Projection:    {self.RUN_PROJECTION}")
-        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
+        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}")
+        printf(f"   Valid Ks = {self._valid_Ks}\n")
         
         self.inputObj.seed = 1
         self.inputObj.eta_grad  = 0.03 
         self.inputObj.mu_grad   = 0.00
         self.inputObj.grad_type = 1
-        self.inputObj.iterations = 600
+        self._iters_vap_default = self.inputObj.iterations
         
         # Perform the projections to save each K component
         for K in self._valid_Ks:
@@ -193,7 +182,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             self._current_K = K
             self._KComponentSetUp()
             
-            self._exportable_txt = {}
+            self._export_txt_for_K = {}
             # oblate part
             for prolate in (0, 1):
                 for i_def, tail_ in self._final_bin_list_data[prolate].items():
@@ -202,18 +191,33 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                     shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
                                 "initial_wf.bin")
                     
+                    self._resetTheIterationsForKcomponentIterations()
                     ## NOTE: Projection is not allowed for the _executeProgram,
                     ## in order to do it after checking (or not) all sp-K, 
                     ## PAV is done in _selectStateFromCalculationSetTearDown()
                     self._projectionAllowed = False
                     self._spIterationAndSelectionProcedure(i_def)
-                    ## B20 loop
-                    printf()
+                    
                 self._previous_bin_path = None
             if self._no_results_for_K: 
                 printf("  [WARNING] No blocked result for 2K=", K)
             # K-loop
         _ = 0
+    
+    
+    def _resetTheIterationsForKcomponentIterations(self):
+        """
+        Set the iteration number in case of K-preconvergence.
+        else, leave the number of iterations as setted in setUpExecutions(on_run)
+        """
+        if self.FULLY_CONVERGE_BLOCKING_ITER_MODE:
+            if not self._curr_deform_index in (-1, 0): 
+                self.inputObj.iterations = self.PRECONVERNGECE_BLOCKING_ITERATIONS
+            else:
+                self.inputObj.iterations = self._iters_vap_default
+            
+        else:
+            pass
     
     def _spIterationAndSelectionProcedure(self, i_def):
         """
@@ -319,8 +323,14 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 dat_fn = f"{fndat}_{dat_f}"
                 shutil.move(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
             
-            if not fnbin in self._exportable_LISTDAT_forK:
-                self._exportable_LISTDAT_forK.append(fnbin)
+            if not (fnbin in self._exportable_LISTDAT_forK or _invalid):        
+                if self.ITERATIVE_METHOD != self.IterativeEnum.EVEN_STEP_STD:
+                    printf(" [WARING] CheckOut the BU_folderK/list.dat ORDER, ",
+                           "iterative method considered for EVEN_STEP_STD.")
+                if self._curr_deform_index < 0:
+                    self._exportable_LISTDAT_forK.insert(0, fnbin)
+                else:
+                    self._exportable_LISTDAT_forK.append(fnbin)
         else:
             ## Normal execution
             ExeTaurus1D_DeformB20.saveFinalWFprocedure(self, 
@@ -352,7 +362,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             Separate the two parts for obtaining the 'exportResult()' for 
             minimization after blocking.
         """
-        if self._blocking_section:
+        if self._blocking_section:            
             if not self._save_results: 
                 return
             ## save the list dat into folder
@@ -364,11 +374,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             with open(f'{self._exportable_BU_FLD_KBLOCK}/' + 
                       self.EXPORT_LIST_RESULTS.replace('TESb20', f'TESb20_K{K}')
                       , 'w+') as f:
-                exportable_txt = [self._exportable_txt[k] 
-                                  for k in sorted(self._exportable_txt.keys())]
+                exportable_txt = [self._export_txt_for_K[k] 
+                                  for k in sorted(self._export_txt_for_K.keys())]
                 exportable_txt.insert(0, "{}, {}".format('DataTaurus', 
                                                          self.CONSTRAINT_DT))
-                if len(self._exportable_txt):
+                if len(self._export_txt_for_K):
                     f.write("\n".join(exportable_txt))
         else:
             ## Normal execution
@@ -397,23 +407,28 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         b20 = dict(self._deformations_map[prolate]).get(i)
         sp_index = self._current_sp
         
+        _iter_str = "[{}/{}: {}']".format(res.iter_max, self.inputObj.iterations, 
+                                          getattr(res, 'iter_time_seconds', 0) //60 )
         if self._save_results:
-            id_, res = self._choosen_state_data
+            # id_, res = self._choosen_state_data ##( Dont do it, cause overwrites the final res information)
+            id_, _ = self._choosen_state_data
             sp_index = int(id_.split('_')[0].replace('sp', '')) if id_ else 0
-            printf("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
+            printf("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
-                          res.Jz, res.b20_isoscalar, res.E_HFB))
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index,
+                          res.E_HFB, _iter_str))
         else:
-            printf("      . {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f}"
+            printf("      . {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
-                          res.Jz, res.b20_isoscalar, res.E_HFB))
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index, 
+                          res.E_HFB, _iter_str))
         ## Append the exportable result file
         line = []
         if self.include_header_in_results_file:
             line.append(f"{i:5}: {b20:+6.3f}")
         line.append(res.getAttributesDictLike)
-        self._exportable_txt[i] = self.HEADER_SEPARATOR.join(line)
-        
+        self._export_txt_for_K[i] = self.HEADER_SEPARATOR.join(line)
+        self._exportable_results_forK[i] = res
         self._sp_blocked_K_already_found[i][sp_index] = self._current_K
     
     def _K_notFoundActionsTearDown(self, res: DataTaurus):
@@ -421,19 +436,24 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         Actions to discard or notice invalid result.
         """
         sp_index = self._current_sp
+        _iter_str = "[{}/{}: {}']".format(res.iter_max, self.inputObj.iterations, 
+                                          getattr(res, 'iter_time_seconds', 0) //60 )
         
         if not self._save_results:
-            printf("   [xx] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
+            printf("   [xx] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {} axial={}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
-                          res.Jz, res.b20_isoscalar, res.E_HFB, res.isAxial()))
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index, 
+                          res.E_HFB, _iter_str, res.isAxial()))
             return
         else:
-            printf("      X {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}  E_hfb={:6.3f} axial={}"
+            printf("      X {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {} axial={}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
-                          res.Jz, res.b20_isoscalar, res.E_HFB, res.isAxial()))
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index, 
+                          res.E_HFB, _iter_str, res.isAxial()))
         invalid_fn = self._list_PAV_outputs[self._current_K].pop()
         invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
         
+        self._exportable_results_forK[self._curr_deform_index] = res
         outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
         shutil.move(invalid_fn, outpth)
         
@@ -479,18 +499,24 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         Overlap between different states <L | R> from the surface,
         """
+        def _testing4Windows(fn_):
+            shutil.copy('data_resources/testing_files/TEMP_res_PAV_z8n9_1result.txt',
+                        f'{fn_}.out')
+        
+        id_sel, bin_sel, datfiles = None, None, []
         if not self._previous_bin_path:
             ## No result, use the minimum energy result or first result
-            id_sel, res, bin_, datfiles = self._energy_CriteriaForStateSelection()
+            args = self._energy_CriteriaForStateSelection()
+            id_sel, res_sel, bin_sel, datfiles = args
             printf("   * Initial state selected =", id_sel, "\n ---------------")
         else:
             printf("   * Overlap criteria begins ---------------")
             shutil.copy(self._previous_bin_path, 'left_wf.bin')
             
-            id_sel, overlapm1_min = None, 999999
-            for id_, res in self._container.getAllResults().items():
-                bin = self._container.get(id_)[1]
-                shutil.copy(f'{self._container.BU_folder}/{bin}', 'right_wf.bin')
+            overlap_min = -999999  # - if sorting for largest norm, + for 1 nearest
+            for id_ in self._container.getAllResults().keys():
+                bin_ = self._container.get(id_)[1]
+                shutil.copy(f'{self._container.BU_folder}/{bin_}', 'right_wf.bin')
                 
                 ## No PAV projection (only PN if VAP wf have it)
                 inp_pav = self.inputObj_PAV.copy()
@@ -508,6 +534,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                     
                     try:
                         os.system(f'./taurus_pav.exe < {fn_}.inp > {fn_}.out')
+                        if os.getcwd().startswith('C:'): _testing4Windows(fn_)
                         res_ov = DataTaurusPAV(self.z, self.n, f'{fn_}.out')
                     except BaseException:
                         if res_ov == None:
@@ -519,8 +546,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                               empty_states_case)
                         continue
                     overl  = res_ov.proj_norm[0]
-                    if 1 - abs(overl) < overlapm1_min:  ## ovelap has an arbitrary phase 
-                        overlapm1_min = 1 - abs(overl)
+                    # overl_new = abs(1 - abs(overl)) # to 1: overl_new < overlap_min
+                    overl_new = abs(overl)          # larges: overl_new > overlap_min
+                    if overl_new > overlap_min:  ## ovelap has an arbitrary phase 
+                        overlap_min = overl_new
                         id_sel = id_
                         printf(f"     *( pass) overlap_{id_}= {overl:6.5f}")
                     else:
@@ -529,21 +558,24 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             
             ## Highly 
             if id_sel == None:
-                id_sel = self._container.get(None, list_index_element=0)[-1]
+                args = self._container.get(None, list_index_element=0)
+                res_sel, bin_sel, datfiles, id_sel = args
                 ## TODO: Other idea is to use the again the E_min criteria.
                 printf("     Final state selected = None / using the first value", 
                       id_sel, "\n ---------------")
             else:
+                res_sel, bin_sel, datfiles = self._container.get(id_sel)
                 printf("     Final state selected =", id_sel, "\n ---------------")
             os.remove(self._previous_bin_path)
-            res, bin_, datfiles  = self._container.get(id_sel)
         
-        ## Update the previous result binary
+        ## Update the previous result binary 
+        ## NOTE: In cases with uncompleted-convergence, this prievious path will
+        ##       be updated after complete execution (_runningAfterSelection)
         self._previous_bin_path = f"previous_wf_{id_sel}.bin"
-        src = "{}/{}".format(self._container.BU_folder, bin_)
+        src = "{}/{}".format(self._container.BU_folder, bin_sel)
         shutil.copy(src, self._previous_bin_path)
         
-        return id_sel, res, bin_, datfiles
+        return id_sel, res_sel, bin_sel, datfiles
     
     def _runningAfterSelection(self, id_sel, bin_, datfiles):
         """
@@ -560,14 +592,19 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         shutil.copy(src, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
         src = "{}/{}".format(self._container.BU_folder, bin_)
         shutil.copy(src, 'final_wf.bin')
+        ## NOTE: Ensure to copy the correct function for the prev_path
+        shutil.copy('final_wf.bin', self._previous_bin_path)
         if datfiles:
             for file_ in datfiles:
                 if not '.dat' in file_: file_ += '.dat'
                 file_2 = file_.replace(f"_{id_sel}", "")
                 shutil.copy("{}/{}".format(self._container.BU_folder, file_), 
                             file_2)
-        if self.RUN_PROJECTION:
-            self.runProjection()
+        
+        if self.RUN_PROJECTION: self.runProjection()
+        
+        result = DataTaurus(self.z, self.n, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
+        return result
     
     def _selectStateFromCalculationSetTearDown(self, set_energies):
         """
@@ -601,11 +638,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             self._choosen_state_data = (id_sel, res)
         
         if id_sel != None:
-            self._runningAfterSelection(id_sel, bin_, datfiles)
+            ## Overwrite anyways with the final result.
+            res = self._runningAfterSelection(id_sel, bin_, datfiles)
             
             ## Execute exporting functions as it where the normal run
             self.saveFinalWFprocedure(res, False)
-            self.executionTearDown(res, False)
+            self.executionTearDown   (res, False)
             self._K_foundActionsTearDown(res)
             
             ## Copy all elements in TEMP_BU folder to BU
@@ -657,73 +695,13 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
            convergence precission. After that evaluate the PAV over itself.
     """
     
-    FULLY_CONVERGE_BLOCKING_ITER = False  ## Get the final blocked-states solution
-    
-    def run(self, fomenko_points=None, fully_converge_blocking_sts=False):
-        """
-        Modifyed method to obtain the reminization with a blocked state.
-        """
-        self._blocking_section = False
-        ExeTaurus1D_DeformB20.run(self)
-        
-        self.FULLY_CONVERGE_BLOCKING_ITER = fully_converge_blocking_sts
-        
-        if fomenko_points:
-            self.inputObj.z_Mphi = fomenko_points[0]
-            self.inputObj.n_Mphi = fomenko_points[1]
-            self.inputObj_PAV.z_Mphi = fomenko_points[0]
-            self.inputObj_PAV.n_Mphi = fomenko_points[1]            
-        ##  
-        self._blocking_section = True
-        if self.numberParity == (0, 0): return
-        printf(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
-        printf(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
-        printf(f"   Doing also Projection:    {self.RUN_PROJECTION}")
-        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}\n")
-        printf(f"   Valid Ks = {self._valid_Ks}")
-        
-        self.inputObj.seed = 1
-        self.inputObj.eta_grad  = 0.03 
-        self.inputObj.mu_grad   = 0.00
-        self.inputObj.grad_type = 1
-        _default_vap_iters = self.inputObj.iterations
-        
-        # Perform the projections to save each K component
-        for K in self._valid_Ks:
-            self._no_results_for_K = True
-            self._current_K = K
-            self._KComponentSetUp()
-            
-            self._exportable_txt = {}
-            # oblate part
-            for prolate in (0, 1):
-                for i_def, tail_ in self._final_bin_list_data[prolate].items():
-                    
-                    self._curr_deform_index = i_def
-                    shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
-                                "initial_wf.bin")
-                    
-                    self.inputObj.iterations = _default_vap_iters
-                    if not i_def in (-1, 0): self.inputObj.iterations = 100
-                    ## NOTE: Projection is not allowed for the _executeProgram,
-                    ## in order to do it after checking (or not) all sp-K, 
-                    ## PAV is done in _selectStateFromCalculationSetTearDown()
-                    self._projectionAllowed = False
-                    self._spIterationAndSelectionProcedure(i_def)
-                    
-                self._previous_bin_path = None
-            if self._no_results_for_K: 
-                printf("  [WARNING] No blocked result for 2K=", K)
-            # K-loop
-        _ = 0
-    
     def _spIterationAndSelectionProcedure(self, i_def):
         """
         Iteration over all the single-particle states until getting a correct 
         solution (axial and same K)
         * Getting the first solution or try over all the possible blockings
         """
-        if self.FULLY_CONVERGE_BLOCKING_ITER:
+        if self.FULLY_CONVERGE_BLOCKING_ITER_MODE:
             ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
                 _spIterationAndSelectionProcedure(self, i_def)
             return
@@ -784,18 +762,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         
         Method to be overwritten for unconverged solutions.
         """
-        
-        if self.FULLY_CONVERGE_BLOCKING_ITER or self._curr_deform_index in (0,-1):
-            ## First states are converged to ensure a good starting value
-            ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
-                _runningAfterSelection(self, id_sel, bin_, datfiles)
-            return
         ## This block export the chosen solution as if the program where 
         ## executed.
         src = "{}/{}".format(self._container.BU_folder, bin_)
         shutil.copy(src, 'initial_wf.bin')
+        
+        if self.FULLY_CONVERGE_BLOCKING_ITER_MODE or self._curr_deform_index in (0,-1):
+            ## First states are converged to ensure a good starting value
+            result = ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
+                        _runningAfterSelection(self, id_sel, bin_, datfiles)
+            return result
                 
-        self.inputObj.iterations = 1000
+        self.inputObj.iterations = self._iters_vap_default
         self.inputObj.qp_block   = 0 # The 1st result has already been blocked
         with open(self.ITYPE.DEFAULT_INPUT_FILENAME, 'w+') as f:
             f.write(self.inputObj.getText4file())
@@ -804,8 +782,185 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
                   .format(self.ITYPE.DEFAULT_INPUT_FILENAME,
                           self.DTYPE.DEFAULT_OUTPUT_FILENAME))
         ## NOTE: .dat files are generated and not to be copied
+        ## FOR TESTING:
+        if os.getcwd().startswith('C:'): 
+            shutil.copy('data_resources/testing_files/TEMP_res_z2n1_0-dbase3odd.txt',
+                        self.DTYPE.DEFAULT_OUTPUT_FILENAME)
+        
+        ## NOTE: Ensure to copy the correct function for the prev_path
+        shutil.copy('final_wf.bin', self._previous_bin_path)
         
         if self.RUN_PROJECTION: self.runProjection()
+        
+        result = DataTaurus(self.z, self.n, self.DTYPE.DEFAULT_OUTPUT_FILENAME)
+        return result
+
+class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
+    
+    """
+    Protocol to evaluate the K mixing of states of different b_20, as in the
+    parent executor class. This process do the same false odd-even meanfield,
+    block each state of each J-Pi.
+    
+    As a final step, it reorganizes the results for b20 folders with each 
+    <K|H|K'> matrix elements in order to operate in parallel the program 
+    "taurus_pav.exe" for PAV projections.
+    \b20_1
+        \1 <1/2| 1/2>, input_pav.INP, hamil_files..., taurus_pav.exe
+        \2 <1/2| 3/2>, " "
+        \3 <1/2| 5/2>, " "
+        \4 <3/2| 3/2>, " "
+        ...
+        \6 <5/2| 5/2>, " "
+    \b20_2
+        ...
+    ...
+    
+    The script might or not to execute or not each node, however, it can prepare
+    all the scripts for the slurm execution and the concatenation of the 
+    "projmatelem_states.bin", HWG folder and its bash-scripts.
+    
+    """
+    
+    def _KComponentSetUp(self):
+        ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)
+        
+        if self._current_K != self._valid_Ks[0]: 
+            return
+        
+        self._export_PAV_Folders = {}
+        # Proceed to create the folders for each deformation
+        for prolate in (0, 1):
+            for i in self._final_bin_list_data[prolate].keys():
+                
+                BU_FLD_DEF_BLOCK = f"{self.DTYPE.BU_folder}/def{i}_PAV"
+                BU_FLD_DEF_BLOCK = BU_FLD_DEF_BLOCK.replace('-', '_')
+                # Create new BU folder
+                if os.path.exists(BU_FLD_DEF_BLOCK):
+                    shutil.rmtree(BU_FLD_DEF_BLOCK)
+                os.mkdir(BU_FLD_DEF_BLOCK)
+                self._export_PAV_Folders[i] = BU_FLD_DEF_BLOCK + '/'
+                    
+    
+    def _K_foundActionsTearDown(self, res:DataTaurus):
+        """ Overwriting to save the results in d """        
+        ExeTaurus1D_B20_OEblocking_Ksurfaces.\
+            _K_foundActionsTearDown(self, res)
+        
+        ## ALL SP results require not to store until all done
+        if not self._save_results: return
+        
+        _PAR = (1 - self.PARITY_TO_BLOCK)//2
+        dest_ = f"{self._current_K}_{_PAR}.bin"
+        shutil.copy('final_wf.bin', 
+                    self._export_PAV_Folders[self._curr_deform_index] + dest_)
+    
+    def _get_gcm_filetexts(self, list_wf):
+        """
+        Creates auxiliary files for PNVAP_preparation scripts in linux.
+                gcm      : "file1   file2   i1 i2" ...
+                gcm_3    : "k" ...
+                gcm_diag : "k" ... for k where file1 == file2
+        
+            :list_wf <list>: wf names in order
+            
+            :Returns: gcm, gcm_3, gcm_diag
+        """
+        gcm = []
+        gcm_3 = []
+        gcm_diag = []
+        
+        k = 0
+        for i, file_1 in enumerate(list_wf):
+            for j in range(i, len(list_wf)):
+                file_2 = list_wf[j]
+                
+                k += 1
+                gcm_3.append(str(k))
+                gcm.append("{:<36}\t{:<36}\t{:3.0f} {:3.0f}"
+                           .format(file_1, file_2, i+1, j+1))
+                if i == j:
+                    gcm_diag.append(str(k))
+        
+        gcm = "\n".join(gcm)
+        gcm_3 = "\n".join(gcm_3)
+        gcm_diag = "\n".join(gcm_diag)
+        gcm_files = {'gcm': gcm, 'gcm_3': gcm_3, 'gcm_diag': gcm_diag}
+        return gcm_files
+    
+    def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
+        
+        ExeTaurus1D_B20_OEblocking_Ksurfaces\
+            .globalTearDown(self, zip_bufolder=zip_bufolder, *args, **kwargs)       
+        
+        ## Import the programs if they do not exist
+        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
+                                mix= not os.path.exists(InputTaurusMIX.PROGRAM))
+            
+        ## Introduce the jobfiles in case of using slurm.
+        for prolate in (0, 1):
+            for i in self._final_bin_list_data[prolate].keys():
+                FLD_ = self._export_PAV_Folders[i]
+                
+                k_list = []
+                for K in self._valid_Ks:
+                    _PAR = (1 - self.PARITY_TO_BLOCK)//2
+                    dest_ = f"{K}_{_PAR}.bin"
+                    if dest_ in os.listdir(FLD_): 
+                        k_list.append(dest_)
+                # k_list = k_list + ['3_0.bin', '5_0.bin']
+                
+                ## save auxiliary gcm, gcm_3, gcm_diag files
+                gcm_files = self._get_gcm_filetexts(k_list)
+                for f_, txt_ in gcm_files.items():
+                    with open(FLD_+f_, 'w+') as f:
+                        f.write(txt_)
+                
+                valid_J_list = list(filter(lambda x: x>0, self._valid_Ks))
+                scr_x = _SlurmJob1DPreparation(self.interaction,  
+                                               len(k_list), valid_J_list, 
+                                               InputTaurusPAV.DEFAULT_INPUT_FILENAME, 
+                                               InputTaurusMIX.DEFAULT_INPUT_FILENAME)
+                scr_files = scr_x.getScriptsByName()
+                
+                ## HWG program and script prepared
+                FLD_3 = FLD_+'HWG'
+                os.mkdir(FLD_3)
+                f_ = 'hw.x'
+                with open(FLD_3+'/'+f_, 'w+') as f:
+                    f.write(scr_files.pop(f_))
+                shutil.copy(InputTaurusPAV.PROGRAM, FLD_3)
+                
+                ## PNPAMP files
+                for f_, txt_ in scr_files.items():
+                    with open(FLD_+f_, 'w+') as f:
+                        f.write(txt_)
+                
+                ## create all the folders for PNPAMP
+                inp_pav = InputTaurusPAV.DEFAULT_INPUT_FILENAME
+                with open(FLD_+'gcm', 'r') as fr:
+                    folder_list = fr.readlines()
+                                     
+                for k_fold, line in enumerate(folder_list):
+                    f1, f2, i, j = [f_.strip() for f_ in line.split()]
+                    
+                    FLD_2 = f"{FLD_}/{k_fold+1}"
+                    os.mkdir(FLD_2)
+                    shutil.copy(FLD_+f1, f"{FLD_2}/left_wf.bin")
+                    shutil.copy(FLD_+f2, f"{FLD_2}/right_wf.bin")
+                    for hty in OutputFileTypes.members() + ['.red', ]:
+                        if os.path.exists(self.interaction+hty):
+                            shutil.copy(self.interaction+hty, FLD_2)
+                    
+                    inp_pav = f"{FLD_2}/{InputTaurusPAV.DEFAULT_INPUT_FILENAME}"
+                    with open(inp_pav, 'w+') as f_:
+                        f_.write(self.inputObj_PAV.getText4file())
+                    shutil.copy(InputTaurusPAV.PROGRAM, FLD_2)
+                    
+                _  = 0
+        ## Execute projection.
+        _ = 0
+
 
 class _SlurmJob1DPreparation():
     
@@ -1016,171 +1171,4 @@ done"""
         }
         
         return scripts_
-
-class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
-    
-    """
-    Protocol to evaluate the K mixing of states of different b_20, as in the
-    parent executor class. This process do the same false odd-even meanfield,
-    block each state of each J-Pi.
-    
-    As a final step, it reorganizes the results for b20 folders with each 
-    <K|H|K'> matrix elements in order to operate in parallel the program 
-    "taurus_pav.exe" for PAV projections.
-    \b20_1
-        \1 <1/2| 1/2>, input_pav.INP, hamil_files..., taurus_pav.exe
-        \2 <1/2| 3/2>, " "
-        \3 <1/2| 5/2>, " "
-        \4 <3/2| 3/2>, " "
-        ...
-        \6 <5/2| 5/2>, " "
-    \b20_2
-        ...
-    ...
-    
-    The script might or not to execute or not each node, however, it can prepare
-    all the scripts for the slurm execution and the concatenation of the 
-    "projmatelem_states.bin", HWG folder and its bash-scripts.
-    
-    """
-    
-    def _KComponentSetUp(self):
-        ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)
-        
-        if self._current_K != self._valid_Ks[0]: 
-            return
-        
-        self._export_PAV_Folders = {}
-        # Proceed to create the folders for each deformation
-        for prolate in (0, 1):
-            for i in self._final_bin_list_data[prolate].keys():
-                
-                BU_FLD_DEF_BLOCK = f"{self.DTYPE.BU_folder}/def{i}_PAV"
-                BU_FLD_DEF_BLOCK = BU_FLD_DEF_BLOCK.replace('-', '_')
-                # Create new BU folder
-                if os.path.exists(BU_FLD_DEF_BLOCK):
-                    shutil.rmtree(BU_FLD_DEF_BLOCK)
-                os.mkdir(BU_FLD_DEF_BLOCK)
-                self._export_PAV_Folders[i] = BU_FLD_DEF_BLOCK + '/'
-                    
-    
-    def _K_foundActionsTearDown(self, res:DataTaurus):
-        """ Overwriting to save the results in d """        
-        ExeTaurus1D_B20_OEblocking_Ksurfaces.\
-            _K_foundActionsTearDown(self, res)
-        
-        if not self._save_results:  
-            ## ALL SP results require not to store until all done
-            return
-        _PAR = (1 - self.PARITY_TO_BLOCK)//2
-        dest_ = f"{self._current_K}_{_PAR}.bin"
-        shutil.copy('final_wf.bin', 
-                    self._export_PAV_Folders[self._curr_deform_index] + dest_)
-    
-    def _get_gcm_filetexts(self, list_wf):
-        """
-        Creates auxiliary files for PNVAP_preparation scripts in linux.
-                gcm      : "file1   file2   i1 i2" ...
-                gcm_3    : "k" ...
-                gcm_diag : "k" ... for k where file1 == file2
-        
-            :list_wf <list>: wf names in order
-            
-            :Returns: gcm, gcm_3, gcm_diag
-        """
-        gcm = []
-        gcm_3 = []
-        gcm_diag = []
-        
-        k = 0
-        for i, file_1 in enumerate(list_wf):
-            for j in range(i, len(list_wf)):
-                file_2 = list_wf[j]
-                
-                k += 1
-                gcm_3.append(str(k))
-                gcm.append("{:<36}\t{:<36}\t{:3.0f} {:3.0f}"
-                           .format(file_1, file_2, i+1, j+1))
-                if i == j:
-                    gcm_diag.append(str(k))
-        
-        gcm = "\n".join(gcm)
-        gcm_3 = "\n".join(gcm_3)
-        gcm_diag = "\n".join(gcm_diag)
-        gcm_files = {'gcm': gcm, 'gcm_3': gcm_3, 'gcm_diag': gcm_diag}
-        return gcm_files
-    
-    def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
-        
-        ExeTaurus1D_B20_OEblocking_Ksurfaces\
-            .globalTearDown(self, zip_bufolder=zip_bufolder, *args, **kwargs)       
-        
-        ## Import the programs if they do not exist
-        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
-                                mix= not os.path.exists(InputTaurusMIX.PROGRAM))
-            
-        ## Introduce the jobfiles in case of using slurm.
-        for prolate in (0, 1):
-            for i in self._final_bin_list_data[prolate].keys():
-                FLD_ = self._export_PAV_Folders[i]
-                
-                k_list = []
-                for K in self._valid_Ks:
-                    _PAR = (1 - self.PARITY_TO_BLOCK)//2
-                    dest_ = f"{K}_{_PAR}.bin"
-                    if dest_ in os.listdir(FLD_): 
-                        k_list.append(dest_)
-                # k_list = k_list + ['3_0.bin', '5_0.bin']
-                
-                ## save auxiliary gcm, gcm_3, gcm_diag files
-                gcm_files = self._get_gcm_filetexts(k_list)
-                for f_, txt_ in gcm_files.items():
-                    with open(FLD_+f_, 'w+') as f:
-                        f.write(txt_)
-                
-                valid_J_list = list(filter(lambda x: x>0, self._valid_Ks))
-                scr_x = _SlurmJob1DPreparation(self.interaction,  
-                                               len(k_list), valid_J_list, 
-                                               InputTaurusPAV.DEFAULT_INPUT_FILENAME, 
-                                               InputTaurusMIX.DEFAULT_INPUT_FILENAME)
-                scr_files = scr_x.getScriptsByName()
-                
-                ## HWG program and script prepared
-                FLD_3 = FLD_+'HWG'
-                os.mkdir(FLD_3)
-                f_ = 'hw.x'
-                with open(FLD_3+'/'+f_, 'w+') as f:
-                    f.write(scr_files.pop(f_))
-                shutil.copy(InputTaurusPAV.PROGRAM, FLD_3)
-                
-                ## PNPAMP files
-                for f_, txt_ in scr_files.items():
-                    with open(FLD_+f_, 'w+') as f:
-                        f.write(txt_)
-                
-                ## create all the folders for PNPAMP
-                inp_pav = InputTaurusPAV.DEFAULT_INPUT_FILENAME
-                with open(FLD_+'gcm', 'r') as fr:
-                    folder_list = fr.readlines()
-                                     
-                for k_fold, line in enumerate(folder_list):
-                    f1, f2, i, j = [f_.strip() for f_ in line.split()]
-                    
-                    FLD_2 = f"{FLD_}/{k_fold+1}"
-                    os.mkdir(FLD_2)
-                    shutil.copy(FLD_+f1, f"{FLD_2}/left_wf.bin")
-                    shutil.copy(FLD_+f2, f"{FLD_2}/right_wf.bin")
-                    for hty in OutputFileTypes.members() + ['.red', ]:
-                        if os.path.exists(self.interaction+hty):
-                            shutil.copy(self.interaction+hty, FLD_2)
-                    
-                    inp_pav = f"{FLD_2}/{InputTaurusPAV.DEFAULT_INPUT_FILENAME}"
-                    with open(inp_pav, 'w+') as f_:
-                        f_.write(self.inputObj_PAV.getText4file())
-                    shutil.copy(InputTaurusPAV.PROGRAM, FLD_2)
-                    
-                _  = 0
-        ## Execute projection.
-        _ = 0
-
 

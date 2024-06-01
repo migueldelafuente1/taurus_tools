@@ -68,17 +68,18 @@ if __name__ == '__main__':
     #                       q_min=-0.4, q_max=0.6, N_max=50, convergences=3, 
     #                       parity_2_block=1)
     
-    args = (nucleus, interactions_B1, GognyEnum.B1)
-    kwargs = dict(
-        valid_Ks = [1, 3, 5], 
-        seed_base=3, ROmega=(0,0),
-        q_min=-0.8, q_max=0.8, N_max=5, convergences=0,   ## 0.6, 25
-        parity_2_block=1,
-        fomenko_points=(7, 7),
-        fully_converge_blocking_sts=False,
-    )
-    run_b20_FalseOE_Kmixing(*args, **kwargs)
-    raise Exception("STOP HERE.")
+    if True: # to do the main evaluation.
+        args = (nucleus, interactions_B1, GognyEnum.B1)
+        kwargs = dict(
+            valid_Ks = [1, 3, 5], 
+            seed_base=3, ROmega=(0,0),
+            q_min=-0.8, q_max=0.8, N_max=7, convergences=0,   ## 0.6, 25
+            parity_2_block=1,
+            fomenko_points=(7, 7),
+            preconverge_blocking_sts=130,
+        )
+        run_b20_FalseOE_Kmixing(*args, **kwargs)
+        raise Exception("STOP HERE.")
     #
     # K2block = 1
     # args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
@@ -95,10 +96,10 @@ if __name__ == '__main__':
     kwargs = dict(
         valid_Ks = [1, 3, 5, 7, 9, 11], 
         seed_base=3, ROmega=(0,0),
-        q_min=-0.8, q_max=0.8, N_max=5, convergences=0,   ## 0.6, 25
+        q_min=-0.8, q_max=0.8, N_max=5, convergences=3,   ## 0.6, 25
         parity_2_block=-1,
         fomenko_points=(0, 7),
-        fully_converge_blocking_sts=True,
+        preconverge_blocking_sts=False,
     )
     run_b20_FalseOE_Kmixing(*args, **kwargs)
     

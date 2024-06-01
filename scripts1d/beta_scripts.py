@@ -78,7 +78,7 @@ def run_q20_surface(nucleus, interactions,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_q20_surface: ", datetime.now().time())
 
@@ -149,7 +149,7 @@ def run_b20_surface(nucleus, interactions,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_q20_surface: ", datetime.now().time())
 
@@ -244,7 +244,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface: ", datetime.now().time())
 
@@ -345,7 +345,7 @@ def run_b20_composedInteraction(nucleus, interactions, interaction_runnable,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface: ", datetime.now().time())
 
@@ -446,7 +446,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             exe_.run()
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface: ", datetime.now().time())
 
@@ -456,7 +456,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   q_min=-2.0, q_max=2.0, N_max=41, 
                                   convergences=0, fomenko_points=(1, 1), 
                                   parity_2_block= 1, 
-                                  fully_converge_blocking_sts=False,):
+                                  preconverge_blocking_sts=False,):
     
     """
         This script evaluate the projection after the blocking from a previous
@@ -476,6 +476,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :fomenko_points: (M protons, M neutron), default is HFB
         :parity_2_block: parity of the states to block
+        :preconverge_blocking_sts <int> = 0  :fully converge, > 0 -> number of steps
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -497,7 +498,12 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
     ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
-    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block   
+    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
+    
+    ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
+        preconverge_blocking_sts in (0, False)
+    ExeTaurus1D_B20_KMixing_OEblocking.PRECONVERNGECE_BLOCKING_ITERATIONS = \
+        preconverge_blocking_sts
     
     if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
         ## Import the programs if they do not exist
@@ -575,10 +581,10 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run(fomenko_points, fully_converge_blocking_sts)
+            exe_.run(fomenko_points)
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface k-mixing: ", datetime.now().time())
     
@@ -587,7 +593,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
                             seed_base=0, ROmega=(13, 13),
                             q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                             fomenko_points=(1, 1), 
-                            parity_2_block= 1, fully_converge_blocking_sts=False,
+                            parity_2_block= 1, preconverge_blocking_sts=False,
                             ):
     """
     Reqire:
@@ -604,6 +610,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :fomenko_points: (M protons, M neutron), default is HFB
         :parity_2_block: parity of the states to block
+        :preconverge_blocking_sts <int> = 0  :fully converge, > 0 -> number of steps
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -627,6 +634,11 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
     ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
+    ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
+        preconverge_blocking_sts in (0, False)
+    ExeTaurus1D_B20_KMixing_OEblocking.PRECONVERNGECE_BLOCKING_ITERATIONS = \
+        preconverge_blocking_sts
+    
     if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
         ## Import the programs if they do not exist
         importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM))
@@ -638,7 +650,6 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
-        printf("pito")
         InputTaurus.set_inputDDparamsFile(
             **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
                InputTaurus.InpDDEnum.r_dim     : ROmega[0],
@@ -702,9 +713,9 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             exe_.setUpExecution(**input_args_onrun)
             exe_.setUpProjection(**input_args_projection)
             exe_.force_converg = False
-            exe_.run(fomenko_points, fully_converge_blocking_sts)
+            exe_.run(fomenko_points)
             exe_.globalTearDown()
         except ExecutionException as e:
-            printf(e)
+            printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface k-mixing: ", datetime.now().time())
