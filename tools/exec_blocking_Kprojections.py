@@ -195,7 +195,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                     ## NOTE: Projection is not allowed for the _executeProgram,
                     ## in order to do it after checking (or not) all sp-K, 
                     ## PAV is done in _selectStateFromCalculationSetTearDown()
-                    self._projectionAllowed = False
+                    ##
+                    ## However, in case of not searching all sp-states-K do it.
+                    self._projectionAllowed *= (not self.FIND_K_FOR_ALL_SPS)
                     self._spIterationAndSelectionProcedure(i_def)
                     
                 self._previous_bin_path = None
@@ -210,12 +212,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         Set the iteration number in case of K-preconvergence.
         else, leave the number of iterations as setted in setUpExecutions(on_run)
         """
-        if self.FULLY_CONVERGE_BLOCKING_ITER_MODE:
+        if not self.FULLY_CONVERGE_BLOCKING_ITER_MODE:
             if not self._curr_deform_index in (-1, 0): 
                 self.inputObj.iterations = self.PRECONVERNGECE_BLOCKING_ITERATIONS
             else:
                 self.inputObj.iterations = self._iters_vap_default
-            
         else:
             pass
     
@@ -410,9 +411,13 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         _iter_str = "[{}/{}: {}']".format(res.iter_max, self.inputObj.iterations, 
                                           getattr(res, 'iter_time_seconds', 0) //60 )
         if self._save_results:
-            # id_, res = self._choosen_state_data ##( Dont do it, cause overwrites the final res information)
-            id_, _ = self._choosen_state_data
-            sp_index = int(id_.split('_')[0].replace('sp', '')) if id_ else 0
+            if self.FIND_K_FOR_ALL_SPS:
+                id_, _ = self._choosen_state_data   ## don't exctract the res
+                sp_index = int(id_.split('_')[0].replace('sp', '')) if id_ else 0
+            else:
+                sp_index = self._current_sp
+                self._choosen_state_data = (self._current_sp, res) # not used
+            
             printf("   [OK] {:>3} {:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, self._curr_deform_index,
@@ -740,6 +745,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
                 continue
             if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
                 ## no more minimizations for this deformation
+                                
                 self._no_results_for_K *= False
                 self._K_foundActionsTearDown(res)
                 set_energies[sp_] = f"{res.E_HFB:6.4f}"
