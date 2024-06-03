@@ -5,7 +5,7 @@ Created on 18 mar 2024
 '''
 import os
 from tools.Enums import GognyEnum
-from scripts1d.beta_Kblocking_scripts import 
+from scripts1d.beta_Kblocking_scripts import \
     run_b20_FalseOE_Kprojections_Gogny, run_b20_FalseOE_Block1KAndPAV, \
     run_b20_FalseOE_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ
 from tools.inputs import InputTaurus
