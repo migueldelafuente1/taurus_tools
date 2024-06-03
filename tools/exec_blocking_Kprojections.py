@@ -78,6 +78,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         # self._valid_Ks = list(filter(lambda x: abs(x) >= self._sp_2jmin,
         #                              self._valid_Ks))
         
+        if not self.FIND_K_FOR_ALL_SPS:
+            # NOTE: verify full convergence in case of given preconvergence steps
+            self.FULLY_CONVERGE_BLOCKING_ITER_MODE  = True
+            self.PRECONVERNGECE_BLOCKING_ITERATIONS = self.inputObj.iterations
+        
         valid_states_KP = set()
         for sp_ in range(1, self._sp_dim +1):
             i = 0

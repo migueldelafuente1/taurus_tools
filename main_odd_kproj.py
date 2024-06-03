@@ -5,8 +5,9 @@ Created on 18 mar 2024
 '''
 import os
 from tools.Enums import GognyEnum
-from scripts1d.beta_scripts import run_b20_FalseOE_Kprojections_Gogny, \
-    run_b20_FalseOE_Kmixing, run_b20_FalseOE_Block1KAndPAV
+from scripts1d.beta_Kblocking_scripts import 
+    run_b20_FalseOE_Kprojections_Gogny, run_b20_FalseOE_Block1KAndPAV, \
+    run_b20_FalseOE_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf, __log_file
 
@@ -90,18 +91,19 @@ if __name__ == '__main__':
 
     ## TEST with the h11/2 state
     
-    interactions_B1 = {(0, 1): 'B1_h11o2', }
+    interactions_B1 = {(0, 3): 'B1_h11o2', }
     nucleus = sorted(list(interactions_B1.keys()))
     
     args = (nucleus, interactions_B1, GognyEnum.B1)
     kwargs = dict(
         valid_Ks = [1, 3, 5, 7, 9, 11], 
         seed_base=3, ROmega=(0,0),
-        q_min=-0.8, q_max=0.8, N_max=5, convergences=3,   ## 0.6, 25
+        q_min=-0.6, q_max=0.6, N_max=25, convergences=3,   ## 0.6, 25
         parity_2_block=-1,
         fomenko_points=(0, 7),
         preconverge_blocking_sts=False,
+        find_Kfor_all_sps = True
     )
-    run_b20_FalseOE_Kmixing(*args, **kwargs)
+    run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
     
     
