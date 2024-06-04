@@ -7,18 +7,17 @@ Created on 19 mar 2024
 
 from copy import deepcopy
 import shutil
-import numpy as np
 import os
 
 from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj,\
-    importAndCompile_taurus, printf
+    importAndCompile_taurus, printf, LINE_2
 from tools.data import DataTaurus, DataTaurusPAV, BaseResultsContainer1D,\
     DataObjectException
 from tools.inputs import InputTaurusPAV, InputTaurusMIX
 from .executors import ExeTaurus1D_DeformB20
 from tools.Enums import OutputFileTypes
-
-
+from numpy.random import randint
+from tools.base_executors import ExecutionException, _Base1DTaurusExecutor
 
 class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     '''
@@ -70,8 +69,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         Set up of the main false OE TES and the arrays for the blocking part.
         """
-        ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, 
-                                                   *args, **kwargs)
+        
         ## organization only sorted: in the range of valid j
         # self._valid_Ks = [k for k in range(-self._sp_2jmax, self._sp_2jmax+1, 2)]
         # # skip invalid K for the basis, i.e. _sp_2jmin=3/2 -> ..., 5,3,-3,-5 ...
@@ -119,6 +117,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 self._sp_blocked_K_already_found[kk] = {}
                 for sp_ in range(1, self._sp_dim +1):
                     self._sp_blocked_K_already_found[kk][sp_] = 0 # default
+        
+        ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, 
+                                                   *args, **kwargs)
+        
     
     def setUpProjection(self, **params):
         """
@@ -152,7 +154,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         self._exportable_results_forK = {}
         self._list_PAV_outputs[self._current_K] = []
         printf(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
-              f"results. saving in [{BU_FLD_KBLOCK}]")
+               f"results. saving in [{BU_FLD_KBLOCK}]")
     
     def run(self, fomenko_points=None):
         """
@@ -289,6 +291,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         overwriting of exporting procedure:
             naming, dat files, output in the BU folder
+            
+        Modification: 
+            Output filenames and .dat filenames were MOVED, to extend the class
+            and avoid further errors it will be copied
         """
         if self._blocking_section:
             if not self._save_results:
@@ -298,7 +304,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 self._container.append(result, id_=id_, binary='final_wf.bin',
                                        datfiles=self.SAVE_DAT_FILES)
                 return
-                
+            
             # copy the final wave function and output with the deformation
             # naming (_0.365.OUT, 0.023.bin, etc )
             #
@@ -312,22 +318,22 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             
             _invalid = result.broken_execution or not result.properly_finished
             if _invalid:
-                shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
+                shutil.copy(self.DTYPE.DEFAULT_OUTPUT_FILENAME,  
                             f"{self._exportable_BU_FLD_KBLOCK}/broken_{fndat}.OUT")
                 for dat_f in self.SAVE_DAT_FILES:
                     dat_f += '.dat'
                     dat_fn = f"broken_{fndat}_{dat_f}"
-                    shutil.move(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
+                    shutil.copy(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
                 return
             
             shutil.copy("final_wf.bin", 
                         f"{self._exportable_BU_FLD_KBLOCK}/{fnbin}")
-            shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
+            shutil.copy(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
                         f"{self._exportable_BU_FLD_KBLOCK}/{fndat}.OUT")
             for dat_f in self.SAVE_DAT_FILES:
                 dat_f += '.dat'
                 dat_fn = f"{fndat}_{dat_f}"
-                shutil.move(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
+                shutil.copy(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
             
             if not (fnbin in self._exportable_LISTDAT_forK or _invalid):        
                 if self.ITERATIVE_METHOD != self.IterativeEnum.EVEN_STEP_STD:
@@ -972,6 +978,198 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         ## Execute projection.
         _ = 0
 
+class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
+    
+    """
+    Perform the blocking on the different K surfaces but from a base seed that
+    has been blocked
+    """
+    
+    def setUpExecution(self, reset_seed=False, valid_Ks=[], *args, **kwargs):
+        
+        if isinstance(valid_Ks, int):
+            self._current_K = valid_Ks
+            valid_Ks = [valid_Ks, ]
+        elif isinstance(valid_Ks, (list, tuple, set)):
+            if valid_Ks.__len__() != 1:
+                raise ExecutionException("This executor only accepts 1 K to block.")
+            self._current_K = valid_Ks[0]
+        
+        ## NOTE: Certain attributes are not setteable
+        
+        self.IGNORE_SEED_BLOCKING  = False
+        self.BLOCK_ALSO_NEGATIVE_K = False
+        self.FIND_K_FOR_ALL_SPS    = False
+        
+        self.GENERATE_RANDOM_SEEDS = True
+        self.DO_BASE_CALCULATION   = True
+        
+        self.FULLY_CONVERGE_BLOCKING_ITER_MODE  = True
+        self.PRECONVERNGECE_BLOCKING_ITERATIONS = None
+        
+        ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.setUpExecution(self, 
+                                                                 reset_seed=reset_seed, 
+                                                                 valid_Ks=valid_Ks, 
+                                                                 *args, **kwargs)
+    
+    def _oddNumberParitySeedConvergence(self):
+        """
+        Modification: 
+         * This method has been modified to search only the K compatible, also 
+           considering Odd,Odd case. 
+        
+        Procedure to select the sp state to block with the lowest energy:
+         * Selects state randomly for a random sh-state in the odd-particle space
+         * Repeat the convergence N times and get the lower energy
+         * export to the BU the (discarded) blocked seeds (done in saveWF method)  
+        """
+        
+        sh_states, sp_states = [], []
+        for sp_, st_sp in self._sp_states_obj.items():
+            if st_sp.m == self._current_K and (-1)**st_sp.l == self.PARITY_TO_BLOCK:
+                sp_states.append(sp_)
+                sh_states.append(int(st_sp.AntoineStrIndex_l_greatThan10))
+        
+        self.SEEDS_RANDOMIZATION = len(sp_states)
+        
+        ## get a sp_space for the state to block 
+        odd_p, odd_n = self.numberParity
+        ## this was set in setUpExecution._getStatesAndDimensionsOfHamiltonian
+        sp_dim    = self._sp_dim
+        
+        ## randomization of the blocked state and repeat the convergence
+        ## several times to get the lower energy
+        blocked_states  = []
+        blocked_sh_states     = {}
+        blocked_seeds_inputs  = {}
+        blocked_seeds_results = {}
+        blocked_energies      = {}
+        bk_min, bk_E_min      = 0, 1.0e+69
+        bu_results = {}
+        double4OO = sum(self.numberParity) # repeat twice for odd-odd
+        printf("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
+              double4OO*self.SEEDS_RANDOMIZATION, 
+              " #-par:", self.numberParity, LINE_2)
+        for i_step in range(double4OO * self.SEEDS_RANDOMIZATION):
+            bk_sp_p, bk_sp_n = 0, 0
+            bk_sh_p, bk_sh_n = 0, 0
+            bk_sp, bk_sh = None, None
+            if odd_p:
+                bk_sp, bk_sh = sp_states[i_step], sh_states[i_step]
+            if odd_n:
+                bk_sh_n = sh_states[i_step]
+                bk_sp_n = sp_dim + sp_states[i_step]
+                bk_sp = (bk_sp, bk_sp_n) if bk_sp else bk_sp_n
+                bk_sh = (bk_sh, bk_sh_n) if bk_sh else bk_sh_n
+            
+            if bk_sp in blocked_states:
+                printf(i_step, f"  * Blocked state [{bk_sp}] is already calculated [SKIP]")
+                continue
+            self.inputObj.qp_block = bk_sp if type(bk_sp)==int else [*bk_sp]
+            
+            blocked_states.append(bk_sp)
+            blocked_sh_states[bk_sp] = bk_sh
+            
+            blocked_seeds_inputs [bk_sp] = deepcopy(self.inputObj)
+            blocked_seeds_results[bk_sp] = None
+            blocked_energies     [bk_sp] = 4.20e+69
+            
+            self._preconvergence_steps = 0
+            self._1stSeedMinima = None
+            
+            res = None
+            while not self._preconvergenceAccepted(res):
+                if res != None:
+                    ## otherwise the state is "re- blocked"
+                    printf("    * [Not Converged] Repeating loop.")
+                    self.inputObj.qp_block = None
+                res = self._executeProgram(base_execution=True)
+            printf("    * [OK] Result accepted for K={} states={}, {}. Saving result."
+                        .format(self._current_K, bk_sh, bk_sp))
+            
+            blocked_seeds_results[bk_sp] = deepcopy(res)
+            blocked_energies     [bk_sp] = res.E_HFB
+            # Move the base wf to a temporal file, then copied from the bk_min
+            shutil.move(self._base_wf_filename, f"{bk_sp}_{self._base_wf_filename}")
+            bu_results[(bk_sh_p, bk_sh_n)] = res
+            
+            ## actualize the minimum result
+            if res.E_HFB < bk_E_min:
+                bk_min, bk_E_min = bk_sp, res.E_HFB
+                self._current_sp = bk_sp - (sp_dim * odd_n)
+        
+            printf(i_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+            
+            ## NOTE: If convergence is iterated, inputObj seed is turned 1, refresh!
+            self.inputObj.seed = self._base_seed_type
+        
+        printf("\n  ** Blocking minimization process [FINISHED], Results:")
+        printf(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")
+        for bk_st in blocked_states:
+            printf(f"  {str(bk_st):>12}  {str(blocked_sh_states[bk_st]):>16}   "
+                  f"{blocked_energies[bk_st]:>9.4f}")
+        printf("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
+        printf(LINE_2)
+        
+        ## after the convegence, remove the blocked states and copy the 
+        # copy the lowest energy solution and output.
+        self.inputObj.qp_block = 0
+        self._1stSeedMinima = blocked_seeds_results[bk_min]
+        shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
+        self._exportBaseResultFile(bu_results)   
+    
+    
+    def _runUntilConvergence(self, MAX_STEPS=3):
+        """
+        Overwriting main running method for BaseExecution with the blocked state
+        Introducing here the same K-found actions from the blocking suite.
+        """
+        res: DataTaurus = _Base1DTaurusExecutor._runUntilConvergence(self, 
+                                                                     MAX_STEPS)
+        self._K_foundActionsTearDown(res)
+        
+        return res
+    
+    def run(self, fomenko_points=None):
+        """
+        Duplicate dummy attributes required buy exportable classes.
+        """
+        self._blocking_section = True
+        self._save_results     = True
+        self._KComponentSetUp()
+        self._export_txt_for_K = {}
+        
+        for prolate in (0, 1):
+            for i in [x[0] for x in self._deformations_map[prolate]]:
+                self._sp_blocked_K_already_found[i] = dict([(sp_,0) for sp_ in 
+                                                            range(1,self._sp_dim+1)])
+                self._sp_blocked_K_already_found[i][self._current_sp] = self._current_K
+        
+        ExeTaurus1D_DeformB20.run(self)
+        
+    def saveFinalWFprocedure(self, result:DataTaurus, base_execution=False):
+        """
+        Overwrite to save properly both as for a K execution and a normal execution
+        """
+        ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
+            saveFinalWFprocedure(self, result, base_execution)
+        
+        ## Save again the results such as the false OE case in the parent class 
+        if not base_execution:
+            ExeTaurus1D_DeformB20.saveFinalWFprocedure(self, result, base_execution)
+    
+    def executionTearDown(self, result:DataTaurus, base_execution, *args, **kwargs):
+        
+        """
+        Overwrite to save properly both as for a K execution and a normal execution
+        """
+        ExeTaurus1D_B20_OEblocking_Ksurfaces_Base.\
+            executionTearDown(self, result, base_execution)
+        
+        ## Save again the results such as the false OE case in the parent class 
+        if not base_execution:
+            ExeTaurus1D_DeformB20.executionTearDown(self, result, base_execution)
+    
 
 class _SlurmJob1DPreparation():
     

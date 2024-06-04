@@ -7,7 +7,8 @@ import os
 from tools.Enums import GognyEnum
 from scripts1d.beta_Kblocking_scripts import \
     run_b20_FalseOE_Kprojections_Gogny, run_b20_FalseOE_Block1KAndPAV, \
-    run_b20_FalseOE_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ
+    run_b20_FalseOE_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ, \
+    run_b20_Block1KandPAV_exampleSingleJ
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf, __log_file
 
@@ -35,6 +36,8 @@ if __name__ == '__main__':
         }
         
         inter_ = (4, 0, None)
+        #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 8)])
+        #interactions_B1 = dict([((11, 8+ 2*i), inter_) for i in range(0, 8)])
         #interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
@@ -69,16 +72,16 @@ if __name__ == '__main__':
     #                       q_min=-0.4, q_max=0.6, N_max=50, convergences=3, 
     #                       parity_2_block=1)
     
-    if True: # to do the main evaluation.
+    if False: # to do the main evaluation.
         args = (nucleus, interactions_B1, GognyEnum.B1)
         kwargs = dict(
-            valid_Ks = [1, 3, 5], 
+            valid_Ks = [1, 3, 5],
             seed_base=3, ROmega=(0,0),
-            q_min=-0.8, q_max=0.8, N_max=7, convergences=0,   ## 0.6, 25
+            q_min=-0.8, q_max=0.8, N_max=13, convergences=0,   ## 0.6, 25
             parity_2_block=1,
             fomenko_points=(7, 7),
-            preconverge_blocking_sts=130,
-            find_Kfor_all_sps = False
+            preconverge_blocking_sts=False,
+            find_Kfor_all_sps = True
         )
         run_b20_FalseOE_Kmixing(*args, **kwargs)
         raise Exception("STOP HERE.")
@@ -91,7 +94,7 @@ if __name__ == '__main__':
 
     ## TEST with the h11/2 state
     
-    interactions_B1 = {(0, 3): 'B1_h11o2', }
+    interactions_B1 = {(0, 3):  'B1_h11o2', }
     nucleus = sorted(list(interactions_B1.keys()))
     
     args = (nucleus, interactions_B1, GognyEnum.B1)
@@ -104,6 +107,16 @@ if __name__ == '__main__':
         preconverge_blocking_sts=False,
         find_Kfor_all_sps = True
     )
-    run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
+        
+    # run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
+    valid_K = 11,
+    args = (nucleus, interactions_B1, GognyEnum.B1, valid_K)
+    kwargs = dict(
+        seed_base=3, ROmega=(0,0),
+        q_min=-0.6, q_max=0.6, N_max=25, convergences=3,   ## 0.6, 25
+        parity_2_block=-1,
+        fomenko_points=(0, 7),
+    )
     
+    run_b20_Block1KandPAV_exampleSingleJ(*args, **kwargs)
     

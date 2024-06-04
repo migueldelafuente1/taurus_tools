@@ -433,7 +433,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             count += 1
         
         with open('BASE-'+self.EXPORT_LIST_RESULTS, 'w+') as f:
-            f.writelines(write_lines)
+            f.writelines('\n'.join(write_lines))
         printf(f" [DONE] Exported [{len(write_lines)}] convergence results in "
               f"[BASE-{self.EXPORT_LIST_RESULTS}]")
         
@@ -475,7 +475,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 shutil.copy('fort.11', 'fort.10')
             
             if result.properly_finished:
-                printf(f" ** {str_rep} Seed convergence procedure [DONE]:")
+                pass
+                #printf(f" ** {str_rep} Seed convergence procedure [DONE]:")
             else:
                 printf(f" ** {str_rep} Seed convergence procedure [FAIL]: repeating ")
             return result.properly_finished
