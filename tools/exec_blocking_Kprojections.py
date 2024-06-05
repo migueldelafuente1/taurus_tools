@@ -65,21 +65,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             self._container    = BaseResultsContainer1D()
             # self._contaienrPAV = BaseResultsContainer1D("TEMP_BU_PAV")
     
+    def setUpProjection(self, **params):
+        """
+        This method has to be to redefine the _list_PAV_outputs as K-dict.
+        """
+        ExeTaurus1D_DeformB20.setUpProjection(self, **params)
+        
+        self._list_PAV_outputs = {} # list by K order
+    
     def setUpExecution(self, reset_seed=False, valid_Ks=[], *args, **kwargs):
         """
         Set up of the main false OE TES and the arrays for the blocking part.
         """
-        
-        ## organization only sorted: in the range of valid j
-        # self._valid_Ks = [k for k in range(-self._sp_2jmax, self._sp_2jmax+1, 2)]
-        # # skip invalid K for the basis, i.e. _sp_2jmin=3/2 -> ..., 5,3,-3,-5 ...
-        # self._valid_Ks = list(filter(lambda x: abs(x) >= self._sp_2jmin,
-        #                              self._valid_Ks))
-        
-        if not self.FIND_K_FOR_ALL_SPS:
-            # NOTE: verify full convergence in case of given preconvergence steps
-            self.FULLY_CONVERGE_BLOCKING_ITER_MODE  = True
-            self.PRECONVERNGECE_BLOCKING_ITERATIONS = self.inputObj.iterations
         
         valid_states_KP = set()
         for sp_ in range(1, self._sp_dim +1):
@@ -95,6 +92,19 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                     if i == sp_:
                         assert not sp_ in self._sp_states_obj, "Already found"
                         self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
+        
+        ## organization only sorted: in the range of valid j
+        # self._valid_Ks = [k for k in range(-self._sp_2jmax, self._sp_2jmax+1, 2)]
+        # # skip invalid K for the basis, i.e. _sp_2jmin=3/2 -> ..., 5,3,-3,-5 ...
+        # self._valid_Ks = list(filter(lambda x: abs(x) >= self._sp_2jmin,
+        #                              self._valid_Ks))
+        ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, 
+                                                   *args, **kwargs)
+        
+        if not self.FIND_K_FOR_ALL_SPS:
+            # NOTE: verify full convergence in case of given preconvergence steps
+            self.FULLY_CONVERGE_BLOCKING_ITER_MODE  = True
+            self.PRECONVERNGECE_BLOCKING_ITERATIONS = self.inputObj.iterations
         
         ## optimal organization of the K: 1, -1, 3, -3, ...
         for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
@@ -117,22 +127,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 self._sp_blocked_K_already_found[kk] = {}
                 for sp_ in range(1, self._sp_dim +1):
                     self._sp_blocked_K_already_found[kk][sp_] = 0 # default
-        
-        ExeTaurus1D_DeformB20.setUpExecution(self, reset_seed=reset_seed, 
-                                                   *args, **kwargs)
-        
-    
-    def setUpProjection(self, **params):
-        """
-        Defines the parameters for the projection of the nucleus.
-        The z, n, interaction, com, Fomenko-points, and Jvals from the program
-        """
-        ExeTaurus1D_DeformB20.setUpProjection(self, **params)
-        
-        self._list_PAV_outputs = {} # list by K order
-        #self.inputObj_PAV.j_max = min( max(self._valid_Ks), self._sp_2jmax)
-        
-        
+                
     def _KComponentSetUp(self):
         """ 
         Actions common for the creation of K folders or 
@@ -466,12 +461,14 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                   .format(sp_index, self._sp_states_obj[sp_index].shellState,  
                           res.Jz, res.b20_isoscalar, self._curr_deform_index, 
                           res.E_HFB, _iter_str, res.isAxial()))
-        invalid_fn = self._list_PAV_outputs[self._current_K].pop()
-        invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
         
-        self._exportable_results_forK[self._curr_deform_index] = res
-        outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
-        shutil.move(invalid_fn, outpth)
+        if self.RUN_PROJECTION:
+            invalid_fn = self._list_PAV_outputs[self._current_K].pop()
+            invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
+            
+            self._exportable_results_forK[self._curr_deform_index] = res
+            outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
+            shutil.move(invalid_fn, outpth)
         
     def _selectionCriteriaForState(self):
         """

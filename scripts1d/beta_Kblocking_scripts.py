@@ -74,8 +74,8 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
-            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
-            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
+            InputTaurus.ArgsEnum.z_Mphi : 0,
+            InputTaurus.ArgsEnum.n_Mphi : 0,
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -85,8 +85,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
-        }
-        
+        }        
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
@@ -100,8 +99,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
-        }
-        
+        }        
         ExeTaurus1D_B20_OEblocking_Ksurfaces.EXPORT_LIST_RESULTS = \
             f"export_TESb20_z{z}n{n}_{interaction}.txt"
         try:
@@ -117,7 +115,6 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface: ", datetime.now().time())
-
 
 def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   seed_base=0, ROmega=(13, 13),
@@ -216,8 +213,9 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
-        
-        input_args_onrun = {** vap_args,
+        input_args_onrun = {
+            IArgsEnum.z_Mphi : fomenko_points[0], 
+            IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1000,
@@ -230,7 +228,6 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             'axial_calc' : axial_calc,
             'valid_Ks'   : [K, ] 
         }
-        
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
             InputTaurusPAV.ArgsEnum.alpha : 10,
@@ -352,8 +349,9 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
-        
-        input_args_onrun = {**vap_args,
+        input_args_onrun = {
+            IArgsEnum.z_Mphi : fomenko_points[0], 
+            IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1500,
@@ -366,7 +364,6 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             'axial_calc' : axial_calc,
             'valid_Ks'   : valid_Ks,
         }
-        
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
             InputTaurusPAV.ArgsEnum.alpha : 10,
@@ -488,7 +485,9 @@ def run_b20_FalseOE_Kmixing_exampleSingleJ(nucleus, interactions, gogny_interact
             'axial_calc' : axial_calc,
         }
         
-        input_args_onrun = {**vap_args,
+        input_args_onrun = {
+            IArgsEnum.z_Mphi : fomenko_points[0], 
+            IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1500,
@@ -600,13 +599,10 @@ def run_b20_Block1KandPAV_exampleSingleJ(
         ## Note: For false o-e projection, fomenko_points are given in run()
         ##          see Note in script run_b20_FalseOE_Block1KAndPAV()
         IArgsEnum = InputTaurus.ArgsEnum
-        vap_args = {IArgsEnum.z_Mphi : 0, IArgsEnum.n_Mphi : 0,}
-        if ((z+n) % 2 == 0 and n % 2 == 0 and not 1 in (z, n)):
-            ## in case of even-even one can do the VAP
-            vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
-                        IArgsEnum.n_Mphi : fomenko_points[1],}
         
-        input_args_start = {**vap_args,
+        input_args_start = {
+            IArgsEnum.z_Mphi : fomenko_points[0], 
+            IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.com : 1,
             IArgsEnum.seed: seed_base,
             IArgsEnum.iterations: 1500,
@@ -618,8 +614,9 @@ def run_b20_Block1KandPAV_exampleSingleJ(
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
-        
-        input_args_onrun = {**vap_args,
+        input_args_onrun = {
+            IArgsEnum.z_Mphi : fomenko_points[0], 
+            IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1500,
@@ -632,7 +629,6 @@ def run_b20_Block1KandPAV_exampleSingleJ(
             'axial_calc' : axial_calc,
             'valid_Ks'   : valid_Ks,
         }
-        
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
             InputTaurusPAV.ArgsEnum.alpha : 15,
