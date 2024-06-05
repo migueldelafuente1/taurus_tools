@@ -92,7 +92,7 @@ if __name__ == '__main__':
         kwargs = dict(
             valid_Ks = [1, 3, 5],
             seed_base=3, ROmega=(0,0),
-            q_min=-0.8, q_max=0.8, N_max=13, convergences=0,   ## 0.6, 25
+            q_min=-0.8, q_max=0.8, N_max=17, convergences=0,   ## 0.6, 25
             parity_2_block=1,
             fomenko_points=(7, 7),
             preconverge_blocking_sts=False,
