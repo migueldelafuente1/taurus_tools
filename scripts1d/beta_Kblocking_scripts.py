@@ -213,9 +213,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
-        input_args_onrun = {
-            IArgsEnum.z_Mphi : fomenko_points[0], 
-            IArgsEnum.n_Mphi : fomenko_points[1],
+        input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1000,
@@ -349,9 +347,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
-        input_args_onrun = {
-            IArgsEnum.z_Mphi : fomenko_points[0], 
-            IArgsEnum.n_Mphi : fomenko_points[1],
+        input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1500,
@@ -484,10 +480,7 @@ def run_b20_FalseOE_Kmixing_exampleSingleJ(nucleus, interactions, gogny_interact
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
         }
-        
-        input_args_onrun = {
-            IArgsEnum.z_Mphi : fomenko_points[0], 
-            IArgsEnum.n_Mphi : fomenko_points[1],
+        input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1500,
@@ -500,7 +493,6 @@ def run_b20_FalseOE_Kmixing_exampleSingleJ(nucleus, interactions, gogny_interact
             'axial_calc' : axial_calc,
             'valid_Ks'   : valid_Ks,
         }
-        
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
             InputTaurusPAV.ArgsEnum.alpha : 13,

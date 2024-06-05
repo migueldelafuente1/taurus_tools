@@ -46,7 +46,7 @@ if __name__ == '__main__':
         #             printf("[{:2}] z{:2} n{:2} A[{}]".format(i, Z, N, Z+N))
         #             interactions_B1[(Z,N)] = (4, 0, None)
         #         printf()
-        
+        interactions_B1 = {}
         inter_ = (4, 0, None)
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((11, 8+ 2*i), inter_) for i in range(0, 7)])
