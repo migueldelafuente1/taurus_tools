@@ -554,6 +554,7 @@ def run_b20_Block1KandPAV_exampleSingleJ(
     
     ExeTaurus1D_B20_Ksurface_Base.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_Ksurface_Base.IterativeEnum.EVEN_STEP_STD
+    ExeTaurus1D_B20_Ksurface_Base.DO_BASE_CALCULATION = False    # *** IMPORTANT
         
     ExeTaurus1D_B20_Ksurface_Base.SAVE_DAT_FILES = [
         # DataTaurus.DatFileExportEnum.canonicalbasis,
