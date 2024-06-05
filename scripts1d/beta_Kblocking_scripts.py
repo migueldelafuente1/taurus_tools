@@ -598,9 +598,9 @@ def run_b20_Block1KandPAV_exampleSingleJ(
             IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.com : 1,
             IArgsEnum.seed: seed_base,
-            IArgsEnum.iterations: 1500,
+            IArgsEnum.iterations: 2000,
             IArgsEnum.grad_type: 1,
-            IArgsEnum.grad_tol : 0.0001,
+            IArgsEnum.grad_tol : 0.0005,
             IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
@@ -612,11 +612,11 @@ def run_b20_Block1KandPAV_exampleSingleJ(
             IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
-            IArgsEnum.iterations: 1500,
+            IArgsEnum.iterations: 2000,
             IArgsEnum.grad_type: 1,
             IArgsEnum.eta_grad : 0.015,
             IArgsEnum.mu_grad  : 0.02, # 0.5
-            IArgsEnum.grad_tol : 0.0001,
+            IArgsEnum.grad_tol : 0.0005,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
@@ -624,9 +624,9 @@ def run_b20_Block1KandPAV_exampleSingleJ(
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
-            InputTaurusPAV.ArgsEnum.alpha : 15,
+            InputTaurusPAV.ArgsEnum.alpha : 20,
             InputTaurusPAV.ArgsEnum.beta  : 20,
-            InputTaurusPAV.ArgsEnum.gamma : 15,
+            InputTaurusPAV.ArgsEnum.gamma : 20,
             InputTaurusPAV.ArgsEnum.j_max : 19,
             InputTaurusPAV.ArgsEnum.j_min : 1,
             InputTaurusPAV.ArgsEnum.empty_states : 0,
