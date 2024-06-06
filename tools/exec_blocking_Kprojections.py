@@ -998,8 +998,8 @@ class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
         self.BLOCK_ALSO_NEGATIVE_K = False
         self.FIND_K_FOR_ALL_SPS    = False
         
-        self.GENERATE_RANDOM_SEEDS = True
-        self.DO_BASE_CALCULATION   = True
+        self.GENERATE_RANDOM_SEEDS = self.SEEDS_RANDOMIZATION > 0
+        self.DO_BASE_CALCULATION   = self.SEEDS_RANDOMIZATION > 0
         
         self.FULLY_CONVERGE_BLOCKING_ITER_MODE  = True
         self.PRECONVERNGECE_BLOCKING_ITERATIONS = None

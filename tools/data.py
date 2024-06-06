@@ -23,7 +23,7 @@ from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
 from copy import copy
 from tools.Enums import Enum
 from tools.inputs import InputTaurus
-from tools.helpers import printf
+from tools.helpers import printf, LINE_1
 
 class DataObjectException(BaseException):
     pass
@@ -826,11 +826,15 @@ class DataTaurus(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
+                printf(" (TC)>> EXCEPTION from Taurus Constructor >> last 5 lines::",
+                       LINE_2)
+                with open(self._filename, 'r') as f:
+                    printf("".join(f.readlines()[-5:]), LINE_2)
+                
                 printf(" (TC)>> EXCEPTION from Taurus Constructor >> self::")
                 printf(self)
                 printf(" (TC)>> exception:: ", e, "<<(TC)")
                 printf(" (TC)<< EXCEPTION from Taurus Constructor <<<<<<<< ")
-                
         
     def __str__(self):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
@@ -1225,7 +1229,11 @@ class DataTaurusPAV(_DataObjectBase):
             except Exception as e:
                 if isinstance(e, ValueError):
                     self._nanComponentsInResults = True
-                printf(" (TC2)>> resEXCEPTION from Taurus Constructor >> self::")
+                printf(" (TC2)>> EXCEPTION from Taurus PAV Constructor >> last 5 lines::",
+                       LINE_2)
+                with open(self._filename, 'r') as f:
+                    printf("".join(f.readlines()[-5:]), LINE_2)
+                printf(" (TC2)>> resEXCEPTION from Taurus PAV Constructor >> self::")
                 printf(self)
                 printf(" (TC2)>> exception:: ", e, "<<(TC2)")
                 printf(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
@@ -1469,10 +1477,14 @@ class DataTaurusMIX(_DataObjectBase):
             try:
                 self.get_results()
             except Exception as e:
-                printf(" (TC2)>> EXCEPTION from Taurus Constructor >> self::")
+                printf(" (TC3)>> EXCEPTION from Taurus MIX Constructor >> last 5 lines::",
+                       LINE_2)
+                with open(self._filename, 'r') as f:
+                    printf("".join(f.readlines()[-5:]), LINE_2)
+                printf(" (TC3)>> EXCEPTION from Taurus MIX Constructor >> self::")
                 printf(self)
-                printf(" (TC2)>> exception:: ", e, "<<(TC2)")
-                printf(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
+                printf(" (TC3)>> exception:: ", e, "<<(TC3)")
+                printf(" (TC3)<< EXCEPTION from Taurus MIX Constructor <<<<<<<< ")
     
     def __str__(self):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))

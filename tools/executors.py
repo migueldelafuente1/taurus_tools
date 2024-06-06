@@ -79,11 +79,13 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             if self.GENERATE_RANDOM_SEEDS:
                 if _DO_ODD:
                     ## procedure to evaluate odd-even nuclei
+                    printf("  ** 1st seed minima_ odd, random convergences")
                     self._oddNumberParitySeedConvergence()
                     ## NOTE: The state blocked is in the seed, no more blocking during the process
                 else:
                     ## Procedure to evaluate a set of random states (for even-even)
                     ## to get the lowest energy.
+                    printf("  ** 1st seed minima_ even-even, random convergences")
                     self._evenNumberParitySeedConvergence()
             else:
                 if not self.DO_BASE_CALCULATION:
@@ -93,9 +95,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 
                 if _DO_ODD:
                     ## procedure to evaluate odd-even nuclei
+                    printf("  ** 1st seed minima_ odd, NO convergences (constr_deform=0)")
                     self._oddNumberParitySeedConvergence()
                 else:
                     ## even-even general case
+                    printf("  ** 1st seed minima_ even-even, NO convergences (constr_deform=0)")
                     while not self._preconvergenceAccepted(res):
                         res = self._executeProgram(base_execution=True)
         

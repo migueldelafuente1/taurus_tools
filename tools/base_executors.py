@@ -672,8 +672,8 @@ class _Base1DTaurusExecutor(object):
         # exec(program)
         FLD_TEST_ = 'data_resources/testing_files/'
         file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
-        # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
-        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
+        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
+        # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
         file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
         
         txt = ''
@@ -886,7 +886,12 @@ class _Base1DTaurusExecutor(object):
         if print_head:
             printf('\n'+HEAD+LINE_2)
             return
+        if result == None or result.broken_execution:
+            printf(" {:2} {:2}    {}  {:>4}"
+                    .format(self.z, self.n, '(F)', str(self._curr_deform_index)))
+            return
         
+        ## TODO: check if broken to skip the iter_time get
         status_fin = 'X' if not result.properly_finished  else '.'
         _iter_str = "[{}/{}: {}']".format(result.iter_max, self.inputObj.iterations, 
                                           getattr(result, 'iter_time_seconds', 0) //60 )

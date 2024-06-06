@@ -165,7 +165,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
-    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
+    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences >= 0
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
     ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
@@ -300,7 +300,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
-    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
+    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences >= 0
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
     ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
@@ -433,7 +433,7 @@ def run_b20_FalseOE_Kmixing_exampleSingleJ(nucleus, interactions, gogny_interact
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
-    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences > 0
+    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences >= 0
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
     ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
@@ -554,16 +554,20 @@ def run_b20_Block1KandPAV_exampleSingleJ(
     
     ExeTaurus1D_B20_Ksurface_Base.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_Ksurface_Base.IterativeEnum.EVEN_STEP_STD
-    ExeTaurus1D_B20_Ksurface_Base.DO_BASE_CALCULATION = False    # *** IMPORTANT
         
     ExeTaurus1D_B20_Ksurface_Base.SAVE_DAT_FILES = [
         # DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
+    ExeTaurus1D_B20_Ksurface_Base.DO_BASE_CALCULATION   = False    # *** IMPORTANT
+    ExeTaurus1D_B20_Ksurface_Base.GENERATE_RANDOM_SEEDS = False    # *** IMPORTANT
     ExeTaurus1D_B20_Ksurface_Base.SEEDS_RANDOMIZATION   = convergences
-    ExeTaurus1D_B20_Ksurface_Base.GENERATE_RANDOM_SEEDS = bool(convergences)
-    ExeTaurus1D_B20_Ksurface_Base.DO_BASE_CALCULATION   = convergences > 0
+    if convergences > 0:
+        printf(" [WARNING] given CONVERGENCES>0 to scripts, that will do BASE calculations (not recomended)\n"*3)
+                
+        ExeTaurus1D_B20_Ksurface_Base.GENERATE_RANDOM_SEEDS = bool(convergences)
+        ExeTaurus1D_B20_Ksurface_Base.DO_BASE_CALCULATION   = convergences >= 0
     ExeTaurus1D_B20_Ksurface_Base.PARITY_TO_BLOCK       = parity_2_block
     
     ExeTaurus1D_B20_Ksurface_Base.FULLY_CONVERGE_BLOCKING_ITER_MODE  = True
@@ -608,7 +612,7 @@ def run_b20_Block1KandPAV_exampleSingleJ(
             'axial_calc' : axial_calc,
         }
         input_args_onrun = {
-            IArgsEnum.z_Mphi : fomenko_points[0], 
+            IArgsEnum.z_Mphi : fomenko_points[0],
             IArgsEnum.n_Mphi : fomenko_points[1],
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
