@@ -103,14 +103,14 @@ if __name__ == '__main__':
     elif _case == __CASES._3:
         ## TEST with the h11/2 state
         
-        interactions_B1 = {(0, 3):  'B1_h11o2_2', }
+        interactions_B1 = {(0, 3):  'B1_h11o2', }
         nucleus = sorted(list(interactions_B1.keys()))
         
-        valid_K = 11,
+        valid_K = 11
         args = (nucleus, interactions_B1, GognyEnum.B1, valid_K)
         kwargs = dict(
             seed_base=3, ROmega=(0,0),
-            q_min=-0.3, q_max=0.3, N_max=25, convergences=0,   ## 0.6, 25
+            q_min=-0.35, q_max=0.35, N_max=36, convergences=0,   ## 0.6, 25
             parity_2_block=-1,
             fomenko_points=(0, 7),
         )
