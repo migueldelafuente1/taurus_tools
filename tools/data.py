@@ -14,16 +14,16 @@ TODO:
 '''
 from collections import OrderedDict
 from datetime import datetime
+import re
 import os
 import shutil
 
 import numpy as np
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
-    getSingleSpaceDegenerations, almostEqual
-from copy import copy
+    getSingleSpaceDegenerations, almostEqual, LINE_2, LINE_1, printf
+from copy import copy, deepcopy
 from tools.Enums import Enum
 from tools.inputs import InputTaurus
-from tools.helpers import printf, LINE_1
 
 class DataObjectException(BaseException):
     pass
@@ -1229,14 +1229,14 @@ class DataTaurusPAV(_DataObjectBase):
             except Exception as e:
                 if isinstance(e, ValueError):
                     self._nanComponentsInResults = True
-                printf(" (TC2)>> EXCEPTION from Taurus PAV Constructor >> last 5 lines::",
+                printf(" (TPC)>> EXCEPTION from Taurus PAV Constructor >> last 5 lines::",
                        LINE_2)
                 with open(self._filename, 'r') as f:
                     printf("".join(f.readlines()[-5:]), LINE_2)
-                printf(" (TC2)>> resEXCEPTION from Taurus PAV Constructor >> self::")
+                printf(" (TPC)>> resEXCEPTION from Taurus PAV Constructor >> self::")
                 printf(self)
-                printf(" (TC2)>> exception:: ", e, "<<(TC2)")
-                printf(" (TC2)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
+                printf(" (TPC)>> exception:: ", e, "<<(TPC)")
+                printf(" (TPC)<< EXCEPTION from Taurus PAV Constructor <<<<<<<< ")
     
     def __str__(self):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
@@ -1257,20 +1257,6 @@ class DataTaurusPAV(_DataObjectBase):
         """
         with open(self._filename, 'r') as f:
             data = f.read()
-            # if self.__message_converged in data: 
-            #     self.properly_finished = True
-            # elif not self.__message_enditer in data:
-            #     self.broken_execution  = True
-            #     return
-            # self._is_vap_calculation = self.__message_endvap in data
-            #
-            # f.seek(0) # rewind the file reading
-            #
-            # data_inp, data_evol  = f.read().split(self.__message_startiter)
-            # if self._is_vap_calculation:
-            #     data_evol, data = data_evol.split(self.__message_endvap)
-            # else:
-            #     data_evol, data = data_evol.split(self.__message_enditer)
             data      = data.split('\n')
         if len(data) < 2 or not data[-2] == self.__message_properly_finished:
             self.properly_finished = False
@@ -1318,7 +1304,7 @@ class DataTaurusPAV(_DataObjectBase):
                     skip_ = 4
                     continue
             
-            if '****' in line: # Line fails (i.e. J < K blocked)
+            if not self._allNVcomp_block and '****' in line: # Line fails (i.e. J < K blocked)
                 printf("[WRN]!, excluded line ", line)
                 continue
         
@@ -1338,54 +1324,81 @@ class DataTaurusPAV(_DataObjectBase):
         """
         pass
     
-    def _getAllNVComponents_blockline(self, line):
+    def _getAllNVComponents_blockline(self, line0):
         """
         Get all values depending on the header, 
         """
-        headers = [line[i:i+5].strip() for i in range(0, 19, 5)]
-        if   headers[0] == '':
-            self._projecting_JMK = False
-        else:
-            self.J .append(int(headers[0]))
-            self.MJ.append(int(headers[1]))
-            self.KJ.append(int(headers[2]))
-            
-        if headers[3] == '':
-            self._projecting_P   = False
-        else:
-            self.P .append(int(headers[3]))
+        headers = [line0[i:i+5].strip() for i in range(0, 19, 5)]
         
-        line = line[20:].split()
+        line = line0[20:].split()
         ## Change to assing norm=0 values (normally with divergences or 1e-150)
         if abs(float(line[0])) < 1.0e-8: line = [0.000 for i in line]
         
         #     1     |      E     |     Z       v |     N       v |     A       v |
         #    J    |    Jz     v |    P    |    T    |    Tz     v
-        _num_indx_val = (3, 5, 7, 10, 14)
         
-        for i, val in enumerate(line):
-            if i in _num_indx_val: continue
-            ## case select
-            if   (i == 0):
-                self.proj_norm  .append(float(val))
-            elif (i == 1):
-                self.proj_energy.append(float(val))
-            elif (i == 2):
-                self.proj_Z .append(float(val))
-            elif (i == 4):
-                self.proj_N .append(float(val))
-            elif (i == 6):
-                self.proj_A .append(float(val))
-            elif (i == 8):
-                self.proj_J .append(float(val))
-            elif (i == 9):
-                self.proj_Jz.append(float(val))
-            elif (i == 11):
-                self.proj_P .append(float(val))
-            elif (i == 12):
-                self.proj_T .append(float(val))
-            elif (i == 13):
-                self.proj_Tz.append(float(val))
+        # _num_indx_val = (3, 5, 7, 10, 14) ## index for the diff exponents E-**
+        _attrs_and_index = {
+            'proj_norm' :  0, 'proj_energy' :  1,
+            'proj_Z'    :  2, 'proj_N'      :  4,   'proj_A'  : 6,
+            'proj_J'    :  8, 'proj_Jz'     :  9,   'proj_P'  : 11,
+            'proj_T'    : 12, 'proj_Tz'     : 13,
+        }
+        _accepted_results = {} # attrs and vals
+        for attr_, i in _attrs_and_index.items():
+            ## Cast valid invalid exceptions for the foat values (Nan, ***, ...)
+            valid = True
+            if '****' in line[i]:
+                if i in (0, 1): valid = False
+                else:
+                    aux_str = line[i].replace('*', '')
+                    ## NOTE: this will exclude, invalid vars
+                    if aux_str.__len__() == 0: valid = False
+                    else:
+                        line[i] = aux_str
+                        line.insert(i+1, 0) # for the next indexes to be in place
+            else:
+                try: float(line[i]) 
+                except ValueError as _:
+                    if   i in (0, 1, 8, 11, 12): 
+                        valid = False
+                    elif attr_ in ('proj_Z',  'proj_N', 'proj_A'):
+                        _valid_re = (r'[-]\d\.\d{7}[-+]\d{3}', r'\d\.\d{7}[-+]\d{3}')
+                    elif attr_ in ('proj_Jz', 'proj_Tz'):
+                        _valid_re = (r'[-]\d\.\d{5}[-+]\d{3}', r'\d\.\d{5}[-+]\d{3}')
+                    
+                    if valid:
+                        _matches = [re.match(re_, line[i]) for re_ in _valid_re]
+                        if any(_matches):
+                            aux_str, mantis = line[i][:-4], line[i][-4:]
+                            if '+' in mantis:
+                                ## Its not possible to have variance exponents > 0 
+                                valid = False
+                            line[i] = aux_str
+                            line.insert(i+1, mantis) # for the next indexes to be in place
+                        else:
+                            valid = False
+            if valid:
+                _accepted_results[attr_] = float(line[i])
+            else:
+                printf(f"[WRN]! excluded line (AllNVComponents) ATTR/val_",
+                           attr_, line[i], f":: [{line}]")
+                return
+        
+        ## Append the line (all correct)
+        for attr_, val in _accepted_results.items(): 
+            getattr(self, attr_).append(val)
+        
+        #  ***  Doit after in case the line is ommited ------------------------
+        if   headers[0] == '': self._projecting_JMK = False
+        else:
+            self.J .append(int(headers[0]))
+            self.MJ.append(int(headers[1]))
+            self.KJ.append(int(headers[2]))
+            
+        if headers[3] == '': self._projecting_P   = False
+        else:                self.P.append(int(headers[3]))
+        # ---------------------------------------------------------------------
     
     def _getSumJPComponents_blockline(self, line):
         """ Block for J components"""
@@ -1426,65 +1439,113 @@ class DataTaurusPAV(_DataObjectBase):
 
 class DataTaurusMIX(_DataObjectBase):
     
-    """ Abstract class with common methods """
+    """ 
+    Class for processing the J_ files from taurus_mix/ program,
+        ## NOTES: 
+            * designed for the github version.
+            * only process the energy  J / Pi final lines (does not track 
+                filtering - cutoffs info)
+    """
     PROGRAM = 'taurus_mix.exe'
-    DEFAULT_OUTPUT_FILENAME = 'aux_output.OUT'
+    DEFAULT_OUTPUT_FILENAME = 'aux_output.dat'
     EXPORT_LIST_RESULTS     = 'export_resultTaurus.txt'
     
-    # __message_startiter = '                   ITERATIVE MINIMIZATION'
-    __message_endpav     = '                  PROJECTED MATRIX ELEMENTS'
-    __message_components = '    J 2*MJ 2*KJ    P |     1     |      E     |     '\
-                           'Z       v |     N       v |     A       v |    J'\
-                           '    |    Jz     v |    P    |    T    |    Tz     v'
-    __message_sum_JP_components = '    J    P |           1           |           E'
-    __message_sum_KP_components = ' 2*KJ    P |           1           |           E'
-    
-    
+    __MSG_INPUT_PARAMS    = '                      INPUT PARAMETERS'
+    __MSG_SELECTED_STATES = 'States selected'
+    __MSG_NATURAL_STATES  = 'Natural states'
+    __MSG_ENERGY_EIGENVEC = 'Energy eigenvectors'
+    __MSG_ENERGY_SPECTRUM = '                       ENERGY SPECTRUM'
+        
     class HeaderEnum(Enum):
         """ Enumerate for the line headers of every argument to process"""
         pass
     
-    def __init__(self, z, n, filename, empty_data=False):
+    class ArgsEnum(Enum):
+        """ Different variable names for (all) the lists in the arguments """
+        i = 'i'
+        label = 'label'
+        JP = 'JP'
+        K = 'K'
+        overlap = 'overlap'
+        norm_eigenvalues = 'norm_eigenvalues'
+        energy = 'energy'
+        par_avg = 'par_avg'
+        Z_avg  = 'Z_avg'
+        N_avg  = 'N_avg'
+        A_avg  = 'A_avg'
+        J_avg  = 'J_avg'
+        T_avg  = 'T_avg'
+        Qs_avg = 'Qs_avg'
+        mu_avg = 'mu_avg'
+        r_p_avg = 'r_p_avg'
+        r_n_avg = 'r_n_avg'
+        r_m_avg = 'r_m_avg'
+        r_ch_avg = 'r_ch_avg'
         
-        self.z = z
-        self.n = n
+        
+    
+    def __init__(self, filename, empty_data=False):
+        
         self.properly_finished = False
         self.broken_execution  = False
+        self.empty_result      = True
         self._filename = filename
         
-        self.J  = []
-        self.MJ = []
-        self.KJ = []
-        self.P  = []
-        self.proj_norm   = []
-        self.proj_energy = []
-        self.proj_Z = []
-        self.proj_N = []
-        self.proj_A = []
-        self.proj_J = []
-        self.proj_Jz= []
-        self.proj_P = []
-        self.proj_T = []
-        self.proj_Tz= []
+        self.J  = None
+        self.P  = None
+        self.z  = None  # will be processed from input files
+        self.n  = None
         
-        self.sum_JP_norm   = []
-        self.sum_JP_energy = []
+        self.selected_states = {
+            self.ArgsEnum.i     : [], 
+            self.ArgsEnum.label   : [],
+            self.ArgsEnum.K       : [],
+            self.ArgsEnum.overlap : [],
+            self.ArgsEnum.energy  : [],
+            self.ArgsEnum.par_avg  : [],
+            self.ArgsEnum.Z_avg : [],
+            self.ArgsEnum.N_avg : [], 
+            self.ArgsEnum.A_avg : [],
+            self.ArgsEnum.J_avg : [],
+            self.ArgsEnum.T_avg : [],    
+        }
+        self.natural_states = {
+            self.ArgsEnum.i     : [], 
+            self.ArgsEnum.norm_eigenvalues : [],
+            self.ArgsEnum.energy  : [],
+            self.ArgsEnum.par_avg  : [],
+            self.ArgsEnum.Z_avg : [],
+            self.ArgsEnum.N_avg : [], 
+            self.ArgsEnum.A_avg : [],
+            self.ArgsEnum.J_avg : [],
+            self.ArgsEnum.T_avg : [],    
+        } 
+        self.energy_eigenvectors = deepcopy(self.natural_states)
+        del self.energy_eigenvectors[self.ArgsEnum.norm_eigenvalues]
         
-        self.sum_KP_norm   = []
-        self.sum_KP_energy = []
+        self.energy_spectrum = deepcopy(self.energy_eigenvectors)
+        self.energy_spectrum[self.ArgsEnum.JP] = []
+        self.energy_spectrum[self.ArgsEnum.Qs_avg] = []
+        self.energy_spectrum[self.ArgsEnum.mu_avg] = []
+        self.energy_spectrum[self.ArgsEnum.r_p_avg] = []
+        self.energy_spectrum[self.ArgsEnum.r_n_avg] = []
+        self.energy_spectrum[self.ArgsEnum.r_m_avg] = []
+        self.energy_spectrum[self.ArgsEnum.r_ch_avg] = []
+        
+        self._lines_energy_spectrum = ""
         
         if not empty_data:
             try:
                 self.get_results()
             except Exception as e:
-                printf(" (TC3)>> EXCEPTION from Taurus MIX Constructor >> last 5 lines::",
+                printf(" (TMC)>> EXCEPTION from Taurus MIX Constructor >> last 5 lines::",
                        LINE_2)
                 with open(self._filename, 'r') as f:
                     printf("".join(f.readlines()[-5:]), LINE_2)
-                printf(" (TC3)>> EXCEPTION from Taurus MIX Constructor >> self::")
+                printf(" (TMC)>> EXCEPTION from Taurus MIX Constructor >> self::")
                 printf(self)
-                printf(" (TC3)>> exception:: ", e, "<<(TC3)")
-                printf(" (TC3)<< EXCEPTION from Taurus MIX Constructor <<<<<<<< ")
+                printf(" (TMC)>> exception:: ", e, "<<(TMC)")
+                printf(" (TMC)<< EXCEPTION from Taurus MIX Constructor <<<<<<<< ")
     
     def __str__(self):
         aux = OrderedDict(sorted(self.__dict__.items(), key=lambda t: t[0]))
@@ -1501,136 +1562,140 @@ class DataTaurusMIX(_DataObjectBase):
         """
         with open(self._filename, 'r') as f:
             data = f.read()
-            # if self.__message_converged in data: 
-            #     self.properly_finished = True
-            # elif not self.__message_enditer in data:
-            #     self.broken_execution  = True
-            #     return
-            # self._is_vap_calculation = self.__message_endvap in data
-            #
-            # f.seek(0) # rewind the file reading
-            #
-            # data_inp, data_evol  = f.read().split(self.__message_startiter)
-            # if self._is_vap_calculation:
-            #     data_evol, data = data_evol.split(self.__message_endvap)
-            # else:
-            #     data_evol, data = data_evol.split(self.__message_enditer)
             data      = data.split('\n')
         
-        self._ignorable_block = True
-        self._allNVcomp_block = False
-        self._sumJPcomp_block = False
-        self._sumKPcomp_block = False
+        self._input_part   = True
+        self._sel_sts_part = False
+        self._nat_sts_part = False
+        self._norm_ev_part = False
+        self._spectra_part = False
         
-        self._projecting_JMK  = True
-        self._projecting_P    = True
-        for _indx, line in enumerate(data):
-            if self._ignorable_block:
-                if line.startswith(self.__message_endpav):
-                    self._ignorable_block  = False
-                    self.properly_finished = True
+        for indx_, line in enumerate(data):
+            if line == '' or line.startswith('--') or line.startswith('=='):
                 continue
+            
+            if self._input_part:
+                if line.startswith(self.__MSG_SELECTED_STATES):
+                    self._input_part   = False
+                    self._sel_sts_part = True
+                    continue
+                self._input_part_processing(line)
+            elif self._sel_sts_part:
+                if line.startswith(self.__MSG_NATURAL_STATES):
+                    self._sel_sts_part = False
+                    self._nat_sts_part = True
+                    continue
+                self._sel_sts_part_processing(line)
+            elif self._nat_sts_part:
+                if line.startswith(self.__MSG_ENERGY_EIGENVEC):
+                    self._nat_sts_part = False
+                    self._norm_ev_part = True
+                    continue
+                self._nat_sts_part_processing(line)
+            elif self._norm_ev_part:
+                if line.startswith(self.__MSG_ENERGY_SPECTRUM):
+                    self._norm_ev_part = False
+                    self._spectra_part = True
+                    continue
+                self._norm_ev_part_processing(line)
             else:
-                if self._sumKPcomp_block and (line.startswith("%%%")):
-                    ## complementary files part, stop
-                    return
-            
-            if len(line) == 0:
-                continue
-            elif ('---' in line) or ('===' in line) or ('Sum of' in line):
-                continue
-            else:
-                if   line == self.__message_components:
-                    self._allNVcomp_block = True
-                    continue
-                elif line == self.__message_sum_JP_components:
-                    self._allNVcomp_block = False
-                    self._sumJPcomp_block = True
-                    continue
-                elif line == self.__message_sum_KP_components:
-                    self._sumJPcomp_block = False
-                    self._sumKPcomp_block = True
-                    continue
-            
-            if   self._allNVcomp_block:
-                self._getAllNVComponents_blockline(line)
-            elif self._sumJPcomp_block:
-                self._getSumJPComponents_blockline(line)
-            elif self._sumKPcomp_block:
-                self._getSumKPComponents_blockline(line)
-    
-    def _getAllNVComponents_blockline(self, line):
-        """
-        Get all values depending on the header, 
-        """
-        headers = [line[i:i+5].strip() for i in range(0, 19, 5)]
-        if   headers[0] == '':
-            self._projecting_JMK = False
-        else:
-            self.J .append(int(headers[0]))
-            self.MJ.append(int(headers[1]))
-            self.KJ.append(int(headers[2]))
-            
-        if headers[3] == '':
-            self._projecting_P   = False
-        else:
-            self.P .append(int(headers[3]))
+                self._spectra_part_processing(line)
         
-        line = line[20:].split()
-        #     1     |      E     |     Z       v |     N       v |     A       v |
-        #    J    |    Jz     v |    P    |    T    |    Tz     v
-        _num_indx_val = (3, 5, 7, 10, 14)
-        for i, val in enumerate(line):
-            if i in _num_indx_val: continue
-            ## case select
-            if   (i == 0):
-                self.proj_norm  .append(float(val))
-            elif (i == 1):
-                self.proj_energy.append(float(val))
-            elif (i == 2):
-                self.proj_Z .append(float(val))
-            elif (i == 4):
-                self.proj_N .append(float(val))
-            elif (i == 6):
-                self.proj_A .append(float(val))
-            elif (i == 8):
-                self.proj_J .append(float(val))
-            elif (i == 9):
-                self.proj_Jz.append(float(val))
-            elif (i == 11):
-                self.proj_P .append(float(val))
-            elif (i == 12):
-                self.proj_T .append(float(val))
-            elif (i == 13):
-                self.proj_Tz.append(float(val))
+    def _input_part_processing(self, line):
+        if   line.startswith('Number of active protons  Z'):
+            self.z = int(line.split()[-1])
+        elif line.startswith('Number of active neutrons N'):
+            self.n = int(line.split()[-1])
+        elif line.startswith('Angular momentum min(2*J)'):
+            self.J = int(line.split()[-1])
+        elif line.startswith('Parity min(P)'):
+            self.P = int(line.split()[-1])
     
-    def _getSumJPComponents_blockline(self, line):
-        """ Block for J components"""
-        if line.startswith("    Total"): 
-            return
-        j, p = None, None
-        if self._projecting_JMK: j = int(line[0:5])
-        if self._projecting_P:   p = int(line[5:10])
-        vals = [float(x) for x in line[10:].split()]
+    def _sel_sts_part_processing(self, line):
+        line = line.strip().split()
         
-        self.sum_JP_norm  .append(vals[0])
-        self.sum_JP_energy.append(vals[2])
-        if abs(vals[1]) > 2.e-7: printf("[ERROR]Imaginary part of 1(J,P)=", j, p)
-        if abs(vals[3]) > 2.e-7: printf("[ERROR]Imaginary part of E(J,P)=", j, p)
+        if len(line) == 11:
+            if not line[0].isdigit():return
+            attrs_ = [
+                self.ArgsEnum.i, self.ArgsEnum.label, self.ArgsEnum.K,
+                self.ArgsEnum.overlap, self.ArgsEnum.energy, 
+                self.ArgsEnum.par_avg, self.ArgsEnum.Z_avg, self.ArgsEnum.N_avg, 
+                self.ArgsEnum.A_avg, self.ArgsEnum.J_avg, self.ArgsEnum.T_avg
+            ]
+            for indx_, attr_ in enumerate(attrs_):
+                if indx_ < 3:
+                    self.selected_states[attr_].append(  int(line[indx_]))
+                else:
+                    if '**' in line[indx_]: line[indx_] = -9999999
+                    self.selected_states[attr_].append(float(line[indx_]))
     
-    def _getSumKPComponents_blockline(self, line):
-        """ Block for K components"""
-        if line.startswith("    Total"): 
-            return
-        j, p = None, None
-        if self._projecting_JMK: j = int(line[0:5])
-        if self._projecting_P:   p = int(line[5:10])
-        vals = [float(x) for x in line[10:].split()]
+    def _nat_sts_part_processing(self, line):
+        line = line.strip().split()
         
-        self.sum_KP_norm  .append(vals[0])
-        self.sum_KP_energy.append(vals[2])
-        if abs(vals[1]) > 2.e-7: printf("[ERROR]Imaginary part of 1(K,P)=", j, p)
-        if abs(vals[3]) > 2.e-7: printf("[ERROR]Imaginary part of E(K,P)=", j, p)
+        if len(line) == 9:
+            if not line[0].isdigit():return
+            attrs_ = [
+                self.ArgsEnum.i, self.ArgsEnum.norm_eigenvalues, 
+                self.ArgsEnum.energy, self.ArgsEnum.par_avg, 
+                self.ArgsEnum.Z_avg, self.ArgsEnum.N_avg, self.ArgsEnum.A_avg,
+                self.ArgsEnum.J_avg, self.ArgsEnum.T_avg
+            ]
+            for indx_, attr_ in enumerate(attrs_):
+                if indx_ == 0:
+                    self.natural_states[attr_].append(  int(line[indx_]))
+                else:
+                    if '**' in line[indx_]: line[indx_] = -9999999
+                    self.natural_states[attr_].append(float(line[indx_]))
+    
+    def _norm_ev_part_processing(self, line):
+        line = line.strip().split()
+        
+        if len(line) == 8:
+            if not line[0].isdigit():return
+            attrs_ = [
+                self.ArgsEnum.i, self.ArgsEnum.energy, self.ArgsEnum.par_avg, 
+                self.ArgsEnum.Z_avg, self.ArgsEnum.N_avg, self.ArgsEnum.A_avg,
+                self.ArgsEnum.J_avg, self.ArgsEnum.T_avg
+            ]
+            for indx_, attr_ in enumerate(attrs_):
+                if indx_ == 0:
+                    self.energy_eigenvectors[attr_].append(  int(line[indx_]))
+                else:
+                    if '**' in line[indx_]: line[indx_] = -9999999
+                    self.energy_eigenvectors[attr_].append(float(line[indx_]))
+    
+    def _spectra_part_processing(self, line0):
+        line = line0.strip().split()
+        
+        if len(line) == 17:
+            if not (line[0].isdigit() or  '/' in line[0]): return
+            self._lines_energy_spectrum += line0 + '\n'
+            
+            attrs_ = [
+                self.ArgsEnum.JP, self.ArgsEnum.JP, self.ArgsEnum.i, 
+                self.ArgsEnum.energy,  None, 
+                self.ArgsEnum.Qs_avg,  self.ArgsEnum.mu_avg, 
+                self.ArgsEnum.r_p_avg, self.ArgsEnum.r_n_avg, 
+                self.ArgsEnum.r_m_avg, self.ArgsEnum.r_ch_avg,
+                self.ArgsEnum.par_avg, 
+                self.ArgsEnum.Z_avg, self.ArgsEnum.N_avg, self.ArgsEnum.A_avg,
+                self.ArgsEnum.J_avg, self.ArgsEnum.T_avg
+            ]
+            for indx_, attr_ in enumerate(attrs_):
+                if attr_ == self.ArgsEnum.JP:
+                    if indx_ == 0:
+                        self.energy_spectrum[attr_].append(line[indx_])
+                    else:
+                        self.energy_spectrum[attr_][-1] += " " + line[indx_]
+                elif indx_ == 4:
+                    continue
+                else:
+                    if '**' in line[indx_]: line[indx_] = -9999999
+                    self.energy_spectrum[attr_].append(float(line[indx_]))
+    
+    def getSpectrumLines(self):
+        return self._lines_energy_spectrum
+    
 
 
 
@@ -2184,8 +2249,10 @@ if __name__ == '__main__':
     # res = DataTaurusPAV(12, 12, '../OUT_1')
     # res = DataTaurusPAV(11, 20, '../test_obl01_odd_31Na/OUT_m1_m1.OUT')
     # res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_brokenoverlap.txt')
-    res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_1result.txt')
-    
+    # res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z2n1_odd_oldversion.txt')
+    res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z0n3_resultwithproblems.txt')
+    # res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_1result.txt')
+        
     _ = 0
     
     

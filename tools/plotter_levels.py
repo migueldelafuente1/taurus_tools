@@ -3,6 +3,7 @@ Created on 13 sept 2023
 
 @author: delafuente
 '''
+from tools.data import DataTaurusMIX
 
 try:
     import matplotlib.pyplot as plt
@@ -120,9 +121,8 @@ class EnergyLevelGraph(_BaseLevelGraph):
         ## if program == 'taurus_hwg':      select methods of processing
         
         ## Reset data if called.
-        self._data_angMom = []
+        self._data_angMom = []   ## The vlaues are in 2J, remember when print
         self._data_energy = []
-        self._data_angMom = []
         self._graph_x = []
         self._graph_y = []
         self._coords_subtitle = ()
@@ -132,7 +132,11 @@ class EnergyLevelGraph(_BaseLevelGraph):
             
             args = line.strip().split()
             
-            self._data_angMom.append(int(args[0]))
+            if '/' in args[0]: 
+                args[0] = args[0].split('/')[0]
+                self._data_angMom.append(int(args[0]))
+            else:
+                self._data_angMom.append(2 * int(args[0]))
             self._data_parity.append(args[1])
             self._data_energy.append(float(args[3]))
         
@@ -189,9 +193,13 @@ class EnergyLevelGraph(_BaseLevelGraph):
             y1, y2, y3, y4 = self._graph_y[i]
             
             en_str = format_e.format(ener_i)
-            jp_str = " {:2}{:1} ".format(self._data_angMom[i], 
-                                       self._data_parity[i])
             
+            if self._data_angMom[i] % 2 == 0:
+                jp_str = " {:2}{:1} ".format(self._data_angMom[i] // 2, 
+                                             self._data_parity[i])
+            else:
+                jp_str = " {:2}/2{:1} ".format(self._data_angMom[i], 
+                                               self._data_parity[i])
             plt_ax.annotate(jp_str, xy=(x1, y1),
                             horizontalalignment='right')
             plt_ax.plot(self._graph_x[i], self._graph_y[i], 'k')
@@ -274,6 +282,7 @@ class EnergyByJGraph(EnergyLevelGraph):
                 exc_col = [(x,y) for x, y  in exc_col.items()]
                 
                 x, y = list(zip(*exc_col))
+                x = [xx/2 for xx in x]   # J is stored as 2J
                 
                 if i == 0:
                     label_ = '{}: ({}){}={:4.2f} MeV'.format(self.title, i, par,
@@ -653,7 +662,25 @@ class JLevelContainer(BaseLevelContainer):
                           self._maxHeight + 1])
         
         #plt.show()
+
+def getAllLevelsAsString(folder_path):
+    """
+    Get the levels in the HWG folder to 
+    """
+    str_ = ''
+    if isinstance(folder_path, str): folder_path = [folder_path, ]
     
+    for folder_ in folder_path:
+        if not os.path.exists(folder_): 
+            print(" [ERROR] Couldn't find the folder for HWG:", folder_)
+            continue
+        for file_ in os.listdir(folder_):
+            if not file_.endswith('.dat'): continue
+            print("  .. importing (hwg) file:", file_)
+            dat_ = DataTaurusMIX(folder_+file_)
+            str_ += dat_.getSpectrumLines()
+    return str_
+
 if __name__ == '__main__':
     
     example_levels = """
@@ -695,6 +722,10 @@ if __name__ == '__main__':
     6  +   4   -212.160   13.385    0.000    0.000   2.6337   2.6249   2.6293   2.7498    1.000000   11.999985   11.999894   23.999879   5.99995   0.14448
 """
     
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_results_fewDefs/'
+    example_levels_2 = getAllLevelsAsString(
+        [f'{MAIN_FLD}K{k}_block_PAV/BU_folder_B1_MZ4_z12n11/HWG/' for k in (1, )])
+     
     # with open("all_spectra_A30_Fermi.txt", 'r') as f:
     #     example_levels_2 = f.read()
     levels_1 = EnergyByJGraph(title='Fermi')
@@ -728,8 +759,8 @@ if __name__ == '__main__':
     levels_3.setData(example_levels_3, program='taurus_hwg')  
     
     BaseLevelContainer.RELATIVE_PLOT = True
-    BaseLevelContainer.ONLY_PAIRED_STATES = True
-    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 1
+    BaseLevelContainer.ONLY_PAIRED_STATES = False
+    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 4
     
     _graph = BaseLevelContainer()
     _graph.global_title = "Comparison HWG D1S from densities"
