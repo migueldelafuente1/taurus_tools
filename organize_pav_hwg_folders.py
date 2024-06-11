@@ -297,7 +297,9 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
             print(f" [ERROR] Non all K were present for z,n={zn}, skipping ,{k_founds}")
         
         os.chdir(fld_pav)
-        RETURN_FLD = "/".join([".." for _ in str(fld_pav).split('\\')])
+        
+        _pth_separ = '\\' if os.getcwd().startswith('C:') else '/'
+        RETURN_FLD = "/".join([".." for _ in str(fld_pav).split(_pth_separ)])
         
         bins2copy = []
         k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
@@ -456,10 +458,11 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
         
         if not all(k_founds.values()):
             print(f" [ERROR] Non all K were present for z,n={zn}, skipping ,{k_founds}")
-        
+
         os.chdir(fld_pav)
-        RETURN_FLD = "/".join([".." for _ in str(fld_pav).split('\\')])
-        
+        _pth_separ = '\\' if os.getcwd().startswith('C:') else '/'
+        RETURN_FLD = "/".join([".." for _ in str(fld_pav).split(_pth_separ)])
+            
         bins2copy = []
         k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
         for i, b1 in enumerate(bins_):
@@ -543,7 +546,8 @@ if __name__ == '__main__':
     K_list = [1, 3, 5, 7]
     MAIN_FLD_TMP = 'results/'+elementNameByZ[nuclei[0][0]]+'K{K}'
     oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, inter, nuclei, 
-                                             PNP_fomenko=7, Jmax=17, RUN_SBATCH=False)
+                                             PNP_fomenko=7, Jmax=17, 
+                                             RUN_SBATCH=False)
     
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder)
