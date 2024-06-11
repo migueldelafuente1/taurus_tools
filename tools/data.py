@@ -1481,8 +1481,6 @@ class DataTaurusMIX(_DataObjectBase):
         r_n_avg = 'r_n_avg'
         r_m_avg = 'r_m_avg'
         r_ch_avg = 'r_ch_avg'
-        
-        
     
     def __init__(self, filename, empty_data=False):
         

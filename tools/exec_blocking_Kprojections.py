@@ -949,6 +949,8 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 for f_, txt_ in scr_files.items():
                     with open(FLD_+f_, 'w+') as f:
                         f.write(txt_)
+                for tail_ in OutputFileTypes.members():
+                    shutil.copy(self.interaction+tail_, FLD_)
                 
                 ## create all the folders for PNPAMP
                 inp_pav = InputTaurusPAV.DEFAULT_INPUT_FILENAME
@@ -962,9 +964,6 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                     os.mkdir(FLD_2)
                     shutil.copy(FLD_+f1, f"{FLD_2}/left_wf.bin")
                     shutil.copy(FLD_+f2, f"{FLD_2}/right_wf.bin")
-                    for hty in OutputFileTypes.members() + ['.red', ]:
-                        if os.path.exists(self.interaction+hty):
-                            shutil.copy(self.interaction+hty, FLD_2)
                     
                     inp_pav = f"{FLD_2}/{InputTaurusPAV.DEFAULT_INPUT_FILENAME}"
                     with open(inp_pav, 'w+') as f_:
@@ -1207,7 +1206,7 @@ mkdir -p /scratch/delafuen/
 mkdir -p /scratch/delafuen/$SLURM_JOB_ID
 chmod 777 PROGRAM
 cp -r  PROGRAM INPUT_FILE left_wf.bin right_wf.bin /scratch/delafuen/$SLURM_JOB_ID
-cp -r  HAMIL.* /scratch/delafuen/$SLURM_JOB_ID
+cp -r  ../HAMIL.* /scratch/delafuen/$SLURM_JOB_ID
 
 cd  /scratch/delafuen/$SLURM_JOB_ID
 
@@ -1297,7 +1296,7 @@ var4=$(cat gcm | head -$var | tail -1 | awk '{print$4}')
 cp $var1 left_wf.bin
 cp $var2 right_wf.bin
 mkdir $var
-cp PROGRAM INPUT_FILE left_wf.bin right_wf.bin HAMIL.* $var
+cp PROGRAM INPUT_FILE left_wf.bin right_wf.bin $var
 cd $var
 chmod 777 PROGRAM
 cd ../
@@ -1343,8 +1342,8 @@ done"""
         self.prepare_pnpamp = self.__TEMPLATE_PREPARE_PNPAMP
         self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.JOBS_LENGTH,
                                                           self.jobs_length)
-        self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.HAMIL,
-                                                          self.hamil)
+        # self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.HAMIL,
+        #                                                   self.hamil)
         self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.INPUT_FILE,
                                                           PAV_input_filename)
         self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.PROGRAM, 

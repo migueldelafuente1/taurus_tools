@@ -432,7 +432,43 @@ class BaseLevelContainer(object):
             _ = lev_obj._data_energy.pop(i)
             _ = lev_obj._data_parity.pop(i)
             _ = lev_obj._data_exc_energy.pop(i)
+    
+    def _get_y_stack_and_bounds(self, lev_obj, y_min, y_max):
         
+        j_states = set(lev_obj._data_angMom)
+        j_states_count = [lev_obj._data_angMom.count(j) for j in j_states]
+        count_j = dict([(j, 0) for j in j_states])
+        
+        if self.RELATIVE_PLOT:
+            if self.MAX_NUM_OF_SIGMAS > max(j_states_count):
+                y_max = max(y_max, lev_obj.Emax - lev_obj.Emin)
+                y_min = min(y_min, 0.0)
+            else:
+                for i, e_ in enumerate(lev_obj._data_energy):
+                    count_j[lev_obj._data_angMom[i]] += 1
+                    y_max = max(y_max, e_ - lev_obj.Emin)
+                    y_min = min(y_min, 0.0)
+                    if all([lj >= self.MAX_NUM_OF_SIGMAS for lj in count_j.values()]): 
+                        break
+                
+            y_stack = lev_obj._data_exc_energy[0]
+            list_lev_select = lev_obj._data_exc_energy
+                
+        else:
+            if self.MAX_NUM_OF_SIGMAS > max(j_states_count):
+                y_max = max(y_max, lev_obj.Emax)
+                y_min = min(y_min, lev_obj.Emin)
+            else:
+                for i, e_ in enumerate(lev_obj._data_energy):
+                    count_j[lev_obj._data_angMom[i]] += 1
+                    y_max = max(y_max, e_)
+                    y_min = min(y_min, e_)
+                    if all([lj >= self.MAX_NUM_OF_SIGMAS for lj in count_j.values()]): 
+                        break
+            y_stack = lev_obj.Emin
+            list_lev_select = lev_obj._data_energy
+        
+        return y_min, y_max, y_stack, list_lev_select
     
     def _setLevelBoundsAndCoordinates(self):
         """
@@ -465,19 +501,8 @@ class BaseLevelContainer(object):
             # Reference for the box
             x_b = (i + lev_obj._horizontal_margin) * self._LX_box
             
-            if self.RELATIVE_PLOT:
-                y_max = max(y_max, lev_obj.Emax - lev_obj.Emin)
-                y_min = min(y_min, 0.0)
-                
-                y_stack = lev_obj._data_exc_energy[0]
-                list_lev_select = lev_obj._data_exc_energy
-                
-            else:
-                y_max = max(y_max, lev_obj.Emax)
-                y_min = min(y_min, lev_obj.Emin)
-                
-                y_stack = lev_obj.Emin
-                list_lev_select = lev_obj._data_energy
+            args = self._get_y_stack_and_bounds(lev_obj, y_min, y_max)
+            y_min, y_max, y_stack, list_lev_select = args
                 
             for indx, ener_i in enumerate(list_lev_select):
                 
@@ -729,22 +754,22 @@ if __name__ == '__main__':
     # with open("all_spectra_A30_Fermi.txt", 'r') as f:
     #     example_levels_2 = f.read()
     levels_1 = EnergyByJGraph(title='Fermi')
-    levels_1.setData(example_levels_2, program='taurus_hwg')   
+    levels_1.setData(example_levels, program='taurus_hwg')   
     # #
-    # levels_2 = EnergyLevelGraph(title='HFB sph')
-    # levels_2.setData(example_levels_2, program='taurus_hwg')  
+    levels_2 = EnergyByJGraph(title='HFB sph')
+    levels_2.setData(example_levels_2, program='taurus_hwg')  
     
     levels_3 = EnergyByJGraph(title='chiral')
     levels_3.setData(example_levels_3, program='taurus_hwg')  
     
     BaseLevelContainer.RELATIVE_PLOT = True
     BaseLevelContainer.ONLY_PAIRED_STATES = True
-    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 1
+    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 3
     
     _graph = JLevelContainer()
     _graph.global_title = "Comparison HWG D1S from densities"
     _graph.add_LevelGraph(levels_1)
-    # _graph.add_LevelGraph(levels_2)
+    _graph.add_LevelGraph(levels_2)
     _graph.add_LevelGraph(levels_3)
     _graph.plot()
     
@@ -764,9 +789,9 @@ if __name__ == '__main__':
     
     _graph = BaseLevelContainer()
     _graph.global_title = "Comparison HWG D1S from densities"
-    _graph.add_LevelGraph(levels_1)
+    # _graph.add_LevelGraph(levels_1)
     _graph.add_LevelGraph(levels_2)
-    _graph.add_LevelGraph(levels_3)
+    # _graph.add_LevelGraph(levels_3)
     _graph.plot()
     
     
