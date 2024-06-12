@@ -749,8 +749,16 @@ if __name__ == '__main__':
     #===========================================================================
     # ## PAV - HWG for __VERTICAL__ K-mixing per deformations
     #===========================================================================
-    nuclei = [(7, 8+ 2*i) for i in range(0, 5, 2)]
-    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
+    # nuclei = [( 7, 8 + 2*i) for i in range(0, 7)]
+    # nuclei = [( 9, 8 + 2*i) for i in range(0, 7)]
+    # nuclei = [(11, 8 + 2*i) for i in range(0, 7)]
+    # nuclei = [(12,11 + 2*i) for i in range(0, 6)]
+    # nuclei = [(13, 8 + 2*i) for i in range(0, 7)]
+    # nuclei = [(15, 8 + 2*i) for i in range(0, 7)]
+    # nuclei = [(17, 8 + 2*i) for i in range(0, 7)]
+    
+    MAIN_FLD = 'results/{}_multiK'.format(elementNameByZ[nuclei[0][0]])
+    # MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
     oddeven_vertical_kmix(MAIN_FLD, inter, nuclei, 
                           PNP_fomenko=7, Jmax=17, K_list = [1, 3, 5],
                           CHANGE_FLD_SETUP=True, 
