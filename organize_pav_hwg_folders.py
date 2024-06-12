@@ -61,9 +61,8 @@ input_mix_args = {
 
 def basic_eveneven_mix_from_vap(MAIN_FLD):
     """
-    
+    # TODO:
     """
-    
     assert os.path.exists(MAIN_FLD), "Main folder does not exists."
     os.chdir(MAIN_FLD)
     # employs the seed_* sorted
@@ -166,6 +165,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         for fn_, scr_ in slurm.getScriptsByName().items():
             dst_fld = DEST_FLD if fn_ != 'hw.x' else DEST_FLD+'/'+DEST_FLD_HWG
             with open(dst_fld+'/'+fn_, 'w+') as f: f.write(scr_)
+            os.chmod (dst_fld+'/'+fn_, 0o777)
         for fn_, scr_ in gcm_files.items():
             with open(DEST_FLD+'/'+fn_, 'w+') as f: f.write("\n".join(scr_))
         
@@ -245,7 +245,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
                 if fld_pav.exists(): shutil.rmtree(fld_pav)
             
         for z, n in nuclei:
-            fld1 = MAIN_FLD / Path(TEMP_BU.format(interaction, z, n))
+            fld_bu = MAIN_FLD / Path(TEMP_BU.format(interaction, z, n))
             
             fld_pav = MAIN_DEST_PATH / DEST_FLD.format(z, n)
             fld_mix = fld_pav / DEST_FLD_HWG
@@ -255,6 +255,8 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
                 fld_mix.mkdir(parents=True, exist_ok=True)
                 shutil.copy('taurus_pav.exe', fld_pav)
                 shutil.copy('taurus_mix.exe', fld_mix)
+                os.chmod(fld_pav / 'taurus_pav.exe', 0o777)
+                os.chmod(fld_mix / 'taurus_mix.exe', 0o777)
                 
                 pav_obj = InputTaurusPAV(z, n, interaction, **input_pav_args)                
                 mix_obj = InputTaurusMIX(z, n, 0, **input_mix_args)
@@ -265,14 +267,14 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
                     f.write(mix_obj.getText4file())
                 
                 for tail_ in ('.2b', '.com', '.sho'):
-                    shutil.copy(fld1 / (interaction+tail_), fld_pav)
+                    shutil.copy(fld_bu / (interaction+tail_), fld_pav)
             
             
             ## The files migration for each k.
             if not (z,n) in fld_migration:  fld_migration[(z,n)]  = (fld_pav, fld_mix)
             if not (z,n) in path_migration: path_migration[(z,n)] = []
             if not (z,n) in nuclei_by_K_found: nuclei_by_K_found[(z,n)] = {}
-            fld_kvap = fld1 / BU_KVAP 
+            fld_kvap = fld_bu / BU_KVAP 
             if not fld_kvap.exists(): print(f" [Error] K={K} folder not present {z},{n}")
             nuclei_by_K_found[(z,n)][K] = fld_kvap.exists()
             
@@ -298,8 +300,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         
         os.chdir(fld_pav)
         
-        _pth_separ = '\\' if os.getcwd().startswith('C:') else '/'
-        RETURN_FLD = "/".join([".." for _ in str(fld_pav).split(_pth_separ)])
+        RETURN_FLD = "/".join(['..' for _ in fld_pav.parts])
         
         bins2copy = []
         k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
@@ -332,6 +333,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         for fn_, scr_ in slurm.getScriptsByName().items():
             dst_fld = Path('') if fn_ != 'hw.x' else Path(DEST_FLD_HWG)
             with open(dst_fld / fn_, 'w+') as f: f.write(scr_)
+            os.chmod(dst_fld / fn_, 0o777)
         for fn_, scr_ in gcm_files.items():
             with open(fn_, 'w+') as f: f.write("\n".join(scr_))
         
@@ -408,7 +410,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
                 if fld_pav.exists(): shutil.rmtree(fld_pav)
             
         for z, n in nuclei:
-            fld1 = MAIN_FLD / Path(TEMP_BU.format(interaction, z, n))
+            fld_bu = MAIN_FLD / Path(TEMP_BU.format(interaction, z, n))
             
             fld_pav = MAIN_DEST_PATH / DEST_FLD.format(z, n)
             fld_mix = fld_pav / DEST_FLD_HWG
@@ -418,6 +420,8 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
                 fld_mix.mkdir(parents=True, exist_ok=True)
                 shutil.copy('taurus_pav.exe', fld_pav)
                 shutil.copy('taurus_mix.exe', fld_mix)
+                os.chmod(fld_pav / 'taurus_pav.exe', 0o777)
+                os.chmod(fld_mix / 'taurus_mix.exe', 0o777)
                 
                 pav_obj = InputTaurusPAV(z, n, interaction, **input_pav_args)                
                 mix_obj = InputTaurusMIX(z, n, 0, **input_mix_args)
@@ -428,14 +432,14 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
                     f.write(mix_obj.getText4file())
                 
                 for tail_ in ('.2b', '.com', '.sho'):
-                    shutil.copy(fld1 / (interaction+tail_), fld_pav)
+                    shutil.copy(fld_bu / (interaction+tail_), fld_pav)
             
             
             ## The files migration for each k.
             if not (z,n) in fld_migration:  fld_migration[(z,n)]  = (fld_pav, fld_mix)
             if not (z,n) in path_migration: path_migration[(z,n)] = []
             if not (z,n) in nuclei_by_K_found: nuclei_by_K_found[(z,n)] = {}
-            fld_kvap = fld1 / BU_KVAP 
+            fld_kvap = fld_bu / BU_KVAP 
             if not fld_kvap.exists(): print(f" [Error] K={K} folder not present {z},{n}")
             nuclei_by_K_found[(z,n)][K] = fld_kvap.exists()
             
@@ -460,8 +464,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
             print(f" [ERROR] Non all K were present for z,n={zn}, skipping ,{k_founds}")
 
         os.chdir(fld_pav)
-        _pth_separ = '\\' if os.getcwd().startswith('C:') else '/'
-        RETURN_FLD = "/".join([".." for _ in str(fld_pav).split(_pth_separ)])
+        RETURN_FLD = "/".join(['..' for _ in fld_pav.parts])
             
         bins2copy = []
         k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
@@ -482,9 +485,6 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
             shutil.copy('input_pav.txt',  fld_i)
             os.chmod(fld_i / 'taurus_pav.exe', 0o777)            
             
-        _ = 0
-        
-    
         # create the scripts
         print("  3. Creating SLURM job scripts.") 
         slurm = _SlurmJob1DPreparation(interaction, len(bins_), valid_J_list,
@@ -494,6 +494,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
         for fn_, scr_ in slurm.getScriptsByName().items():
             dst_fld = Path('') if fn_ != 'hw.x' else Path(DEST_FLD_HWG)
             with open(dst_fld / fn_, 'w+') as f: f.write(scr_)
+            os.chmod(dst_fld / fn_, 0o777)
         for fn_, scr_ in gcm_files.items():
             with open(fn_, 'w+') as f: f.write("\n".join(scr_))
         
@@ -508,7 +509,194 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
         print("   * done for z,n=", zn, f' Ks:{k_founds.keys()}, len={len(bins2copy)}\n')
     
     print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
+
+def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
+                          PNP_fomenko=1, Jmax=1, K_list = [],
+                          CHANGE_FLD_SETUP=False,
+                          RUN_PAV_JOB=False, RUN_HWG_JOB=False):
+    """
+    The script reads the BU_folders for the MAIN_FLD_TMP where the K states 
+    were already placed, for the Job to be applied:
+        
+        F_multiK/
+            BU_folder_{inter}_z{z}n{n}/
+                1_0_VAP/
+                ...
+                def{i_def}_PAV/
+                    1, ..., N/ {inter}.*, inputPAV, taurus_pav.exe, left/right_wf
+                ...
+                HWG
+                sub_1.x
+                job_1.x
+                cat_states.py
+                ...
+    For each {i_Deformation}:
+        1. Applying PAV job, run for 1, .. N the projection.
+        2. If the PAV execution were done, runs the cat and mv the projected_me
+            to the HWG folder, then run the maximum J
     
+    """
+    print(f"## Script begins, UPDATE_fld:{CHANGE_FLD_SETUP} PAV:{RUN_PAV_JOB} HWG:{RUN_HWG_JOB} \n")
+    assert not(RUN_PAV_JOB * RUN_HWG_JOB),      "Cannot do both PAV and HWG at the same time"
+    assert not(CHANGE_FLD_SETUP * RUN_HWG_JOB), "Cannot remake the folders and do the HWG"
+    
+    global input_pav_args 
+    input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
+    input_pav_args[InputTaurusPAV.ArgsEnum.z_Mphi] = PNP_fomenko
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = 1
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = Jmax
+    
+    global input_mix_args
+    
+    TEMP_BU      = "BU_folder_{}_z{}n{}/"
+    TEMP_K_BU    = "{}_0_VAP"
+    DEST_FLD     = 'def{}_PAV/'
+    DEST_FLD_HWG = 'HWG'
+    valid_J_list = [i for i in range(1, Jmax+1, 2)]
+    
+    for z,n in nuclei:
+        
+        print(" 1. Reading for nuclei:", z, n, interaction)
+        fld_bu = Path(MAIN_FLD_TMP) / Path(TEMP_BU.format(interaction, z, n))
+        if not fld_bu.exists():
+            print(f" [ERROR] not found z,n:{z},{n} {fld_bu}")
+            continue
+        
+        list_folders = list(filter(lambda x: os.path.isdir(x), os.listdir(fld_bu)))
+        if not K_list:
+            K_list = filter(lambda x: x.endswith('_VAP'), list_folders)
+            K_list = sorted(list(map(lambda x: x.split('_')[0], K_list)))
+            print("  * K list defined = ", K_list)
+        
+        print(" 2. Getting the deformation list for the process")
+        if not (fld_bu / 'list_dict.dat').exists:
+            with open(fld_bu / 'list_dict.dat', 'r') as f:
+                def_list = []
+                for x in f.readlines():
+                    k, d = x.split()
+                    k = k.split('_')[2].replace('-','_').replace('d','')
+                    def_list.append((k, d))
+        else:
+            def_list = filter(lambda x: x.startswith('seed_'), os.listdir(fld_bu))
+            def_list = filter(lambda x: not x.endswith('-dbase.bin'), def_list)
+            def_list = map(lambda x: x.split('_')[2], def_list)
+            def_list = map(lambda x: x.replace('-','_').replace('d',''), def_list)
+            def_list = sort_by_deformation_naming(list(def_list))
+            
+            vals_ = set()
+            for K in K_list:
+                if not (fld_bu / f"{K}_0_VAP").exists(): continue
+                for f in filter(lambda x: x.endswith('.bin'), 
+                                os.listdir( fld_bu / f"{K}_0_VAP" )):
+                    vals_.add( f.replace('.bin', '') )
+            vals_ = sort_by_deformation_naming(list(vals_))
+            if len(vals_) == len(def_list):
+                def_list = [(def_list[i], v) for i,v in enumerate(vals_)]
+            else:
+                print(" [ERROR] Cannot recreate the list of deformed states on PAV.")
+                continue
+        
+        if CHANGE_FLD_SETUP:
+            print(' 2.1 Requested remake the def_{}_PAV folder.')
+            for fld_ in os.listdir(fld_bu):
+                if fld_.endswith('_PAV'): 
+                    print("shutil.rmtree", fld_bu / fld_, "  TODO!")
+                    #shutil.rmtree(fld_bu / fld_)
+            for k, v in def_list:
+                bins_init = [fld_bu / Path(TEMP_K_BU.format(K)) / f"{v}.bin" 
+                                for K in K_list]
+                n_bins = len(bins_init)
+                if not all([x.exists() for x in bins_init]):
+                    print("  [SKIP] not found all bins for all K def=", k, v)
+                    continue                    
+                
+                fld_pav = fld_bu / Path(DEST_FLD.format(k) + 'aux')                
+                fld_mix = fld_pav / DEST_FLD_HWG
+                
+                fld_pav.mkdir(parents=True, exist_ok=True)
+                fld_mix.mkdir(parents=True, exist_ok=True)
+                shutil.copy('taurus_mix.exe', fld_mix)
+                os.chmod(fld_mix / 'taurus_pav.exe', 0o777) 
+                
+                pav_obj = InputTaurusPAV(z, n, interaction, **input_pav_args)                
+                mix_obj = InputTaurusMIX(z, n, 0, **input_mix_args)
+                
+                with open(fld_pav / 'input_pav.txt', 'w+') as f:
+                    f.write(pav_obj.getText4file())
+                with open(fld_mix / 'input_mix.txt', 'w+') as f:
+                    f.write(mix_obj.getText4file())
+                
+                bins_     = [f"{v}_{K}_0.bin" for K in K_list]
+                bins_dest = [(fld_pav / bin_) for bin_ in bins_]
+                for i in range(n_bins):
+                    shutil.copy(bins_init[i], bins_dest[i])
+                kk = 0
+                for i in range(n_bins):
+                    for j in range(i, n_bins):
+                        kk += 1
+                        fld_i = fld_pav / f"{kk}"
+                        fld_i.mkdir(parents=True, exist_ok=True)
+                        shutil.copy(bins_dest[i], fld_i /  'left_wf.bin')
+                        shutil.copy(bins_dest[j], fld_i / 'right_wf.bin')
+                        shutil.copy('taurus_pav.exe', fld_i)
+                        shutil.copy(fld_pav / 'input_pav.txt', fld_i)
+                        os.chmod(fld_i / 'taurus_pav.exe', 0o777) 
+                
+                for tail_ in ('.2b', '.com', '.sho'):
+                    shutil.copy(fld_bu / (interaction+tail_), fld_pav)
+                
+                k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
+                for i, b1 in enumerate(bins_):
+                    for i2 in range(i, len(bins_)):
+                        k += 1
+                        gcm_files['gcm_3'].append(f"    {i+1: <6}")
+                        gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
+                        if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
+                
+                # create the scripts
+                print("  3. Creating SLURM job scripts.") 
+                slurm = _SlurmJob1DPreparation(interaction, n_bins, valid_J_list,
+                                               PAV_input_filename='input_pav.txt',
+                                               HWG_input_filename='input_mix.txt')       
+                
+                for fn_, scr_ in slurm.getScriptsByName().items():
+                    dst_fld = fld_pav if fn_ != 'hw.x' else fld_mix
+                    with open(dst_fld / fn_, 'w+') as f: f.write(scr_)
+                    os.chmod (dst_fld / fn_, 0o777)
+                    
+                for fn_, scr_ in gcm_files.items():
+                    with open(fld_pav / fn_, 'w+') as f: f.write("\n".join(scr_))
+        
+        ## Remaked PAV-deformation folders or not, lets run    
+        RETURN_FOLDER = "/".join(['..' for _ in fld_bu.parts])
+        os.chdir(fld_bu)
+        if RUN_PAV_JOB:
+            print(" 3. Running the PAV")
+            for k, _ in def_list:
+                fld_pav = Path(DEST_FLD.format(k))
+                os.chdir(fld_pav)
+                os.system('sbatch sub_1.x')
+                print(  "   [run] sbatch in", fld_pav)
+                os.chdir('..')
+            os.chdir(RETURN_FOLDER)
+        if RUN_HWG_JOB:
+            print(" 3. Cat states and Run the HWG")
+            for k, _ in def_list:
+                fld_pav = Path(DEST_FLD.format(k))
+                os.chdir(fld_pav)
+                os.system('python3 cat_states.py')
+                os.chdir(DEST_FLD_HWG)
+                print(  "   [run] hw.x in", fld_pav)
+                os.system('./hw.x')
+                os.chdir('../..')
+            os.chdir(RETURN_FOLDER)
+        print(" Done for isotope.")
+    print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
+
+
+
+
+
 if __name__ == '__main__':
     
     ## Exists the programs and compile with ifort.
@@ -516,7 +704,6 @@ if __name__ == '__main__':
         importAndCompile_taurus(use_dens_taurus=False, 
                                 pav = not os.path.exists('taurus_pav.exe'), 
                                 mix = not os.path.exists('taurus_mix.exe'))
-    
     # TESTING_
     # inter  = 'B1_MZ3' 
     # nuclei = [(2, 1), (2, 3)]
@@ -543,11 +730,11 @@ if __name__ == '__main__':
     #===========================================================================
     # ## PAV - HWG for multi K (K folders separated for each nuclei)
     #===========================================================================
-    K_list = [1, 3, 5, 7]
-    MAIN_FLD_TMP = 'results/'+elementNameByZ[nuclei[0][0]]+'K{K}'
-    oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, inter, nuclei, 
-                                             PNP_fomenko=7, Jmax=17, 
-                                             RUN_SBATCH=False)
+    # K_list = [1, 3, 5, 7]
+    # MAIN_FLD_TMP = 'results/'+elementNameByZ[nuclei[0][0]]+'K{K}'
+    # oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, inter, nuclei, 
+    #                                          PNP_fomenko=7, Jmax=17, 
+    #                                          RUN_SBATCH=False)
     
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder)
@@ -558,3 +745,14 @@ if __name__ == '__main__':
     # oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
     #                                     PNP_fomenko=7, Jmax=17, RUN_SBATCH=False)
 
+    
+    #===========================================================================
+    # ## PAV - HWG for __VERTICAL__ K-mixing per deformations
+    #===========================================================================
+    nuclei = [(7, 8+ 2*i) for i in range(0, 5, 2)]
+    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
+    oddeven_vertical_kmix(MAIN_FLD, inter, nuclei, 
+                          PNP_fomenko=7, Jmax=17, K_list = [1, 3, 5],
+                          CHANGE_FLD_SETUP=True, 
+                          RUN_PAV_JOB=True, RUN_HWG_JOB=False)
+    
