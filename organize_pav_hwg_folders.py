@@ -700,7 +700,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
 if __name__ == '__main__':
     
     ## Exists the programs and compile with ifort.
-    if False:
+    if True:
         importAndCompile_taurus(use_dens_taurus=False, 
                                 pav = not os.path.exists('taurus_pav.exe'), 
                                 mix = not os.path.exists('taurus_mix.exe'))
