@@ -616,7 +616,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                 fld_pav.mkdir(parents=True, exist_ok=True)
                 fld_mix.mkdir(parents=True, exist_ok=True)
                 shutil.copy('taurus_mix.exe', fld_mix)
-                os.chmod(fld_mix / 'taurus_pav.exe', 0o777) 
+                os.chmod(fld_mix / 'taurus_mix.exe', 0o777) 
                 
                 pav_obj = InputTaurusPAV(z, n, interaction, **input_pav_args)                
                 mix_obj = InputTaurusMIX(z, n, 0, **input_mix_args)
@@ -752,7 +752,7 @@ if __name__ == '__main__':
     # nuclei = [( 7, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [( 9, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(11, 8 + 2*i) for i in range(0, 7)]
-    # nuclei = [(12,11 + 2*i) for i in range(0, 6)]
+    nuclei = [(12,11 + 2*i) for i in range(0, 1)]
     # nuclei = [(13, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(15, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(17, 8 + 2*i) for i in range(0, 7)]
