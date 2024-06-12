@@ -608,9 +608,12 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                 n_bins = len(bins_init)
                 if not all([x.exists() for x in bins_init]):
                     print("  [SKIP] not found all bins for all K def=", k, v)
-                    continue                    
+                    continue
+                            
+                fld_pav = fld_bu / Path(DEST_FLD.format(k))
+                if os.getcwd().startswith('C:'): # for testing in windows
+                    fld_pav = fld_bu / Path(DEST_FLD.format(k) + 'aux')
                 
-                fld_pav = fld_bu / Path(DEST_FLD.format(k) + 'aux')                
                 fld_mix = fld_pav / DEST_FLD_HWG
                 
                 fld_pav.mkdir(parents=True, exist_ok=True)
