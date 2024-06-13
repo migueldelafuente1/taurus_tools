@@ -35,8 +35,9 @@ class _Base1DTaurusExecutor(object):
     PRINT_STEP_RESULT = True
     PRINT_CALCULATION_PARAMETERS = True
     ITERATIVE_METHOD  = None
-    SAVE_DAT_FILES = []  # list for saving the auxillary files from taurus
-    EXPORT_LIST_RESULTS = 'export_resultTaurus.txt'
+    MAX_ITER_WAITING_TIME = 43200   # 12 h timeout 
+    SAVE_DAT_FILES        = []      # list for saving the auxillary files from taurus
+    EXPORT_LIST_RESULTS   = 'export_resultTaurus.txt'
     HEADER_SEPARATOR = OUTPUT_HEADER_SEPARATOR
     
     TRACK_TIME_AND_RAM = False
@@ -842,7 +843,8 @@ class _Base1DTaurusExecutor(object):
                     ## option to analyze the program performance
                     order_ = f'{{ /usr/bin/time -v {order_}; }} 2> {self.TIME_FILE}'
                 
-                MAX_TO = max(self._getMinimumIterationTimeTaurus(), 43200) # 12 h timeout
+                MAX_TO = max(self._getMinimumIterationTimeTaurus(), 
+                             self.MAX_ITER_WAITING_TIME)
                 _e = subprocess.call(order_, 
                                      shell=True,
                                      timeout=MAX_TO)

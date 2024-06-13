@@ -10,7 +10,7 @@ The naming and scripts are the automatized sorting from taurus_tools
 Using the scripts and objects for input for the different programs
 '''
 
-import os
+import os, platform
 import shutil
 from pathlib import Path
 
@@ -135,7 +135,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
             for i2 in range(i, len(bins_)):
                 k += 1
                 bins2copy.append( (b1, bins_[i2]) )
-                gcm_files['gcm_3'].append(f"    {i+1: <6}")
+                gcm_files['gcm_3'].append(f"    {k: <6}")
                 gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
                 if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
         
@@ -308,7 +308,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
             for i2 in range(i, len(bins_)):
                 k += 1
                 bins2copy.append( (b1, bins_[i2]) )
-                gcm_files['gcm_3'].append(f"    {i+1: <6}")
+                gcm_files['gcm_3'].append(f"    {k: <6}")
                 gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
                 if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
         
@@ -472,7 +472,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
             for i2 in range(i, len(bins_)):
                 k += 1
                 bins2copy.append( (b1, bins_[i2]) )
-                gcm_files['gcm_3'].append(f"    {i+1: <6}")
+                gcm_files['gcm_3'].append(f"    {k: <6}")
                 gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
                 if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
         
@@ -600,8 +600,11 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
             print(' 2.1 Requested remake the def_{}_PAV folder.')
             for fld_ in os.listdir(fld_bu):
                 if fld_.endswith('_PAV'): 
-                    print("shutil.rmtree", fld_bu / fld_, "  TODO!")
-                    #shutil.rmtree(fld_bu / fld_)
+                    ## TESTING 
+                    if platform.system() == 'Windows':
+                        print("shutil.rmtree", fld_bu / fld_, "  TODO!")
+                    else:
+                        shutil.rmtree(fld_bu / fld_)
             for k, v in def_list:
                 bins_init = [fld_bu / Path(TEMP_K_BU.format(K)) / f"{v}.bin" 
                                 for K in K_list]
@@ -611,7 +614,8 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                     continue
                             
                 fld_pav = fld_bu / Path(DEST_FLD.format(k))
-                if os.getcwd().startswith('C:'): # for testing in windows
+                # if os.getcwd().startswith('C:'): # for testing in windows
+                if platform.system() == 'Windows':
                     fld_pav = fld_bu / Path(DEST_FLD.format(k) + 'aux')
                 
                 fld_mix = fld_pav / DEST_FLD_HWG
@@ -652,7 +656,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                 for i, b1 in enumerate(bins_):
                     for i2 in range(i, len(bins_)):
                         k += 1
-                        gcm_files['gcm_3'].append(f"    {i+1: <6}")
+                        gcm_files['gcm_3'].append(f"    {k: <6}")
                         gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
                         if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
                 
@@ -752,16 +756,16 @@ if __name__ == '__main__':
     #===========================================================================
     # ## PAV - HWG for __VERTICAL__ K-mixing per deformations
     #===========================================================================
-    # nuclei = [( 7, 8 + 2*i) for i in range(0, 7)]
+    nuclei = [( 7, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [( 9, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(11, 8 + 2*i) for i in range(0, 7)]
-    nuclei = [(12,11 + 2*i) for i in range(0, 1)]
+    # nuclei = [(12,11 + 2*i) for i in range(0, 1)]
     # nuclei = [(13, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(15, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(17, 8 + 2*i) for i in range(0, 7)]
     
     MAIN_FLD = 'results/{}_multiK'.format(elementNameByZ[nuclei[0][0]])
-    # MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
+    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
     oddeven_vertical_kmix(MAIN_FLD, inter, nuclei, 
                           PNP_fomenko=7, Jmax=17, K_list = [1, 3, 5],
                           CHANGE_FLD_SETUP=True, 

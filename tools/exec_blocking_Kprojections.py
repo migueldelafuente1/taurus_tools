@@ -1266,11 +1266,15 @@ def copy_stuff(dir_list):
 if os.path.exists('gcm_3'):  # gcm_file
     with open('gcm_3', 'r') as f:
         dir_list = f.readlines()
+        dir_list = [fld_.strip() for fld_ in dir_list]
         print(dir_list)
         copy_stuff(dir_list)
 else: # without gcm_file
-    dir_list = list(filter(lambda x: os.path.isdir(x) and x.isdigit(), os.listdir()))
-    copy_stuff(dir_list.sort())"""
+    dir_list = filter(lambda x: os.path.isdir(x) and x.isdigit(), os.listdir())
+    dir_list = sorted([int(x) for x in dir_list])
+    dir_list = [str(x) for x in dir_list]
+    print(dir_list)
+    copy_stuff(dir_list)"""
     
     __TEMPLATE_JOB_HWX = """#!/bin/bash
 
