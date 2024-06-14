@@ -143,7 +143,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             djmax = min(16, 2*self._sp_2jmax)
             djmin = 0
         else:
-            djmax = self._sp_2jmax
+            djmax = 2 * self._sp_2jmax - 1
             djmin = self._sp_2jmin
         
         # if (InputTaurusPAV.ArgsEnum.j_max or InputTaurusPAV.ArgsEnum.j_min):
