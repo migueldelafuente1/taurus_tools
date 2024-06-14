@@ -1332,7 +1332,14 @@ class DataTaurusPAV(_DataObjectBase):
         
         line = line0[20:].split()
         ## Change to assing norm=0 values (normally with divergences or 1e-150)
-        if abs(float(line[0])) < 1.0e-8: line = [0.000 for i in line]
+        if '***' in line[0]:
+            printf(f"[WRN]! excluded line (AllNVComponents) '****'  in norm",
+                   f":: [{line0}]")
+            return 
+        ## NOTE: states with norm ******* give problems, results close to 0 with
+        ##  divergences are well identified in the process, putting everithing 
+        ##  to 0 could mislead the exclusion process.
+        # if abs(float(line[0])) < 1.0e-8: line = [0.000 for i in line]
         
         #     1     |      E     |     Z       v |     N       v |     A       v |
         #    J    |    Jz     v |    P    |    T    |    Tz     v

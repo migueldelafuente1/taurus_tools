@@ -747,13 +747,16 @@ if __name__ == '__main__':
     6  +   4   -212.160   13.385    0.000    0.000   2.6337   2.6249   2.6293   2.7498    1.000000   11.999985   11.999894   23.999879   5.99995   0.14448
 """
     
-    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_results_fewDefs/'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/'
     example_levels_2 = getAllLevelsAsString(
         [f'{MAIN_FLD}K{k}_block_PAV/BU_folder_B1_MZ4_z12n11/HWG/' for k in (1, )])
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/Kmix_block_PAV/BU_folder_B1_MZ4_z12n11/HWG/'
+    
+    example_levels = getAllLevelsAsString(MAIN_FLD)
      
     # with open("all_spectra_A30_Fermi.txt", 'r') as f:
     #     example_levels_2 = f.read()
-    levels_1 = EnergyByJGraph(title='Fermi')
+    levels_1 = EnergyByJGraph(title='B1')
     levels_1.setData(example_levels, program='taurus_hwg')   
     # #
     levels_2 = EnergyByJGraph(title='HFB sph')
@@ -763,18 +766,19 @@ if __name__ == '__main__':
     levels_3.setData(example_levels_3, program='taurus_hwg')  
     
     BaseLevelContainer.RELATIVE_PLOT = True
-    BaseLevelContainer.ONLY_PAIRED_STATES = True
-    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 3
+    BaseLevelContainer.ONLY_PAIRED_STATES = False
+    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 8
     
     _graph = JLevelContainer()
     _graph.global_title = "Comparison HWG D1S from densities"
+    _graph.global_title = "23Mg HWG(B1 MZ=4), Mix 2K=1,3,5 "
     _graph.add_LevelGraph(levels_1)
-    _graph.add_LevelGraph(levels_2)
-    _graph.add_LevelGraph(levels_3)
+    # _graph.add_LevelGraph(levels_2)
+    # _graph.add_LevelGraph(levels_3)
     _graph.plot()
     
     ## ##  EXAMPLE FOR LEVEL GRAPHS ## ##
-    levels_1 = EnergyLevelGraph(title='Chiral')
+    levels_1 = EnergyLevelGraph(title='B1')
     levels_1.setData(example_levels, program='taurus_hwg') 
     
     levels_2 = EnergyLevelGraph(title='Fermi')
@@ -785,12 +789,12 @@ if __name__ == '__main__':
     
     BaseLevelContainer.RELATIVE_PLOT = True
     BaseLevelContainer.ONLY_PAIRED_STATES = False
-    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 4
+    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 6
     
     _graph = BaseLevelContainer()
-    _graph.global_title = "Comparison HWG D1S from densities"
-    # _graph.add_LevelGraph(levels_1)
-    _graph.add_LevelGraph(levels_2)
+    _graph.global_title = "23Mg HWG(B1 MZ=4), Mix 2K=1,3,5 "#"Comparison HWG D1S from densities"
+    _graph.add_LevelGraph(levels_1)
+    # _graph.add_LevelGraph(levels_2)
     # _graph.add_LevelGraph(levels_3)
     _graph.plot()
     
