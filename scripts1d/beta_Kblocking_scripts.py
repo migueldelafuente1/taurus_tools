@@ -296,7 +296,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
     ExeTaurus1D_B20_KMixing_OEblocking.SAVE_DAT_FILES = [
         # DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
-        # DataTaurus.DatFileExportEnum.occupation_numbers,
+        DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)

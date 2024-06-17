@@ -652,6 +652,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         
         if id_sel != None:
             ## Overwrite anyways with the final result.
+            self._projectionAllowed = self.RUN_PROJECTION
             res = self._runningAfterSelection(id_sel, bin_, datfiles)
             
             ## Execute exporting functions as it where the normal run

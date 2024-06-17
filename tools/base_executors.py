@@ -288,7 +288,7 @@ class _Base1DTaurusExecutor(object):
         """
         FLD_TEST_ = 'data_resources/testing_files/'
         file2copy = FLD_TEST_+'TEMP_res_PAV_z2n1_odd.txt'
-        file2copy = FLD_TEST_+'TEMP_res_PAV_z8n9_1result.txt'
+        # file2copy = FLD_TEST_+'TEMP_res_PAV_z8n9_1result.txt'
         # file2copy = FLD_TEST_+'TEMP_res_PAV_z12n19_nan_norm_components.txt'
         
         txt = ''
