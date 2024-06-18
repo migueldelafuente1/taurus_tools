@@ -456,6 +456,13 @@ class _Base1DTaurusExecutor(object):
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
                 res : self.DTYPE = self._runUntilConvergence()
                 
+                if k == 0: 
+                    res_0 = self._results[1].pop()
+                    b20_0 = getattr(res_0, self.CONSTRAINT_DT)
+                    if abs(getattr(res, self.CONSTRAINT_DT) - b20_0) > 1.0e-3:
+                        printf("[WARNING] 1st solution reiterated, values don't match")
+                        printf(f"   for constraint value b20_0=[{b20_0}] ")                    
+                
                 self._results[1].append(res)
                 self._final_bin_list_data[1][k] = res._exported_filename
                 # self._results[1].append(self._executeProgram())
