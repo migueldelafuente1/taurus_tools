@@ -538,7 +538,9 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     """
     print(f"## Script begins, UPDATE_fld:{CHANGE_FLD_SETUP} PAV:{RUN_PAV_JOB} HWG:{RUN_HWG_JOB} \n")
     assert not(RUN_PAV_JOB * RUN_HWG_JOB),      "Cannot do both PAV and HWG at the same time"
-    assert not(CHANGE_FLD_SETUP * RUN_HWG_JOB), "Cannot remake the folders and do the HWG"
+    if (CHANGE_FLD_SETUP * RUN_HWG_JOB):
+        print("Cannot remake the folders and do the HWG . cancelling CHANGE_FLD.")
+        CHANGE_FLD_SETUP = False
     
     global input_pav_args 
     input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
@@ -694,6 +696,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                 os.system('python3 cat_states.py')
                 os.chdir(DEST_FLD_HWG)
                 print(  "   [run] hw.x in", fld_pav)
+                os.chmod ('hw.x', 0o777)
                 os.system('./hw.x')
                 os.chdir('../..')
             os.chdir(RETURN_FOLDER)
@@ -701,8 +704,56 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
 
 
-
-
+def clear_all_pav_folders(FLDS_):
+    """
+    When being sure the results for the PAV folders 1,2,3,4, ... are valid,
+    remove these folders, specially in case of hamil-files in every folder.
+    
+    intended:
+        FLDS_: results/ClK1, results/ClK3, ...
+        
+    """
+    exit_ = input("[wARNING] The script will remove proj-matrix element for PAV, sure?: ")
+    if not exit_: return
+    for fld_ in FLDS_:
+        fld_ = Path(fld_)
+        MODE_ = 'kmix' if fld_.name.startswith('kmix_PNPAMP') else 'bu_zn/pnpamp/'
+        print(" 1. fld_:", fld_, "MODE=", MODE_)
+        if not os.path.exists(fld_): continue
+        
+        if MODE_ == 'kmix':
+            flds_bu = [fld_ ,]
+        else:
+            flds_bu = filter(lambda x: x.startswith('BU_folder'), os.listdir(fld_))
+        for  fld_bu in flds_bu:
+            fld_bu  = fld_ / Path(fld_bu)
+            fld_hwg = fld_bu / Path("PNPAMP_HWG")
+            if MODE_ == 'kmix':
+                fld_bu, fld_hwg  = fld_, fld_
+                
+            print("   2. fld_bu:", fld_bu, " /pnpamp:", fld_hwg)
+            
+            if not os.path.exists(fld_bu): continue
+            if not os.path.exists(fld_hwg): continue
+            
+            list_pav = list(filter(lambda x: x.isdigit(), os.listdir(fld_hwg)))
+            ## creating the diagonal gcm file
+            if not os.path.exists(fld_hwg / 'gcm_diag'):
+                n = int(-1 + (1 + 8*len(list_pav))**.5)//2
+                k, diag_ = 0, []
+                for i in range(n):
+                    for j in range(i, n):
+                        k += 1
+                        diag_.append(str(k))
+                with open(fld_hwg / 'gcm_diag', 'w+') as f:
+                    print("      3. creating gcm_file with:", diag_)
+                    f.write('\n'.join(diag_))
+                    
+            print("       3. removing:\n", list_pav)
+            for x in list_pav:
+                shutil.rmtree(fld_hwg / Path(x))
+        print("done for floder", fld_)
+    print("[OK] all clear.")
 
 if __name__ == '__main__':
     
@@ -723,6 +774,13 @@ if __name__ == '__main__':
     nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 6)]
     # nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
+    
+    #===========================================================================
+    # ## Clear the PAV proj-matrix elements folder
+    #===========================================================================
+    # flds_ = [f'results/ClK{K}' for K in [1, 3, 5, 7,]]
+    flds_ = [f'results/kmix_PNPAMP_z{z}n{n}' for z,n in nuclei]
+    # clear_all_pav_folders(flds_)
     
     #===========================================================================
     # ## PAV for SINGLE - K
@@ -769,5 +827,5 @@ if __name__ == '__main__':
     oddeven_vertical_kmix(MAIN_FLD, inter, nuclei, 
                           PNP_fomenko=7, Jmax=17, K_list = [1, 3, 5],
                           CHANGE_FLD_SETUP=True, 
-                          RUN_PAV_JOB=True, RUN_HWG_JOB=False)
+                          RUN_PAV_JOB=False, RUN_HWG_JOB=True)
     
