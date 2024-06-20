@@ -60,6 +60,7 @@ input_mix_args = {
 # SCRIPTS
 #===============================================================================    
 _JobLauncherClass = _SlurmJob1DPreparation
+RUN_USING_BATCH   = True
 if not os.getcwd().startswith('C:'):
     os.system('which sbatch > HASBATCH')
     with open('HASBATCH', 'r') as f:
@@ -67,6 +68,8 @@ if not os.getcwd().startswith('C:'):
         if aux == '' or 'not sbatch' in aux: 
             _JobLauncherClass = _TaskSpoolerJob1DPreparation
     os.remove('HASBATCH')
+    RUN_USING_BATCH = False
+    
 
 
 def basic_eveneven_mix_from_vap(MAIN_FLD):
@@ -113,7 +116,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = K
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = Jmax
     
-    global input_mix_args
+    global input_mix_args, _JobLauncherClass
     
     for z, n in nuclei:
         print(" Starting for", TEMP_BU.format(interaction, z, n))
@@ -182,7 +185,10 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         # run sbatch
         if RUN_SBATCH: 
             os.chdir(DEST_FLD)
-            os.system('sbatch sub_1.x')
+            if RUN_USING_BATCH: 
+                os.system('sbatch sub_1.x')
+            else:
+                os.system('python3 sub_tsp.py')
             os.chdir('..')
         
         ## done, go back
@@ -223,7 +229,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
-    global input_mix_args
+    global input_mix_args, _JobLauncherClass
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     DEST_FLD     = 'kmix_PNPAMP_z{}n{}/'
@@ -297,7 +303,6 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         
         if first_step: first_step = False
     
-    _ = 0
     # copy pav folders.
     print("  2. Copying binaries, etc for PAV") 
     for zn, k_founds in nuclei_by_K_found.items():
@@ -349,8 +354,11 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         
         # run sbatch
         if RUN_SBATCH: 
-            os.system('sbatch sub_1.x')
-            print(  "   [Executing] sbatch")
+            if RUN_USING_BATCH: 
+                os.system('sbatch sub_1.x')
+            else:
+                os.system('python3 sub_tsp.py')
+            print(  f"   [Executing] sbatch/tsp [{RUN_USING_BATCH}]")
         else: print("   [Not Executing] sbatch")
     
         ## done, go back
@@ -388,7 +396,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
-    global input_mix_args
+    global input_mix_args, _JobLauncherClass
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     DEST_FLD     = 'kmix_PNPAMP_z{}n{}/'
@@ -509,9 +517,12 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
             with open(fn_, 'w+') as f: f.write("\n".join(scr_))
         
         # run sbatch
-        if RUN_SBATCH: 
-            os.system('sbatch sub_1.x')
-            print(  "   [Executing] sbatch")
+        if RUN_SBATCH:
+            if RUN_USING_BATCH: 
+                os.system('sbatch sub_1.x')
+            else:
+                os.system('python3 sub_tsp.py')
+            print(  f"   [Executing] sbatch/tsp [{RUN_USING_BATCH}]")
         else: print("   [Not Executing] sbatch")
     
         ## done, go back
@@ -558,7 +569,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = 1
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = Jmax
     
-    global input_mix_args
+    global input_mix_args, _JobLauncherClass
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     TEMP_K_BU    = "{}_0_VAP"
@@ -694,8 +705,12 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
             for k, _ in def_list:
                 fld_pav = Path(DEST_FLD.format(k))
                 os.chdir(fld_pav)
-                os.system('sbatch sub_1.x')
-                print(  "   [run] sbatch in", fld_pav)
+                if RUN_USING_BATCH: 
+                    os.system('sbatch sub_1.x')
+                else:
+                    os.system('python3 sub_tsp.py')
+                print(f"   [Executing] sbatch/tsp [{RUN_USING_BATCH}]")
+                print( "   [run] sbatch in", fld_pav)
                 os.chdir('..')
             os.chdir(RETURN_FOLDER)
         if RUN_HWG_JOB:

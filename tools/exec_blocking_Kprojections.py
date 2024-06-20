@@ -1372,6 +1372,7 @@ done"""
     
     ##
     def _prepare_job_and_submit(self, PAV_input_filename):
+        
         self.job_1 = self.__TEMPLATE_SLURM_JOB
         self.job_1 = self.job_1.replace(self.ArgsEnum.JOBS_LENGTH,
                                         self.jobs_length)
@@ -1401,39 +1402,43 @@ done"""
 class _TaskSpoolerJob1DPreparation(_SlurmJob1DPreparation):
     
     """
-        This class prepare the task spooler job to run in the 
+        This class prepare the task spooler job to run if no SLURM is present
+        The job scripts are not directly runnable, requires previous setting 
+        before running.
     """
     
     __TEMPLATE_SLURM_JOB = """##
-## Job to be run, using: job_tsp.py [HAMILTONIAN] [working_folder]
+## Job to be run, using: job_tsp.py [working_folder]
 ##
 
 from sys import argv
 from datetime import datetime
 import os, shutil
 
-INPUT_FILE = 'input_pav.txt'
+hamil      = 'HAMIL'
+input_file = 'INPUT_FILE'
+program    = 'PROGRAM'
 LOG_JOB_FN = 'submitted_tspError.LOG'
 
 try:
     terminal_args_given = argv
-    assert len(terminal_args_given) == 3, \
-        "invalid argument given, 3 required, got: {}".format(terminal_args_given)
+    assert len(terminal_args_given) == 2, \
+        "invalid argument given, 2 required, got: {}".format(terminal_args_given)
     
-    _, HAMIL, fld_ = terminal_args_given
+    _, fld_ = terminal_args_given
     
-    hamil_files = filter(lambda x: x.startswith(HAMIL), os.listdir())
-    for hamil_ in hamil_files:
-        shutil.copy(hamil_, fld_)
+    hamil_files = filter(lambda x: x.startswith(hamil), os.listdir())
+    for hamil_f in hamil_files:
+        shutil.copy(hamil_f, fld_)
     
     os.chdir (fld_)
-    assert INPUT_FILE in os.listdir(), \
-        "Not found input arg[{}] in folder[{}]".format(INPUT_FILE, fld_)
+    assert input_file in os.listdir(), \
+        "Not found input arg[{}] in folder[{}]".format(input_file, fld_)
     
-    os.system('./taurus_pav.exe < {} > OUT'.format(INPUT_FILE))
+    os.system('./{} < {} > OUT'.format(program, input_file))
     
-    ## Clear the hamil folder
-    for hamil_ in hamil_files: os.remove(hamil_)
+    ## Clear the hamiltonians from  folder
+    for hamil_f in hamil_files: os.remove(hamil_f)
     os.chdir ('..')
     
     print("  # done folder {}".format(fld_))
@@ -1452,31 +1457,29 @@ except BaseException as e:
 import os, shutil
 
 JOB_NAME = 'job_tsp.py'
-HAMIL    = None
 
 pav_list = filter(lambda x: x.isdigit(), os.listdir())
 pav_list = sorted(list(map(lambda x: int(x), pav_list)))
-
-# get the hamil file to use
-HAMIL = list(filter(lambda x: x.endswith('.2b'), os.listdir()))
-if len(HAMIL) != 1:
-    raise ValueError(" [ERROR], hamil file not found or several: {}".format(HAMIL))
-else:
-    HAMIL = HAMIL[0].replace('.2b', '')
 
 print("SUBMIT_JOBs [START]")
 for fld_ in pav_list:
     fld_ = str(fld_)
     
     # change to the folder and run with tsp
-    os.system("tsp python3 {} {} {}".format(JOB_NAME, HAMIL, fld_))
+    os.system("tsp python3 {} {} {}".format(JOB_NAME, fld_))
 
 ## Getting logs and clear 
 os.system('tsp -C')
 print("SUBMIT_JOBs [DONE]")"""
     
     def _prepare_job_and_submit(self, PAV_input_filename):
+        
         self.job_1 = self.__TEMPLATE_SLURM_JOB
+        self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
+                                        PAV_input_filename)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
+        
         self.sub_1 = self.__TEMPLATE_SLURM_SUB
     
     def getScriptsByName(self):
