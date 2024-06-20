@@ -1197,7 +1197,7 @@ class _SlurmJob1DPreparation():
             script_hwg
     """
     
-    __TEMPLATE_SLURM_JOB = """#!/bin/bash
+    _TEMPLATE_SLURM_JOB = """#!/bin/bash
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --array=1-ARRAY_JOBS_LENGTH
@@ -1230,7 +1230,7 @@ rm /scratch/delafuen/$SLURM_JOB_ID/*
 rmdir /scratch/delafuen/$SLURM_JOB_ID/
 """
     
-    __TEMPLATE_SLURM_SUB = """#!/bin/bash
+    _TEMPLATE_SLURM_SUB = """#!/bin/bash
 ## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
 
 tt="1-23:59:59"
@@ -1239,7 +1239,7 @@ rang="1-ARRAY_JOBS_LENGTH"
 sbatch --output=/dev/null --array $rang --time $tt  $PWD/job_1.x
 """
     
-    __TEMPLATE_CAT_ME_STATES = """#!/bin/bash
+    _TEMPLATE_CAT_ME_STATES = """#!/bin/bash
 rm projmatelem_states.bin
 mkdir outputs_PAV
 rm outputs_PAV/* 
@@ -1253,7 +1253,7 @@ done
 
 cp gcm* outputs_PAV"""
     
-    __TEMPLATE_CAT_ME_STATES_PYTHON = """import shutil, os
+    _TEMPLATE_CAT_ME_STATES_PYTHON = """import shutil, os
 
 OUT_fld  = 'outputs_PAV'
 pme_file = 'projmatelem_states.bin'
@@ -1287,7 +1287,7 @@ else: # without gcm_file
     print(dir_list)
     copy_stuff(dir_list)"""
     
-    __TEMPLATE_JOB_HWX = """#!/bin/bash
+    _TEMPLATE_JOB_HWX = """#!/bin/bash
 
 ulimit -s unlimited 
 
@@ -1299,7 +1299,7 @@ sed s/"J_VAL"/$var/ INPUT_FILE > INP0
 done
 """
     
-    __TEMPLATE_PREPARE_PNPAMP = """#!/bin/bash
+    _TEMPLATE_PREPARE_PNPAMP = """#!/bin/bash
 ## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
 
 for var in {1..ARRAY_JOBS_LENGTH}; do
@@ -1345,7 +1345,7 @@ done"""
         self._prepare_job_and_submit(PAV_input_filename)
         
         ## PREPARE PNAMP
-        self.prepare_pnpamp = self.__TEMPLATE_PREPARE_PNPAMP
+        self.prepare_pnpamp = self._TEMPLATE_PREPARE_PNPAMP
         self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.JOBS_LENGTH,
                                                           self.jobs_length)
         # self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.HAMIL,
@@ -1355,14 +1355,14 @@ done"""
         self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.PROGRAM, 
                                                           self.TAURUS_PAV)
         ## CAT
-        self.script_cat = self.__TEMPLATE_CAT_ME_STATES
+        self.script_cat = self._TEMPLATE_CAT_ME_STATES
         self.script_cat = self.script_cat.replace(self.ArgsEnum.JOBS_LENGTH,
                                                   self.jobs_length)
         
         ## HWG
         J_vals = " ".join([str(j) for j in valid_J_list])
         J_vals = f'LIST="{J_vals}"'
-        self.script_hwg = self.__TEMPLATE_JOB_HWX
+        self.script_hwg = self._TEMPLATE_JOB_HWX
         self.script_hwg = self.script_hwg.replace(self.ArgsEnum.LIST_JVALS,
                                                   J_vals)
         self.script_hwg = self.script_hwg.replace(self.ArgsEnum.INPUT_FILE,
@@ -1373,7 +1373,7 @@ done"""
     ##
     def _prepare_job_and_submit(self, PAV_input_filename):
         
-        self.job_1 = self.__TEMPLATE_SLURM_JOB
+        self.job_1 = self._TEMPLATE_SLURM_JOB
         self.job_1 = self.job_1.replace(self.ArgsEnum.JOBS_LENGTH,
                                         self.jobs_length)
         self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
@@ -1381,7 +1381,7 @@ done"""
                                         PAV_input_filename)
         self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
         
-        self.sub_1 = self.__TEMPLATE_SLURM_SUB
+        self.sub_1 = self._TEMPLATE_SLURM_SUB
         self.sub_1 = self.sub_1.replace(self.ArgsEnum.JOBS_LENGTH,
                                         self.jobs_length)
     
@@ -1392,7 +1392,7 @@ done"""
             'job_1.x': self.job_1,
             'hw.x': self.script_hwg,
             'cat_states.me.x': self.script_cat,
-            'cat_states.py'  : self.__TEMPLATE_CAT_ME_STATES_PYTHON,
+            'cat_states.py'  : self._TEMPLATE_CAT_ME_STATES_PYTHON,
             'run_pnamp.x': self.prepare_pnpamp,
         }
         
@@ -1407,7 +1407,7 @@ class _TaskSpoolerJob1DPreparation(_SlurmJob1DPreparation):
         before running.
     """
     
-    __TEMPLATE_SLURM_JOB = """##
+    _TEMPLATE_SLURM_JOB = """##
 ## Job to be run, using: job_tsp.py [working_folder]
 ##
 
@@ -1450,7 +1450,7 @@ except BaseException as e:
         f.write("[ERROR] [{}] fld:[{}]: {}", str(dt_str, fld_, str(e)))
 """
     
-    __TEMPLATE_SLURM_SUB = """##
+    _TEMPLATE_SLURM_SUB = """##
 ## Folders numerated 1, 2, 3 ... with the wavefunctions, taurus and input 
 ## already inside them
 
@@ -1474,13 +1474,13 @@ print("SUBMIT_JOBs [DONE]")"""
     
     def _prepare_job_and_submit(self, PAV_input_filename):
         
-        self.job_1 = self.__TEMPLATE_SLURM_JOB
+        self.job_1 = self._TEMPLATE_SLURM_JOB
         self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
         self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
                                         PAV_input_filename)
         self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
         
-        self.sub_1 = self.__TEMPLATE_SLURM_SUB
+        self.sub_1 = self._TEMPLATE_SLURM_SUB
     
     def getScriptsByName(self):
         
@@ -1489,7 +1489,7 @@ print("SUBMIT_JOBs [DONE]")"""
             'job_tsp.py': self.job_1,
             'hw.x': self.script_hwg,
             'cat_states.me.x': self.script_cat,
-            'cat_states.py'  : self.__TEMPLATE_CAT_ME_STATES_PYTHON,
+            'cat_states.py'  : self._TEMPLATE_CAT_ME_STATES_PYTHON,
             'run_pnamp.x': self.prepare_pnpamp,
         }
         
