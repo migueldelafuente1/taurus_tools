@@ -14,7 +14,8 @@ import os, platform
 import shutil
 from pathlib import Path
 
-from tools.exec_blocking_Kprojections import _SlurmJob1DPreparation
+from tools.exec_blocking_Kprojections import _SlurmJob1DPreparation, \
+    _TaskSpoolerJob1DPreparation
 from tools.inputs import InputTaurus, InputTaurusPAV, InputTaurusMIX
 from tools.helpers import importAndCompile_taurus, elementNameByZ
 
@@ -58,6 +59,15 @@ input_mix_args = {
 #===============================================================================
 # SCRIPTS
 #===============================================================================    
+_JobLauncherClass = _SlurmJob1DPreparation
+if not os.getcwd().startswith('C:'):
+    os.system('which sbatch > HASBATCH')
+    with open('HASBATCH', 'r') as f:
+        aux = f.read()
+        if aux == '' or 'not sbatch' in aux: 
+            _JobLauncherClass = _TaskSpoolerJob1DPreparation
+    os.remove('HASBATCH')
+
 
 def basic_eveneven_mix_from_vap(MAIN_FLD):
     """
@@ -157,10 +167,10 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
             f.write(mix_obj.getText4file())
         
         # create the scripts
-        print("  4. Creating SLURM job scripts.") 
-        slurm = _SlurmJob1DPreparation(interaction, len(bins_), valid_J_list,
-                                       PAV_input_filename='input_pav.txt',
-                                       HWG_input_filename='input_mix.txt')       
+        print("  4. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
+        slurm = _JobLauncherClass(interaction, len(bins_), valid_J_list,
+                                  PAV_input_filename='input_pav.txt',
+                                  HWG_input_filename='input_mix.txt')       
         
         for fn_, scr_ in slurm.getScriptsByName().items():
             dst_fld = DEST_FLD if fn_ != 'hw.x' else DEST_FLD+'/'+DEST_FLD_HWG
@@ -325,10 +335,10 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         
     
         # create the scripts
-        print("  3. Creating SLURM job scripts.") 
-        slurm = _SlurmJob1DPreparation(interaction, len(bins_), valid_J_list,
-                                       PAV_input_filename='input_pav.txt',
-                                       HWG_input_filename='input_mix.txt')       
+        print("  3. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
+        slurm = _JobLauncherClass(interaction, len(bins_), valid_J_list,
+                                  PAV_input_filename='input_pav.txt',
+                                  HWG_input_filename='input_mix.txt')       
         
         for fn_, scr_ in slurm.getScriptsByName().items():
             dst_fld = Path('') if fn_ != 'hw.x' else Path(DEST_FLD_HWG)
@@ -486,10 +496,10 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
             os.chmod(fld_i / 'taurus_pav.exe', 0o777)            
             
         # create the scripts
-        print("  3. Creating SLURM job scripts.") 
-        slurm = _SlurmJob1DPreparation(interaction, len(bins_), valid_J_list,
-                                       PAV_input_filename='input_pav.txt',
-                                       HWG_input_filename='input_mix.txt')       
+        print("  3. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
+        slurm = _JobLauncherClass(interaction, len(bins_), valid_J_list,
+                                  PAV_input_filename='input_pav.txt',
+                                  HWG_input_filename='input_mix.txt')       
         
         for fn_, scr_ in slurm.getScriptsByName().items():
             dst_fld = Path('') if fn_ != 'hw.x' else Path(DEST_FLD_HWG)
@@ -663,10 +673,10 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                         if i2 == i: gcm_files['gcm_diag'].append(f"    {k: <6}")
                 
                 # create the scripts
-                print("  3. Creating SLURM job scripts.") 
-                slurm = _SlurmJob1DPreparation(interaction, n_bins, valid_J_list,
-                                               PAV_input_filename='input_pav.txt',
-                                               HWG_input_filename='input_mix.txt')       
+                print("  3. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
+                slurm = _JobLauncherClass(interaction, n_bins, valid_J_list,
+                                          PAV_input_filename='input_pav.txt',
+                                          HWG_input_filename='input_mix.txt')       
                 
                 for fn_, scr_ in slurm.getScriptsByName().items():
                     dst_fld = fld_pav if fn_ != 'hw.x' else fld_mix

@@ -8,6 +8,7 @@ Created on 19 mar 2024
 from copy import deepcopy
 import shutil
 import os
+from pathlib import Path
 
 from tools.helpers import almostEqual, LINE_1, readAntoine, QN_1body_jj,\
     importAndCompile_taurus, printf, LINE_2
@@ -911,11 +912,20 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         ## Import the programs if they do not exist
         importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
                                 mix= not os.path.exists(InputTaurusMIX.PROGRAM))
-            
+        
+        _JobLauncherClass = _SlurmJob1DPreparation
+        if not os.getcwd().startswith('C:'):
+            os.system('which sbatch > HASBATCH')
+            with open('HASBATCH', 'r') as f:
+                aux = f.read()
+                if aux == '' or 'not sbatch' in aux: 
+                    _JobLauncherClass = _TaskSpoolerJob1DPreparation
+            os.remove('HASBATCH')
+        
         ## Introduce the jobfiles in case of using slurm.
         for prolate in (0, 1):
             for i in self._final_bin_list_data[prolate].keys():
-                FLD_ = self._export_PAV_Folders[i]
+                FLD_ = Path(self._export_PAV_Folders[i])
                 
                 k_list = []
                 for K in self._valid_Ks:
@@ -928,45 +938,46 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 ## save auxiliary gcm, gcm_3, gcm_diag files
                 gcm_files = self._get_gcm_filetexts(k_list)
                 for f_, txt_ in gcm_files.items():
-                    with open(FLD_+f_, 'w+') as f:
+                    with open(FLD_ / Path(f_), 'w+') as f:
                         f.write(txt_)
                 
                 valid_J_list = list(filter(lambda x: x>0, self._valid_Ks))
-                scr_x = _SlurmJob1DPreparation(self.interaction,  
-                                               len(k_list), valid_J_list, 
-                                               InputTaurusPAV.DEFAULT_INPUT_FILENAME, 
-                                               InputTaurusMIX.DEFAULT_INPUT_FILENAME)
+                
+                print("  4. Creating job scripts.", _JobLauncherClass.__name__) 
+                scr_x = _JobLauncherClass(self.interaction,  
+                                          len(k_list), valid_J_list, 
+                                          InputTaurusPAV.DEFAULT_INPUT_FILENAME, 
+                                          InputTaurusMIX.DEFAULT_INPUT_FILENAME)
                 scr_files = scr_x.getScriptsByName()
                 
                 ## HWG program and script prepared
-                FLD_3 = FLD_+'HWG'
+                FLD_3 = FLD_ / Path('HWG')
                 os.mkdir(FLD_3)
-                f_ = 'hw.x'
-                with open(FLD_3+'/'+f_, 'w+') as f:
+                with open(FLD_3 / 'hw.x', 'w+') as f:
                     f.write(scr_files.pop(f_))
                 shutil.copy(InputTaurusPAV.PROGRAM, FLD_3)
                 
                 ## PNPAMP files
                 for f_, txt_ in scr_files.items():
-                    with open(FLD_+f_, 'w+') as f:
+                    with open(FLD_ / Path(f_), 'w+') as f:
                         f.write(txt_)
                 for tail_ in OutputFileTypes.members():
                     shutil.copy(self.interaction+tail_, FLD_)
                 
                 ## create all the folders for PNPAMP
                 inp_pav = InputTaurusPAV.DEFAULT_INPUT_FILENAME
-                with open(FLD_+'gcm', 'r') as fr:
+                with open(FLD_ / 'gcm', 'r') as fr:
                     folder_list = fr.readlines()
                                      
                 for k_fold, line in enumerate(folder_list):
                     f1, f2, i, j = [f_.strip() for f_ in line.split()]
                     
-                    FLD_2 = f"{FLD_}/{k_fold+1}"
+                    FLD_2 = FLD_ / f"{k_fold+1}"
                     os.mkdir(FLD_2)
-                    shutil.copy(FLD_+f1, f"{FLD_2}/left_wf.bin")
-                    shutil.copy(FLD_+f2, f"{FLD_2}/right_wf.bin")
+                    shutil.copy(FLD_ / Path(f1), FLD_2 / "left_wf.bin")
+                    shutil.copy(FLD_ / Path(f2), FLD_2 / "right_wf.bin")
                     
-                    inp_pav = f"{FLD_2}/{InputTaurusPAV.DEFAULT_INPUT_FILENAME}"
+                    inp_pav = FLD_2 / f"{InputTaurusPAV.DEFAULT_INPUT_FILENAME}"
                     with open(inp_pav, 'w+') as f_:
                         f_.write(self.inputObj_PAV.getText4file())
                     shutil.copy(InputTaurusPAV.PROGRAM, FLD_2)
@@ -1166,7 +1177,6 @@ class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
         ## Save again the results such as the false OE case in the parent class 
         if not base_execution:
             ExeTaurus1D_DeformB20.executionTearDown(self, result, base_execution)
-    
 
 class _SlurmJob1DPreparation():
     
@@ -1187,7 +1197,7 @@ class _SlurmJob1DPreparation():
             script_hwg
     """
     
-    __TEMPLATE_SLURM_JOB_1 = """#!/bin/bash
+    __TEMPLATE_SLURM_JOB = """#!/bin/bash
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --array=1-ARRAY_JOBS_LENGTH
@@ -1220,7 +1230,7 @@ rm /scratch/delafuen/$SLURM_JOB_ID/*
 rmdir /scratch/delafuen/$SLURM_JOB_ID/
 """
     
-    __TEMPLATE_SLURM_SUB_1 = """#!/bin/bash
+    __TEMPLATE_SLURM_SUB = """#!/bin/bash
 ## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
 
 tt="1-23:59:59"
@@ -1332,17 +1342,8 @@ done"""
         
         
         ## JOB-PARALLEL
-        self.job_1 = self.__TEMPLATE_SLURM_JOB_1
-        self.job_1 = self.job_1.replace(self.ArgsEnum.JOBS_LENGTH,
-                                        self.jobs_length)
-        self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
-        self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
-                                        PAV_input_filename)
-        self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
+        self._prepare_job_and_submit(PAV_input_filename)
         
-        self.sub_1 = self.__TEMPLATE_SLURM_SUB_1
-        self.sub_1 = self.sub_1.replace(self.ArgsEnum.JOBS_LENGTH,
-                                        self.jobs_length)
         ## PREPARE PNAMP
         self.prepare_pnpamp = self.__TEMPLATE_PREPARE_PNPAMP
         self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.JOBS_LENGTH,
@@ -1369,6 +1370,20 @@ done"""
         self.script_hwg = self.script_hwg.replace(self.ArgsEnum.PROGRAM,
                                                   self.TAURUS_HWG)
     
+    ##
+    def _prepare_job_and_submit(self, PAV_input_filename):
+        self.job_1 = self.__TEMPLATE_SLURM_JOB
+        self.job_1 = self.job_1.replace(self.ArgsEnum.JOBS_LENGTH,
+                                        self.jobs_length)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
+                                        PAV_input_filename)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
+        
+        self.sub_1 = self.__TEMPLATE_SLURM_SUB
+        self.sub_1 = self.sub_1.replace(self.ArgsEnum.JOBS_LENGTH,
+                                        self.jobs_length)
+    
     def getScriptsByName(self):
         
         scripts_ = {
@@ -1382,3 +1397,97 @@ done"""
         
         return scripts_
 
+
+class _TaskSpoolerJob1DPreparation(_SlurmJob1DPreparation):
+    
+    """
+        This class prepare the task spooler job to run in the 
+    """
+    
+    __TEMPLATE_SLURM_JOB = """##
+## Job to be run, using: job_tsp.py [HAMILTONIAN] [working_folder]
+##
+
+from sys import argv
+from datetime import datetime
+import os, shutil
+
+INPUT_FILE = 'input_pav.txt'
+LOG_JOB_FN = 'submitted_tspError.LOG'
+
+try:
+    terminal_args_given = argv
+    assert len(terminal_args_given) == 3, \
+        "invalid argument given, 3 required, got: {}".format(terminal_args_given)
+    
+    _, HAMIL, fld_ = terminal_args_given
+    
+    hamil_files = filter(lambda x: x.startswith(HAMIL), os.listdir())
+    for hamil_ in hamil_files:
+        shutil.copy(hamil_, fld_)
+    
+    os.chdir (fld_)
+    assert INPUT_FILE in os.listdir(), \
+        "Not found input arg[{}] in folder[{}]".format(INPUT_FILE, fld_)
+    
+    os.system('./taurus_pav.exe < {} > OUT'.format(INPUT_FILE))
+    
+    ## Clear the hamil folder
+    for hamil_ in hamil_files: os.remove(hamil_)
+    os.chdir ('..')
+    
+    print("  # done folder {}".format(fld_))
+    
+except BaseException as e:
+    with open(LOG_JOB_FN, 'w+') as f:
+        # Convert to string
+        dt_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write("[ERROR] [{}] fld:[{}]: {}", str(dt_str, fld_, str(e)))
+"""
+    
+    __TEMPLATE_SLURM_SUB = """##
+## Folders numerated 1, 2, 3 ... with the wavefunctions, taurus and input 
+## already inside them
+
+import os, shutil
+
+JOB_NAME = 'job_tsp.py'
+HAMIL    = None
+
+pav_list = filter(lambda x: x.isdigit(), os.listdir())
+pav_list = sorted(list(map(lambda x: int(x), pav_list)))
+
+# get the hamil file to use
+HAMIL = list(filter(lambda x: x.endswith('.2b'), os.listdir()))
+if len(HAMIL) != 1:
+    raise ValueError(" [ERROR], hamil file not found or several: {}".format(HAMIL))
+else:
+    HAMIL = HAMIL[0].replace('.2b', '')
+
+print("SUBMIT_JOBs [START]")
+for fld_ in pav_list:
+    fld_ = str(fld_)
+    
+    # change to the folder and run with tsp
+    os.system("tsp python3 {} {} {}".format(JOB_NAME, HAMIL, fld_))
+
+## Getting logs and clear 
+os.system('tsp -C')
+print("SUBMIT_JOBs [DONE]")"""
+    
+    def _prepare_job_and_submit(self, PAV_input_filename):
+        self.job_1 = self.__TEMPLATE_SLURM_JOB
+        self.sub_1 = self.__TEMPLATE_SLURM_SUB
+    
+    def getScriptsByName(self):
+        
+        scripts_ = {
+            'sub_tsp.py': self.sub_1, 
+            'job_tsp.py': self.job_1,
+            'hw.x': self.script_hwg,
+            'cat_states.me.x': self.script_cat,
+            'cat_states.py'  : self.__TEMPLATE_CAT_ME_STATES_PYTHON,
+            'run_pnamp.x': self.prepare_pnpamp,
+        }
+        
+        return scripts_
