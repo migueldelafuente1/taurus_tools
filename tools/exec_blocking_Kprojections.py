@@ -1466,7 +1466,7 @@ for fld_ in pav_list:
     fld_ = str(fld_)
     
     # change to the folder and run with tsp
-    os.system("tsp python3 {} {} {}".format(JOB_NAME, fld_))
+    os.system("tsp python3 {} {}".format(JOB_NAME, fld_))
 
 ## Getting logs and clear 
 os.system('tsp -C')
