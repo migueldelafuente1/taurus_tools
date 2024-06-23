@@ -15,6 +15,7 @@ except Exception:
 import os
 from copy import copy, deepcopy
 import collections
+from pathlib import Path
 
 _BASE_CLS_ATTRS = {
     '_horizontal_margin' : -0.07,
@@ -389,8 +390,13 @@ class BaseLevelContainer(object):
         self._renderLevelGraphs(figaspect=figaspect)
         
         if export_filename:
-            export_filename.replace(".pdf", "")
-            self._fig.savefig(export_filename + '.pdf')
+            if isinstance(export_filename, Path):
+                file_ = export_filename.name
+                if not file_.endswith('.pdf'): file_ += '.pdf'
+                export_filename = export_filename.parent / file_                
+            else:
+                if not export_filename.endswith(".pdf"): export_filename += ".pdf"
+            self._fig.savefig(export_filename)
     
     def _filterStatesForThisLevelObject(self, lev_obj : _BaseLevelGraph):
         """
@@ -576,6 +582,7 @@ class BaseLevelContainer(object):
             plt.ylabel('Excitation Energy (MeV)')
         
         self._fig = _fig
+        self._fig.tight_layout()
         plt.show()
         
 #===============================================================================

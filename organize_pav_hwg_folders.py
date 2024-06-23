@@ -729,7 +729,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
 
 
-def clear_all_pav_folders(FLDS_):
+def clear_all_pav_folders(FLDS_, removeProjME=False):
     """
     When being sure the results for the PAV folders 1,2,3,4, ... are valid,
     remove these folders, specially in case of hamil-files in every folder.
@@ -777,6 +777,11 @@ def clear_all_pav_folders(FLDS_):
             print("       3. removing:\n", list_pav)
             for x in list_pav:
                 shutil.rmtree(fld_hwg / Path(x))
+            
+            path_pme = fld_hwg / "HWG/projmatelem_states.bin"
+            if removeProjME and path_pme.exists():
+                os.remove(path_pme) 
+                print("       3.2 removing ALSO [projmatelem_states.bin]")
         print("done for floder", fld_)
     print("[OK] all clear.")
 
@@ -839,7 +844,7 @@ if __name__ == '__main__':
     #===========================================================================
     # ## PAV - HWG for __VERTICAL__ K-mixing per deformations
     #===========================================================================
-    nuclei = [( 7, 8 + 2*i) for i in range(0, 7)]
+    # nuclei = [( 7, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [( 9, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(11, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(12,11 + 2*i) for i in range(0, 1)]
