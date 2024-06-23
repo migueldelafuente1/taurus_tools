@@ -335,10 +335,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
             shutil.copy('taurus_pav.exe', fld_i)
             shutil.copy('input_pav.txt',  fld_i)
             os.chmod(fld_i / 'taurus_pav.exe', 0o777)            
-            
-        _ = 0
         
-    
         # create the scripts
         print("  3. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
         slurm = _JobLauncherClass(interaction, len(bins_), valid_J_list,
@@ -719,6 +716,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                 fld_pav = Path(DEST_FLD.format(k))
                 os.chdir(fld_pav)
                 os.system('python3 cat_states.py')
+                shutil.move('projmatelem_states.bin', DEST_FLD_HWG)
                 os.chdir(DEST_FLD_HWG)
                 print(  "   [run] hw.x in", fld_pav)
                 os.chmod ('hw.x', 0o777)
