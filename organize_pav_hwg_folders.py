@@ -61,15 +61,22 @@ input_mix_args = {
 #===============================================================================    
 _JobLauncherClass = _SlurmJob1DPreparation
 RUN_USING_BATCH   = True
-if not os.getcwd().startswith('C:'):
-    os.system('which sbatch > HASBATCH')
-    with open('HASBATCH', 'r') as f:
-        aux = f.read()
-        if aux == '' or 'not sbatch' in aux: 
-            _JobLauncherClass = _TaskSpoolerJob1DPreparation
-    os.remove('HASBATCH')
-    RUN_USING_BATCH = False
-    
+
+def _setUpBatchOrTSPforComputation():
+    """
+    In case of running in Linux system- define if is TSP or SLURM system present
+    """
+    global RUN_USING_BATCH
+    if not os.getcwd().startswith('C:'):
+        os.system('which sbatch > HASBATCH')
+        with open('HASBATCH', 'r') as f:
+            aux = f.read()
+            print("  [SET UP]: which sbatch:\n", aux, '\n')
+            if aux == '' or 'not sbatch' in aux: 
+                _JobLauncherClass = _TaskSpoolerJob1DPreparation
+                RUN_USING_BATCH   = False
+        os.remove('HASBATCH')
+    print("  [SET UP] RUN_USING_BATCH =", RUN_USING_BATCH)
 
 
 def basic_eveneven_mix_from_vap(MAIN_FLD):
@@ -790,6 +797,8 @@ if __name__ == '__main__':
         importAndCompile_taurus(use_dens_taurus=False, 
                                 pav = not os.path.exists('taurus_pav.exe'), 
                                 mix = not os.path.exists('taurus_mix.exe'))
+    
+    _setUpBatchOrTSPforComputation()
     # TESTING_
     # inter  = 'B1_MZ3' 
     # nuclei = [(2, 1), (2, 3)]
@@ -799,7 +808,7 @@ if __name__ == '__main__':
     # raise Exception("STOP-TEST")
     ## 
     inter  = 'B1_MZ4' 
-    nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
+    # nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 6)]
     # nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
     
@@ -808,7 +817,7 @@ if __name__ == '__main__':
     #===========================================================================
     # flds_ = [f'results/ClK{K}' for K in [1, 3, 5, 7,]]
     flds_ = [f'results/kmix_PNPAMP_z{z}n{n}' for z,n in nuclei]
-    # clear_all_pav_folders(flds_)
+    # clear_all_pav_folders(flds_, removeProjME=True)
     
     #===========================================================================
     # ## PAV for SINGLE - K
@@ -826,8 +835,8 @@ if __name__ == '__main__':
     # K_list = [1, 3, 5, 7]
     # MAIN_FLD_TMP = 'results/'+elementNameByZ[nuclei[0][0]]+'K{K}'
     # oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, inter, nuclei, 
-    #                                          PNP_fomenko=7, Jmax=17, 
-    #                                          RUN_SBATCH=False)
+    #                                          PNP_fomenko=7, Jmax=15, 
+    #                                          RUN_SBATCH=True)
     
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder)
