@@ -362,9 +362,9 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
-            InputTaurusPAV.ArgsEnum.alpha : 10,
+            InputTaurusPAV.ArgsEnum.alpha : 13,
             InputTaurusPAV.ArgsEnum.beta  : 20,
-            InputTaurusPAV.ArgsEnum.gamma : 10,
+            InputTaurusPAV.ArgsEnum.gamma : 13,
             InputTaurusPAV.ArgsEnum.empty_states : 0,
             InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0,
             InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,

@@ -1231,8 +1231,11 @@ class DataTaurusPAV(_DataObjectBase):
                     self._nanComponentsInResults = True
                 printf(" (TPC)>> EXCEPTION from Taurus PAV Constructor >> last 5 lines::",
                        LINE_2)
-                with open(self._filename, 'r') as f:
-                    printf("".join(f.readlines()[-5:]), LINE_2)
+                if os.path.exists(self._filename):
+                    with open(self._filename, 'r') as f:
+                        printf("".join(f.readlines()[-5:]), LINE_2)
+                else:
+                    printf(f"   [SUPER ERR] File [{self._filename}] not found")
                 printf(" (TPC)>> resEXCEPTION from Taurus PAV Constructor >> self::")
                 printf(self)
                 printf(" (TPC)>> exception:: ", e, "<<(TPC)")
