@@ -100,11 +100,12 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         scripts: 
     
     """
+    MAIN_FLD = Path(MAIN_FLD)
     print("## Script begins for K=", K, ' *************************** \n')
     if not os.path.exists(MAIN_FLD): 
         print(" [ERROR] Main folder does not exists:", MAIN_FLD)
         return
-    RETURN_FLD = "/".join([".." for _ in MAIN_FLD.split('/')])
+    RETURN_FLD = "/".join(["..",]*len(MAIN_FLD.parts))
     
     if MAIN_FLD:
         shutil.copy('taurus_pav.exe', MAIN_FLD)
@@ -113,7 +114,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     os.chdir(MAIN_FLD)
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     BU_KVAP      =f"{K}_0_VAP/"
-    DEST_FLD     = 'PNPAMP_HWG/'
+    DEST_FLD     =f'{K}_0_PNPAMP_HWG/'
     DEST_FLD_HWG = 'HWG'
     valid_J_list = [i for i in range(1, Jmax+1, 2)]
     
@@ -206,7 +207,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     print("## Script has ended for K=", K, '\n')
     
 
-def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nuclei,
+def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
                                         PNP_fomenko=1, Jmax=1, RUN_SBATCH=False):
     """
     Create all the folders with executable, hamil, etc. In this case, using all
@@ -226,7 +227,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         * TRUE
     
     """
-    
+    MAIN_FLD = Path(MAIN_FLD)
     K_list = sorted(K_list)
     print("## Script begin for the list K:", K_list, " ***************** \n")    
     
@@ -239,7 +240,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
     global input_mix_args, _JobLauncherClass
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
-    DEST_FLD     = 'kmix_PNPAMP_z{}n{}/'
+    DEST_FLD     = "kmix_PNPAMP" # 'kmix_PNPAMP_z{}n{}/'
     DEST_FLD_HWG = 'HWG'
     valid_J_list = [i for i in range(1, Jmax+1, 2)]
     
@@ -252,7 +253,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         print("  K =", K, "  *first_state =", first_step)
         BU_KVAP      =f"{K}_0_VAP/"
         
-        MAIN_FLD = Path(MAIN_FLD_TMP.format(K=K))
+        #MAIN_FLD = Path(MAIN_FLD_TMP.format(K=K))
         if not MAIN_FLD.exists(): 
             print(" [ERROR] Main folder does not exists:", MAIN_FLD)
             return
@@ -262,7 +263,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         if first_step:
             ## if previous k-mix folders clear
             for fld_ in filter(lambda x: os.path.isdir(x)
-                                         and x.startswith('kmix_PNPAMP_z'), 
+                                         and x.startswith('kmix_PNPAMP'), 
                                os.listdir(MAIN_DEST_PATH)):
                 fld_pav = Path(MAIN_DEST_PATH) / fld_
                 if fld_pav.exists(): shutil.rmtree(fld_pav)
@@ -270,8 +271,10 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         for z, n in nuclei:
             fld_bu = MAIN_FLD / Path(TEMP_BU.format(interaction, z, n))
             
-            fld_pav = MAIN_DEST_PATH / DEST_FLD.format(z, n)
-            fld_mix = fld_pav / DEST_FLD_HWG
+            ## note, save it in the same BU folder.
+            # fld_pav = MAIN_DEST_PATH / DEST_FLD.format(z, n)
+            fld_pav = fld_bu / DEST_FLD 
+            fld_mix = fld_pav  / DEST_FLD_HWG
             
             if first_step:                 
                 fld_pav.mkdir(parents=True, exist_ok=True)
@@ -369,7 +372,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD_TMP, interaction, nucle
         os.chdir(RETURN_FLD)
         print("   * done for z,n=", zn, f' Ks:{k_founds.keys()}, len={len(bins2copy)}\n')
     
-    print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
+    print(f"## Script completed for {MAIN_FLD} - {interaction}")
     
 def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, nuclei,
                                         PNP_fomenko=1, Jmax=1, RUN_SBATCH=False):
@@ -810,25 +813,31 @@ if __name__ == '__main__':
     inter  = 'B1_MZ4' 
     # nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 6)]
-    # nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
+    nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
     
     #===========================================================================
     # ## Clear the PAV proj-matrix elements folder
     #===========================================================================
     # flds_ = [f'results/ClK{K}' for K in [1, 3, 5, 7,]]
-    flds_ = [f'results/kmix_PNPAMP_z{z}n{n}' for z,n in nuclei]
+    # flds_ = [f'results/kmix_PNPAMP_z{z}n{n}' for z,n in nuclei]
+    #
     # clear_all_pav_folders(flds_, removeProjME=True)
     
     #===========================================================================
     # ## PAV for SINGLE - K
     #===========================================================================
-    # X = elementNameByZ[nuclei[0][0]]
-    # for K in ( 5,):
-    #     MAIN_FLD = f'results/MgK{K}'
-    #     oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
-    #                                 PNP_fomenko=7, Jmax=9, RUN_SBATCH=True)
+    # nuclei = [(12, 19), (12, 21)]
     
+    X = elementNameByZ[nuclei[0][0]]
+    for K in ( 1, 3, 5 ):
+        # MAIN_FLD = f'results/MgK{K}'
+        # LOCAL_PTH = f'../DATA_RESULTS/K_OddEven/B1/{X}/'
+        LOCAL_PTH = 'results/'
+        MAIN_FLD = LOCAL_PTH + ''
+        oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
+                                    PNP_fomenko=7, Jmax=9, RUN_SBATCH=True)
     
+    0/0
     #===========================================================================
     # ## PAV - HWG for multi K (K folders separated for each nuclei)
     #===========================================================================
@@ -841,13 +850,14 @@ if __name__ == '__main__':
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder)
     #===========================================================================
-    # K_list = [1, 3, 5]
-    # nuclei = [(9, 8+ 2*i) for i in range(0, 5)]
-    # MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
-    # oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
-    #                                     PNP_fomenko=7, Jmax=17, RUN_SBATCH=False)
-
+    K_list = [1, 3, 5]
+    nuclei = [(7, 8+ 2*i) for i in range(0, 5)]
+    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/N/'
     
+    oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
+                                        PNP_fomenko=7, Jmax=17, RUN_SBATCH=False)
+
+    0/0
     #===========================================================================
     # ## PAV - HWG for __VERTICAL__ K-mixing per deformations
     #===========================================================================
