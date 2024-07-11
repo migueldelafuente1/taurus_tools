@@ -737,7 +737,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
 
 
-def clear_all_pav_folders(FLDS_, removeProjME=False):
+def clear_all_pav_folders_1(FLDS_, removeProjME=False):
     """
     When being sure the results for the PAV folders 1,2,3,4, ... are valid,
     remove these folders, specially in case of hamil-files in every folder.
@@ -793,6 +793,62 @@ def clear_all_pav_folders(FLDS_, removeProjME=False):
         print("done for floder", fld_)
     print("[OK] all clear.")
 
+def clear_all_pav_folders(FLDS_, removeProjME=False):
+    """
+    When being sure the results for the PAV folders 1,2,3,4, ... are valid,
+    remove these folders, specially in case of hamil-files in every folder.
+    
+    intended:
+        FLDS_: results/BU_folder/K_P_PNPAMP_HWG, ... results/BU_folder/kmix_PNPAMP
+        
+    """
+    exit_ = input("[wARNING] The script will remove proj-matrix element for PAV, sure?: ")
+    if not exit_: return
+    for fld_ in FLDS_:
+        fld_ = Path(fld_)
+        MODE_ = 'kmix' if fld_.name.startswith('kmix_PNPAMP') else 'bu_zn/pnpamp/'
+        print(" 1. fld_:", fld_, "MODE=", MODE_)
+        if not os.path.exists(fld_): continue
+        
+        if MODE_ == 'kmix':
+            flds_bu = [fld_ ,]
+        else:
+            flds_bu = filter(lambda x: x.endswith('PNPAMP_HWG'), os.listdir(fld_))
+        for  fld_bu in flds_bu:
+            fld_hwg  = fld_ if MODE_ == 'kmix' else fld_ / Path(fld_bu)
+                
+            print("   2. fld_bu:", fld_, " /pnpamp:", fld_hwg)
+            
+            if not os.path.exists(fld_hwg): continue
+            
+            list_pav = list(filter(lambda x: x.isdigit(), os.listdir(fld_hwg)))
+            ## creating the diagonal gcm file
+            if not os.path.exists(fld_hwg / 'gcm_diag'):
+                n = int(-1 + (1 + 8*len(list_pav))**.5)//2
+                k, diag_ = 0, []
+                for i in range(n):
+                    for j in range(i, n):
+                        k += 1
+                        diag_.append(str(k))
+                with open(fld_hwg / 'gcm_diag', 'w+') as f:
+                    print("      3. creating gcm_file with:", diag_)
+                    f.write('\n'.join(diag_))
+                    
+            print("       3. removing:\n", list_pav)
+            size_ = 0
+            for x in list_pav:
+                size_ += sum([os.path.getsize(u) for u in (fld_hwg/x).iterdir()])
+                shutil.rmtree(fld_hwg / Path(x))
+            print(f"            removed: [{len(list_pav)}] folders [{size_/(1024**2):5.3f}Mb]")
+            
+            path_pme = fld_hwg / "HWG/projmatelem_states.bin"
+            if removeProjME and path_pme.exists():
+                size_ = os.path.getsize(path_pme)/(1024**2)
+                os.remove(path_pme) 
+                print(f"       3.2 removing ALSO [HWG/projmatelem_states.bin] [{size_:5.3f}Mb]")
+        print("done for floder", fld_)
+    print("[OK] all clear.")
+
 if __name__ == '__main__':
     
     ## Exists the programs and compile with ifort.
@@ -813,14 +869,25 @@ if __name__ == '__main__':
     inter  = 'B1_MZ4' 
     # nuclei = [(12, 11+ 2*i) for i in range(0, 5)]
     # nuclei = [(15, 8+ 2*i)  for i in range(0, 6)]
-    nuclei = [(17, 12+ 2*i) for i in range(0, 5)]
+    # nuclei = [(17, 10+ 2*i) for i in range(0, 5)]
     
     #===========================================================================
     # ## Clear the PAV proj-matrix elements folder
     #===========================================================================
+    ##   Note 1: Old paths for the K-separated folders
     # flds_ = [f'results/ClK{K}' for K in [1, 3, 5, 7,]]
     # flds_ = [f'results/kmix_PNPAMP_z{z}n{n}' for z,n in nuclei]
-    #
+    # clear_all_pav_folders_1(flds_, removeProjME=True)
+    
+    ##   Note 2:
+    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/' 
+    MAIN_FLD = MAIN_FLD + 'Cl/BU_folder_{inter}_z{z}n{n}' # /kmix_PNPAMP
+    # MAIN_FLD = 'results/Cl/BU_folder_{inter}_z{z}n{n}'
+    # MAIN_FLD = 'results/Cl/BU_folder_{inter}_z{z}n{n}/kmix_PNPAMP'
+    
+    nuclei = [(17, 10+ 2*i) for i in range(2, 3)]
+    flds_  = [MAIN_FLD.format(inter=inter, z=z, n=n) for z,n in nuclei] 
+    # flds_ = [f'{FLD_}/kmix_PNPAMP']
     # clear_all_pav_folders(flds_, removeProjME=True)
     
     #===========================================================================
@@ -829,15 +896,14 @@ if __name__ == '__main__':
     # nuclei = [(12, 19), (12, 21)]
     
     X = elementNameByZ[nuclei[0][0]]
-    for K in ( 1, 3, 5 ):
+    for K in ( 1, 3, 5, 7 ):
         # MAIN_FLD = f'results/MgK{K}'
         # LOCAL_PTH = f'../DATA_RESULTS/K_OddEven/B1/{X}/'
         LOCAL_PTH = 'results/'
-        MAIN_FLD = LOCAL_PTH + ''
-        oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
-                                    PNP_fomenko=7, Jmax=9, RUN_SBATCH=True)
-    
-    0/0
+        MAIN_FLD = LOCAL_PTH + X
+        # oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei,
+        #                             PNP_fomenko=7, Jmax=9, RUN_SBATCH=True)
+    # 0/0
     #===========================================================================
     # ## PAV - HWG for multi K (K folders separated for each nuclei)
     #===========================================================================
@@ -850,14 +916,14 @@ if __name__ == '__main__':
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder)
     #===========================================================================
-    K_list = [1, 3, 5]
-    nuclei = [(7, 8+ 2*i) for i in range(0, 5)]
-    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/N/'
-    
-    oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
-                                        PNP_fomenko=7, Jmax=17, RUN_SBATCH=False)
-
-    0/0
+    # K_list = [1, 3, 5]
+    # nuclei = [(7, 8+ 2*i) for i in range(0, 5)]
+    # MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/N/'
+    #
+    # oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
+    #                                     PNP_fomenko=7, Jmax=17, RUN_SBATCH=False)
+    #
+    # 0/0
     #===========================================================================
     # ## PAV - HWG for __VERTICAL__ K-mixing per deformations
     #===========================================================================
@@ -868,11 +934,13 @@ if __name__ == '__main__':
     # nuclei = [(13, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(15, 8 + 2*i) for i in range(0, 7)]
     # nuclei = [(17, 8 + 2*i) for i in range(0, 7)]
-    
+    inter = 'B1_MZ3'
+    nuclei = [(2, 1)]
     MAIN_FLD = 'results/{}_multiK'.format(elementNameByZ[nuclei[0][0]])
     MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/F_multiK'
-    oddeven_vertical_kmix(MAIN_FLD, inter, nuclei, 
-                          PNP_fomenko=7, Jmax=17, K_list = [1, 3, 5],
-                          CHANGE_FLD_SETUP=True, 
-                          RUN_PAV_JOB=False, RUN_HWG_JOB=True)
+    MAIN_FLD = 'results'
+    # oddeven_vertical_kmix(MAIN_FLD, inter, nuclei, 
+    #                       PNP_fomenko=7, Jmax=15, K_list = [1, 3, 5, 7],
+    #                       CHANGE_FLD_SETUP=True, 
+    #                       RUN_PAV_JOB=True, RUN_HWG_JOB=False)
     
