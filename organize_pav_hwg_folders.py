@@ -66,7 +66,7 @@ def _setUpBatchOrTSPforComputation():
     """
     In case of running in Linux system- define if is TSP or SLURM system present
     """
-    global RUN_USING_BATCH
+    global RUN_USING_BATCH, _JobLauncherClass
     if not os.getcwd().startswith('C:'):
         os.system('which sbatch > HASBATCH')
         with open('HASBATCH', 'r') as f:
@@ -193,6 +193,7 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         # run sbatch
         if RUN_SBATCH: 
             os.chdir(DEST_FLD)
+            global RUN_USING_BATCH
             if RUN_USING_BATCH: 
                 os.system('sbatch sub_1.x')
             else:
@@ -237,7 +238,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
-    global input_mix_args, _JobLauncherClass
+    global input_mix_args, _JobLauncherClass, RUN_USING_BATCH
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     DEST_FLD     = "kmix_PNPAMP" # 'kmix_PNPAMP_z{}n{}/'
@@ -403,7 +404,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
-    global input_mix_args, _JobLauncherClass
+    global input_mix_args, _JobLauncherClass, RUN_USING_BATCH
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     DEST_FLD     = 'kmix_PNPAMP_z{}n{}/'
@@ -576,7 +577,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = 1
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = Jmax
     
-    global input_mix_args, _JobLauncherClass
+    global input_mix_args, _JobLauncherClass, RUN_USING_BATCH
     
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     TEMP_K_BU    = "{}_0_VAP"
