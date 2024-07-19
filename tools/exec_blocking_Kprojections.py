@@ -72,7 +72,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         ExeTaurus1D_DeformB20.setUpProjection(self, **params)
         
-        self._list_PAV_outputs = {} # list by K order
+        self._list_PAV_outputs = {} # list by K-p order
     
     def setUpExecution(self, reset_seed=False, valid_Ks=[], *args, **kwargs):
         """
@@ -148,7 +148,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
         self._exportable_LISTDAT_forK = []
         self._exportable_results_forK = {}
-        self._list_PAV_outputs[self._current_K] = []
+        self._list_PAV_outputs[(self._current_K, self.PARITY_TO_BLOCK)] = []
         printf(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
                f"results. saving in [{BU_FLD_KBLOCK}]")
     
@@ -350,8 +350,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         
         After ._save_results option, the PAV is just done after all sp done
         """
-        out_args = (self._current_K, self._curr_deform_index)
-        outfn    = "K{}_d{}.OUT".format(*out_args)
+        parity_ = 1 if self.PARITY_TO_BLOCK == -1 else 0
+        out_args = (self._current_K, parity_, self._curr_deform_index)
+        outfn    = "K{}_P{}_d{}.OUT".format(*out_args)
         
         outpth = "{}/{}".format(self._curr_PAV_result.BU_folder, outfn)
         
@@ -359,9 +360,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             outpth = "{}/broken_{}".format(self._curr_PAV_result.BU_folder, outfn)
             shutil.move(self.DTYPE.DEFAULT_OUTPUT_FILENAME, outpth)
             return
-        
-        if not outfn in self._list_PAV_outputs[self._current_K]:
-            self._list_PAV_outputs[self._current_K].append(outfn)
+        key_kp = (self._current_K, self.PARITY_TO_BLOCK)
+        if not outfn in self._list_PAV_outputs[key_kp]:
+            self._list_PAV_outputs[key_kp].append(outfn)
         
         shutil.move(DataTaurusPAV.DEFAULT_OUTPUT_FILENAME, outpth)
     
@@ -398,11 +399,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         Process to save result after calling runProjection()
         """
         ## save the list dat into folder/ one per K value
-        for K in self._list_PAV_outputs.keys():
-            with open(f'{self._curr_PAV_result.BU_folder}/list_k{K}_pav.dat', 
+        for K, P in self._list_PAV_outputs.keys():
+            _Pstr = _PAR = (1 - P)//2
+            with open(f'{self._curr_PAV_result.BU_folder}/list_k{K}_P{_Pstr}_pav.dat', 
                       'w+') as f:
-                if len(self._list_PAV_outputs[K]):
-                    sort_ = self._list_PAV_outputs[K]
+                if len(self._list_PAV_outputs[(K, P)]):
+                    sort_ = self._list_PAV_outputs[(K, P)]
                     sort_ = self._sortListDATForPAVresults(sort_)
                     f.write("\n".join(sort_))
     
@@ -464,7 +466,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                           res.E_HFB, _iter_str, res.isAxial()))
         
         if self.RUN_PROJECTION:
-            invalid_fn = self._list_PAV_outputs[self._current_K].pop()
+            key_kp = (self._current_K, self.PARITY_TO_BLOCK)
+            invalid_fn = self._list_PAV_outputs[key_kp].pop()
             invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
             
             self._exportable_results_forK[self._curr_deform_index] = res
@@ -954,7 +957,7 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 FLD_3 = FLD_ / Path('HWG')
                 os.mkdir(FLD_3)
                 with open(FLD_3 / 'hw.x', 'w+') as f:
-                    f.write(scr_files.pop(f_))
+                    f.write(scr_files.pop('hw.x'))
                 shutil.copy(InputTaurusPAV.PROGRAM, FLD_3)
                 
                 ## PNPAMP files
@@ -962,6 +965,7 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                     with open(FLD_ / Path(f_), 'w+') as f:
                         f.write(txt_)
                 for tail_ in OutputFileTypes.members():
+                    if not os.path.exists(self.interaction + tail_): continue
                     shutil.copy(self.interaction+tail_, FLD_)
                 
                 ## create all the folders for PNPAMP
