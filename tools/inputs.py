@@ -978,7 +978,8 @@ Disable simplifications P     {disable_simplifications_P}"""
                          self.ArgsEnum.disable_simplifications_NZA,
                          self.ArgsEnum.disable_simplifications_JMK,
                          self.ArgsEnum.disable_simplifications_P,):
-                assert value in (0,1, True, False), f"Value must be 1 or 0 [{value}]"
+                assert value in (0,1,-1, True, False), f"Value must be 1 or 0 [{value}]"
+                if value == -1: value = 0
                 value = int(value)
             elif arg in (self.ArgsEnum.z_Mphi, 
                          self.ArgsEnum.n_Mphi,
