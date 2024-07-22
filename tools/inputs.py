@@ -1178,13 +1178,14 @@ Specific cut-off (label)      L  0 +1      941058169115  0"""
                 elif arg in (self.ArgsEnum.matrix_element_dim, 
                              self.ArgsEnum.z_core,
                              self.ArgsEnum.n_core,
-                             self.ArgsEnum.j_val, 
-                             self.ArgsEnum.parity,):
+                             self.ArgsEnum.j_val,):
                     assert isinstance(value, int) and value >=0, \
                         f"Value must be non-negative integer [{value}]"
                 elif arg == self.ArgsEnum.max_energy:
                     assert isinstance(value, (int, float)) and value > 0, \
                         f"Value mist be positive number (int or float)"
+                elif arg == self.ArgsEnum.parity:
+                    assert value in (-1, 1), f"Parity should be 1/-1, got [{value}]"
                 else:
                     raise(f"Unidentified argument to set: [{arg}] val[{value}]")
             else:
