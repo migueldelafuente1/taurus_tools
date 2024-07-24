@@ -161,7 +161,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     ExeTaurus1D_B20_KMixing_OEblocking.SAVE_DAT_FILES = [
         # DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
-        # DataTaurus.DatFileExportEnum.occupation_numbers,
+        DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
@@ -169,7 +169,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
     ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
-        preconverge_blocking_sts in (0, False)
+        preconverge_blocking_sts in (0, False) # and (not find_Kfor_all_sps)
     ExeTaurus1D_B20_KMixing_OEblocking.PRECONVERNGECE_BLOCKING_ITERATIONS = \
         preconverge_blocking_sts
     
@@ -304,7 +304,7 @@ def run_b20_FalseOE_Kmixing(nucleus, interactions, gogny_interaction,
     ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
     
     ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
-        preconverge_blocking_sts in (0, False)
+        preconverge_blocking_sts in (0, False) and (not find_Kfor_all_sps)
     ExeTaurus1D_B20_KMixing_OEblocking.PRECONVERNGECE_BLOCKING_ITERATIONS = \
         preconverge_blocking_sts
     
@@ -429,7 +429,7 @@ def run_b20_FalseOE_Kmixing_exampleSingleJ(nucleus, interactions, gogny_interact
     ExeTaurus1D_B20_KMixing_OEblocking.SAVE_DAT_FILES = [
         # DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
-        # DataTaurus.DatFileExportEnum.occupation_numbers,
+        DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)

@@ -1215,7 +1215,7 @@ if __name__ == '__main__':
         MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K{K_val}_block_PAV'
         MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/K{K_val}_block_PAV'
         # MAIN_FLD = '../DATA_RESULTS/example_singleJ/K{K_val}_block_PAV'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Cl'
+        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/F'
         # MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg1ststateSwap_multiK'
         
         nuclei = [( 7, 8 + 2*i)  for i in range(0, 1)] # 7
@@ -1224,7 +1224,7 @@ if __name__ == '__main__':
         nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
         # nuclei = [(15,  8 + 2*i) for i in range(0, 6)]
         nuclei = [(17,10 + 2*i) for i in range(5, 6)]
-        # nuclei = [(9, 20), ]
+        nuclei = [(9, 18), ]
         
         folders_2_import = [
             # ((2, 1), '../BU_folder_B1_MZ3_z2n1/PNAMP/', DataTaurusPAV),
@@ -1241,13 +1241,13 @@ if __name__ == '__main__':
         #                            plot_SCL_interpolation=False)
         # raise Exception("STOP HERE")
         
-        K_vals  = [1, 3, 5, 7]
+        K_vals  = [1, 3, 5, ]#  ]
         # _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD, K_vals,
         #                                     plot_SCL_interpolation=1,
         #                                     Jmax_2_plot=9)
         _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals,
-                                            plot_SCL_interpolation=1,
-                                            Jmax_2_plot=9)
+                                           plot_SCL_interpolation=1,
+                                           Jmax_2_plot=9)
         raise Exception("STOP HERE")
         
         # K_vals  = [1, 3, 5, 7]

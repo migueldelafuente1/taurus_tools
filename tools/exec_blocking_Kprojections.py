@@ -19,6 +19,7 @@ from .executors import ExeTaurus1D_DeformB20
 from tools.Enums import OutputFileTypes
 from numpy.random import randint
 from tools.base_executors import ExecutionException, _Base1DTaurusExecutor
+from random import shuffle
 
 class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     '''
@@ -223,6 +224,26 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         else:
             pass
     
+    def _randomize_sp_to_block(self):
+        """ 
+        Select the states in a random way or in the basis order.
+        
+        The criteria to get the randomization is using the attribute 
+        PRECONVERNGECE_BLOCKING_ITERATIONS, in case of being using the 
+        FULLY_CONVERGE_BLOCKING_ITER_MODE = False (can be setted separately in 
+        the scripts).
+        
+        The number of states to be selected is fixed from that attribute.
+        """
+        sp_index_list = [sp_ for sp_ in range(1, self._sp_dim +1)]
+        random_ = False
+        if ((not self.FULLY_CONVERGE_BLOCKING_ITER_MODE) and 
+             self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
+            shuffle(sp_index_list)
+            random_ = True
+            
+        return sp_index_list, self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0
+    
     def _spIterationAndSelectionProcedure(self, i_def):
         """
         Iteration over all the single-particle states until getting a correct 
@@ -237,7 +258,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         isNeu = self._sp_dim if self.numberParity[1] else 0
         set_energies = {}
         ## block the states in order
-        for sp_ in range(1, self._sp_dim +1):
+        
+        sp_index_list, random_ = self._randomize_sp_to_block()
+        count_    = 0
+        MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS if random_ else self._sp_dim
+        for i_sp in range(self._sp_dim):
+            sp_ = sp_index_list[i_sp]
             self._current_sp = sp_
             ## OPTIMIZATION:
             # * if state has a previous K skip
@@ -249,6 +275,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             if (K_prev != 0) and (K_prev  != self._current_K): continue
             if self._sp_states_obj[sp_].m != self._current_K : continue
             if parity_ != self.PARITY_TO_BLOCK : continue 
+            
+            count_ += 1
+            if count_ > MAX_COUNT:
+                print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
+                break
             
             self.inputObj.qp_block = sp_ + isNeu
             
@@ -711,7 +742,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
            this is ommited for starting case.
         2. With the overlap results, reevaluate the optimal solution for the 
            convergence precission. After that evaluate the PAV over itself.
-    """
+    """            
     
     def _spIterationAndSelectionProcedure(self, i_def):
         """
@@ -731,8 +762,13 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         
         isNeu = self._sp_dim if self.numberParity[1] else 0
         set_energies = {}
+        
+        sp_index_list, random_ = self._randomize_sp_to_block()
+        count_    = 0
+        MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS if random_ else self._sp_dim
         ## block the states in order
-        for sp_ in range(1, self._sp_dim +1):
+        for i_sp in range(self._sp_dim):
+            sp_ = sp_index_list[i_sp]
             self._current_sp = sp_
             ## OPTIMIZATION:
             # * if state has a previous K skip
@@ -745,6 +781,10 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             if self._sp_states_obj[sp_].m != self._current_K : continue
             if parity_ != self.PARITY_TO_BLOCK : continue 
             
+            count_ += 1
+            if count_ > MAX_COUNT:
+                print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
+                break
             self.inputObj.qp_block = sp_ + isNeu
             
             ## minimize and save only if 2<Jz> = K
