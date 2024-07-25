@@ -109,14 +109,23 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             self.PRECONVERNGECE_BLOCKING_ITERATIONS = self.inputObj.iterations
         
         ## optimal organization of the K: 1, -1, 3, -3, ...
-        for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
-            if not k in valid_states_KP: 
-                continue # skip states with K but other parity
-            if valid_Ks != [] and not k in valid_Ks:
-                continue
-            self._valid_Ks.append(k)
-            if self.BLOCK_ALSO_NEGATIVE_K:
-                self._valid_Ks.append(-k)
+        if self.numberParity in ((1, 0), (0, 1)):
+            for k in range(self._sp_2jmin, self._sp_2jmax +1, 2):
+                if not k in valid_states_KP: 
+                    continue # skip states with K but other parity
+                if valid_Ks != [] and not k in valid_Ks:
+                    continue
+                self._valid_Ks.append(k)
+                if self.BLOCK_ALSO_NEGATIVE_K:
+                    self._valid_Ks.append(-k)
+        elif self.numberParity == (1, 1):
+            ## Odd-Odd, has integer K values.
+            for k in range(0, self._sp_2jmax * 2, 2):
+                if valid_Ks != [] and not k in valid_Ks:
+                    continue
+                self._valid_Ks.append(k)
+                if self.BLOCK_ALSO_NEGATIVE_K:
+                    self._valid_Ks.append(-k)
         
         for k in self._valid_Ks:
             def_dct = list(map(lambda x: x[0], self._deformations_map[0]))
@@ -314,6 +323,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 return ExeTaurus1D_DeformB20.runProjection(self, **params)
         return
     
+    def _idNamingForContainerOfFinalWF(self):
+        id_ = "sp{}_d{}K{}".format(self._current_sp, 
+                                   self._curr_deform_index,
+                                   self._current_K)
+        return id_
+    
     def saveFinalWFprocedure(self, result:DataTaurus, base_execution=False):
         """
         overwriting of exporting procedure:
@@ -325,9 +340,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         if self._blocking_section:
             if not self._save_results:
-                id_ = "sp{}_d{}K{}".format(self._current_sp, 
-                                           self._curr_deform_index,
-                                           self._current_K)
+                id_ = self._idNamingForContainerOfFinalWF()
                 self._container.append(result, id_=id_, binary='final_wf.bin',
                                        datfiles=self.SAVE_DAT_FILES)
                 return
@@ -731,8 +744,6 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         prev_bins = filter(lambda x: x.startswith('previous_wf_sp'), os.listdir())
         for file_ in prev_bins: os.remove(file_)
 
-
-
 class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
     
     """
@@ -1029,6 +1040,208 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 _  = 0
         ## Execute projection.
         _ = 0
+
+class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
+    
+    """
+    Calculation of Odd-Odd nuclei requires to evaluate many combinations of two 
+    quasiparticles
+    """
+    
+    def _randomize_sp_to_block(self):
+        """
+        Prepares the list for all states compatible with the current K and parity
+        
+        return sorted values (sp-proton, sp-neutron)
+        """
+        sp_combination = []
+        for i1 in range(1, self._sp_dim + 1):
+            sp1 : QN_1body_jj = self._sp_states_obj[i1]
+            for i2 in range(1, self._sp_dim + 1):
+                sp2 : QN_1body_jj = self._sp_states_obj[i2]
+                
+                if (-1)**(sp1.l + sp2.l) != self.PARITY_TO_BLOCK: continue
+                if (sp1.m + sp2.m != self._current_K): continue
+                
+                sp_combination.append( (i1, i2 + self._sp_dim) )
+        
+        random_ = False
+        if ((not self.FULLY_CONVERGE_BLOCKING_ITER_MODE) and 
+             self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
+            shuffle(sp_combination)
+            random_ = True
+        
+        return sp_combination, random_
+    
+    def _spIterationAndSelectionProcedure(self, i_def):
+        """
+        Iteration over all the single-particle states until getting a correct 
+        solution (axial and same K)
+        * Getting the first solution or try over all the possible blockings
+        """
+        ## fix the deformation i to the main constraint
+        prolate = int(i_def >= 0)
+        b20_ = dict(self._deformations_map[prolate]).get(i_def)
+        setattr(self.inputObj, self.CONSTRAINT, b20_)
+        
+        set_energies = {}
+        ## block the states in order
+        sp_index_list, random_ = self._randomize_sp_to_block()
+        count_, global_count  = 0, 0
+        MAX_COUNT = len(sp_index_list)
+        if random_: MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS
+        
+        for sp_p, sp_n in sp_index_list:
+            self._current_sp = (sp_p, sp_n)
+            ## OPTIMIZATION:
+            # X if state has a previous K skip - (not possible, cannot store it)
+            # * if state has different jz initial skip      (already verified)
+            # * the parity is necessary to match a pattern  (already verified)          
+            global_count += 1
+                        
+            self.inputObj.qp_block = (sp_p, sp_n)
+            ## minimize and save only if 2<Jz> = K
+            res : DataTaurus = self._executeProgram()
+            if not (res.properly_finished and res.isAxial()):
+                continue
+            if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+                ## no more minimizations for this deformation
+                count_ += 1
+                if count_ > MAX_COUNT:
+                    print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
+                    break
+                
+                self._no_results_for_K *= False
+                self._K_foundActionsTearDown(res)
+                set_energies[self._current_sp] = f"{res.E_HFB:6.4f}"
+                if not self.FIND_K_FOR_ALL_SPS: break
+            elif global_count == len(sp_index_list):
+                printf(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
+            else:
+                self._K_notFoundActionsTearDown(res)
+        
+        if (self.FIND_K_FOR_ALL_SPS and not self._no_results_for_K):
+            # only apply if multiple E
+            self._selectStateFromCalculationSetTearDown(set_energies)
+    
+    def _K_foundActionsTearDown(self, res: DataTaurus):
+        """
+        Other exportable actions for founded result in K
+        """
+        i   = self._curr_deform_index
+        prolate  = 0 if i < 0 else 1 
+        b20      = dict(self._deformations_map[prolate]).get(i)
+        sp_index = self._current_sp
+        sp_index = sp_index[0], sp_index[1] - self._sp_dim
+        
+        _iter_str = "[{}/{}: {}']".format(res.iter_max, self.inputObj.iterations, 
+                                          getattr(res, 'iter_time_seconds', 0) //60 )
+        if self._save_results:
+            if self.FIND_K_FOR_ALL_SPS:
+                id_, _ = self._choosen_state_data   ## don't exctract the res
+                sp_index = 0
+                if id_: sp_index = self._getCurrentSPIndexFromContainerID(id_)
+            else:
+                sp_index = self._current_sp
+                self._choosen_state_data = (self._current_sp, res) # not used
+            
+            printf("   [OK] {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
+                  .format(sp_index, 
+                          self._sp_states_obj[sp_index[0]].shellState,
+                          self._sp_states_obj[sp_index[1] - self._sp_dim].shellState,  
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index,
+                          res.E_HFB, _iter_str))
+        else:
+            printf("      . {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
+                  .format(sp_index, 
+                          self._sp_states_obj[sp_index[0]].shellState,
+                          self._sp_states_obj[sp_index[1]].shellState,
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index, 
+                          res.E_HFB, _iter_str))
+        ## Append the exportable result file
+        line = []
+        if self.include_header_in_results_file:
+            line.append(f"{i:5}: {b20:+6.3f}")
+        line.append(res.getAttributesDictLike)
+        self._export_txt_for_K[i] = self.HEADER_SEPARATOR.join(line)
+        self._exportable_results_forK[i] = res
+        #self._sp_blocked_K_already_found[i][sp_index] = self._current_K
+    
+    def _K_notFoundActionsTearDown(self, res: DataTaurus):
+        """
+        Actions to discard or notice invalid result.
+        """
+        sp_index  = self._current_sp
+        sp_index  = sp_index[0], sp_index[1] - self._sp_dim
+        _iter_str = "[{}/{}: {}']".format(res.iter_max, self.inputObj.iterations, 
+                                          getattr(res, 'iter_time_seconds', 0) //60 )
+        
+        if not self._save_results:
+            printf("   [xx] {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {} axial={}"
+                  .format(sp_index, 
+                          self._sp_states_obj[sp_index[0]].shellState,
+                          self._sp_states_obj[sp_index[1]].shellState, 
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index, 
+                          res.E_HFB, _iter_str, res.isAxial()))
+            return
+        else:
+            printf("      X {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {} axial={}"
+                  .format(sp_index, 
+                          self._sp_states_obj[sp_index[0]].shellState,
+                          self._sp_states_obj[sp_index[1]].shellState, 
+                          res.Jz, res.b20_isoscalar, self._curr_deform_index, 
+                          res.E_HFB, _iter_str, res.isAxial()))
+        
+        if self.RUN_PROJECTION:
+            key_kp = (self._current_K, self.PARITY_TO_BLOCK)
+            invalid_fn = self._list_PAV_outputs[key_kp].pop()
+            invalid_fn = f"{self._curr_PAV_result.BU_folder}/{invalid_fn}"
+            
+            self._exportable_results_forK[self._curr_deform_index] = res
+            outpth = invalid_fn.replace(".OUT", "_invalid.OUT")
+            shutil.move(invalid_fn, outpth)
+    
+    def _idNamingForContainerOfFinalWF(self):
+        """ Id for container and managing of blocked wf. """
+        sp_n = self._current_sp[1] - self._sp_dim
+        id_ = "sp_p{}n{}_d{}K{}".format(self._current_sp[0], sp_n,  
+                                       self._curr_deform_index,
+                                       self._current_K)
+        return id_
+    
+    def _getCurrentSPIndexFromContainerID(self, id_):
+        """ """
+        id_ = id_.split('_')[1].replace('p', '')
+        sp_p, sp_n = id_.split('n')
+        sp_p, sp_n = int(sp_p), int(sp_n) + self._sp_dim
+        return sp_p, sp_n
+    
+    def _selectionCriteriaForState(self):
+        """
+        When several blocked K states lead to different energies (FIND_ALL_K=True),
+        stablish a selection for the correct wf for PAV.
+        """
+        if self._MIN_ENERGY_CRITERIA:
+            ## Energy_criteria
+            id_min, res, bin_, datfiles = self._energy_CriteriaForStateSelection()
+        else:
+            ## Overlap citeria: <def_1, def_2(K)> max or not broken for MF-PAV
+            id_min, res, bin_, datfiles = self._overlap_CriteriaForStateSelection()
+        
+        self._current_result = res
+        ## Copy into main folder as in a normal result execution
+        ## id_ format: "sp{}_d{}K{}"
+        if id_min != None:
+            self._current_sp = self._getCurrentSPIndexFromContainerID(id_min)
+        else:
+            self._current_sp = None
+        return id_min, res, bin_, datfiles
+    
+
+
+
+
+
 
 class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
     

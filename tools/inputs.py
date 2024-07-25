@@ -406,7 +406,7 @@ eval/export Valence.Space   = {export_vs}
         Set the Qp to block, attr self.qp_block is the qp state for the blocking,
         """
         if self.qp_block not in (None, 0):
-            if not isinstance(self.qp_block, list):
+            if not isinstance(self.qp_block, (list, tuple)):
                 blk_sts = [self.qp_block, ]
             else:
                 blk_sts = self.qp_block
