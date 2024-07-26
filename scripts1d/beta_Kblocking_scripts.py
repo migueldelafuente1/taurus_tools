@@ -155,7 +155,8 @@ def __selectAndSetUp_OEOO_Blocking(z, n,
     
     if _Executable_B20_KMixClass.RUN_PROJECTION: 
         ## Import the programs if they do not exist
-        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM))
+        importAndCompile_taurus(use_dens_taurus=False,
+                                pav= not os.path.exists(InputTaurusPAV.PROGRAM))
     
     return _Executable_B20_KMixClass
 
