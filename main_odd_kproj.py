@@ -8,7 +8,7 @@ from tools.Enums import GognyEnum
 from scripts1d.beta_Kblocking_scripts import \
     run_b20_FalseOE_Kprojections_Gogny, run_b20_FalseOE_Block1KAndPAV, \
     run_b20_FalseOdd_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ, \
-    run_b20_Block1KandPAV_exampleSingleJ
+    run_b20_Block1KandPAV_exampleSingleJ, run_b20_testOO_Kmixing4AllCombinations
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf, __log_file
 
@@ -60,9 +60,10 @@ if __name__ == '__main__':
         _1 = 'exe_surf_1K_and_PAV'      # does all-sp for K, also PAV
         _2 = 'exe_surf_Kmixing_and_PAV' # does all-sp for all K, also PAV
         _3 = 'exe_example_h11/2_singleJ'
+        _4 = 'exe_example_OO_convergences'  # evaluates all possible sp-blocks-vap mins
     
     ## SELECT HERE ****
-    _case = __CASES._2
+    _case = __CASES._4
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -131,7 +132,22 @@ if __name__ == '__main__':
             find_Kfor_all_sps = True
         )
             
-        # run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
+        run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
         #=======================================================================
-    
+    elif _case == __CASES._4:
+        #interactions_B1 = {(11,11): inter_, }
+        nucleus = (1, 1)
+        args = (nucleus, interactions_B1, GognyEnum.B1)
+        kwargs = dict(
+            # valid_Ks = [1, 3, ], # 5, 7
+            valid_Ks = [0, ],
+            seed_base=3, ROmega=(0,0),
+            q_min=-0.4, q_max=0.4, N_max=3, convergences=0,   ## 0.6, 25
+            parity_2_block=1,
+            fomenko_points=(7, 7),
+            preconverge_blocking_sts=False, # False,
+            find_Kfor_all_sps = True
+        )
+        run_b20_testOO_Kmixing4AllCombinations(*args, **kwargs)
+        
     printf("END OF SUITE.")

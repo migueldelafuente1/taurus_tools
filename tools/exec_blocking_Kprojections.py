@@ -156,8 +156,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             shutil.rmtree(BU_FLD_KBLOCK)
         os.mkdir(BU_FLD_KBLOCK)
         self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
-        self._exportable_LISTDAT_forK = []
-        self._exportable_results_forK = {}
+        self._exportable_LISTDAT_forK  = []
+        self._exportable_results_forK  = {}
         self._list_PAV_outputs[(self._current_K, self.PARITY_TO_BLOCK)] = []
         printf(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
                f"results. saving in [{BU_FLD_KBLOCK}]")
@@ -1048,11 +1048,14 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
     quasiparticles
     """
     
-    def _randomize_sp_to_block(self):
+    def _randomize_sp_to_block(self, randomize=True):
         """
         Prepares the list for all states compatible with the current K and parity
         
-        return sorted values (sp-proton, sp-neutron)
+        return sorted values (sp-proton, sp-neutron).
+        
+        randomize: considers (as default) the randomization in case of not having
+        all the states.
         """
         sp_combination = []
         for i1 in range(1, self._sp_dim + 1):
@@ -1066,10 +1069,11 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 sp_combination.append( (i1, i2 + self._sp_dim) )
         
         random_ = False
-        if ((not self.FULLY_CONVERGE_BLOCKING_ITER_MODE) and 
-             self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
-            shuffle(sp_combination)
-            random_ = True
+        if randomize:
+            if ((not self.FULLY_CONVERGE_BLOCKING_ITER_MODE) and 
+                 self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
+                shuffle(sp_combination)
+                random_ = True
         
         return sp_combination, random_
     
@@ -1146,14 +1150,14 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 self._choosen_state_data = (self._current_sp, res) # not used
             
             printf("   [OK] {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
-                  .format(sp_index, 
+                  .format("({:2},{:2})".format(sp_index),  
                           self._sp_states_obj[sp_index[0]].shellState,
                           self._sp_states_obj[sp_index[1] - self._sp_dim].shellState,  
                           res.Jz, res.b20_isoscalar, self._curr_deform_index,
                           res.E_HFB, _iter_str))
         else:
             printf("      . {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {}"
-                  .format(sp_index, 
+                  .format("({:2},{:2})".format(sp_index), 
                           self._sp_states_obj[sp_index[0]].shellState,
                           self._sp_states_obj[sp_index[1]].shellState,
                           res.Jz, res.b20_isoscalar, self._curr_deform_index, 
@@ -1178,7 +1182,7 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         
         if not self._save_results:
             printf("   [xx] {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {} axial={}"
-                  .format(sp_index, 
+                  .format("({:2},{:2})".format(sp_index), 
                           self._sp_states_obj[sp_index[0]].shellState,
                           self._sp_states_obj[sp_index[1]].shellState, 
                           res.Jz, res.b20_isoscalar, self._curr_deform_index, 
@@ -1186,7 +1190,7 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
             return
         else:
             printf("      X {} {:>11},{:>11} <jz>= {:4.1f}, b20={:>6.3f}({:>3.0f})  E_hfb={:6.3f} {} axial={}"
-                  .format(sp_index, 
+                  .format("({:2},{:2})".format(sp_index), 
                           self._sp_states_obj[sp_index[0]].shellState,
                           self._sp_states_obj[sp_index[1]].shellState, 
                           res.Jz, res.b20_isoscalar, self._curr_deform_index, 
@@ -1239,9 +1243,268 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
     
 
 
+class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblocking):
+    
+    """
+    Place a normal TES surface, but only keeps the false OO solutions.
+    The process creates the organization for all possible blocking combinations 
+    to execute in parallel (SLURM):
+    
+    BU_folder_NAME/VAP_BLOCKINGS/
+        def_**/
+            K*/
+                1/ 
+                    initial_wf.bin(false odd-odd)
+                    aux.INP (with the blocking combination)
+                    taurus_vap.exe
+                2/ 
+                ...
+                map_folder_sp1sp2_blocking
+                job_1.x
+                sub_1.x (execution of each)
+                HAMIL_files.*
+    script_run_all.py (launch all the slurm executables for all deformatios, K) 
+    script_process_data.py
+    
+    
+    The number of K, parity, VAP-Fomenko and deformations is given as an option,
+    
+    run process modifyed to not execute directly (i.e. for MZ=4 there are 
+    hundred of sp-combinations, 20' each.)
+    """
+    
+    def run(self, fomenko_points=None):
+        """
+        Modifyed method to obtain the reminization with a blocked state.
+        """
+        self._blocking_section = False
+        ExeTaurus1D_DeformB20.run(self)
+        
+        BU_KBLOCK = f"{self.DTYPE.BU_folder}/VAP_BLOCKINGS"
+        if os.path.exists(BU_KBLOCK): shutil.rmtree(BU_KBLOCK)
+        os.mkdir(BU_KBLOCK)
+        
+        if fomenko_points:
+            self.inputObj.z_Mphi = fomenko_points[0]
+            self.inputObj.n_Mphi = fomenko_points[1]
+            self.inputObj_PAV.z_Mphi = fomenko_points[0]
+            self.inputObj_PAV.n_Mphi = fomenko_points[1]            
+        ##  
+        self._blocking_section = True
+        if self.numberParity == (0, 0): return
+        printf(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        printf(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
+        printf(f"   Doing also Projection:    {self.RUN_PROJECTION}")
+        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}")
+        printf(f"   Valid Ks = {self._valid_Ks}\n")
+        
+        self.inputObj.seed = 1
+        self.inputObj.eta_grad  = 0.03 
+        self.inputObj.mu_grad   = 0.00
+        self.inputObj.grad_type = 1
+        self._iters_vap_default = self.inputObj.iterations
+        
+        BU_FLD = self.DTYPE.BU_folder
+        _PAR = (1 - self.PARITY_TO_BLOCK)//2
+        def_flds = []
+        # Perform the projections to save each K component
+        for K in self._valid_Ks:
+            self._no_results_for_K = True
+            self._current_K = K
+            self._KComponentSetUp()
+            
+            self._export_txt_for_K = {}
+            # oblate part
+            for prolate in (0, 1):
+                for i_def, tail_ in self._final_bin_list_data[prolate].items():
+                    
+                    def_f = f'def{i_def}'.replace('-', '_')
+                    if not def_f in def_flds: def_flds.append(def_f)
+                    
+                    BU_FLD_KBLOCK = f"{BU_FLD}/VAP_BLOCKINGS/{def_f}/{self._current_K}_{_PAR}"
+                    BU_FLD_KBLOCK = BU_FLD_KBLOCK.replace('-', '_')
+                    self._current_comb_folder_KP = Path(BU_FLD_KBLOCK)
+                    
+                    self._curr_deform_index = i_def
+                    shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
+                                self._current_comb_folder_KP / "initial_wf.bin")
+                    for hftype in ('.2b', '.sho', '.com'):
+                        shutil.copy(f"{self.interaction}{hftype}", 
+                                self._current_comb_folder_KP)
+                    
+                    # self._spIterationAndSelectionProcedure(i_def)
+                    self._slurmFolderSetUp()
+        
+        with open(f'{BU_FLD}/VAP_BLOCKINGS/run_vap_def_KP.py', 'w+') as f:
+            script = self._TEMPLATE_RUN_SLURM_PY
+            script = script.format(def_flds, self._valid_Ks, self.PARITY_TO_BLOCK)
+            f.write(script)
+    
+    
+    def _KComponentSetUp(self):
+        """ 
+        Actions common for the creation of K folders in order of deformation.
+        """
+        
+        for prolate in (0, 1):
+            for i_def, tail_ in self._final_bin_list_data[prolate].items():
+                # Refresh and create folders for vap-blocked results
+                _PAR = (1 - self.PARITY_TO_BLOCK)//2
+                BU_FLD = self.DTYPE.BU_folder
+                BU_FLD_KBLOCK = f"{BU_FLD}/VAP_BLOCKINGS/def{i_def}"
+                BU_FLD_KBLOCK = BU_FLD_KBLOCK.replace('-', '_')
+                
+                # Create new BU folder
+                if not os.path.exists(BU_FLD_KBLOCK):
+                    os.mkdir(BU_FLD_KBLOCK)
+                
+                BU_FLD_KBLOCK = f"{BU_FLD}/VAP_BLOCKINGS/def{i_def}/{self._current_K}_{_PAR}"
+                BU_FLD_KBLOCK = BU_FLD_KBLOCK.replace('-', '_')
+                os.mkdir(BU_FLD_KBLOCK)
+        
+        self._exportable_BU_FLD_KBLOCK = BU_FLD_KBLOCK 
+        self._exportable_LISTDAT_forK  = []
+        self._exportable_results_forK  = {}
+        self._list_PAV_outputs[(self._current_K, self.PARITY_TO_BLOCK)] = []
+        printf(f"* Doing 2K={self._current_K} P({self.PARITY_TO_BLOCK}) for TES",
+               f"results. saving in [{BU_FLD}/VAP_BLOCKINGS]")
+    
+    def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
+        """
+        Do nothing, do not zip files.
+        """
+        pass
+    
+    ### AUXILIARY SCRIPT TEMPLATES -------------------------------------------
+            
+    _TEMPLATE_SLURM_JOB_VAP = """#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --array=1-ARRAY_JOBS_LENGTH
+#
+## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
 
+export OMP_NUM_THREADS=1
+ulimit -s unlimited
+var=$SLURM_ARRAY_TASK_ID
 
+full_path=$PWD"/"
+cd $full_path
+cd $var
 
+workdir=$PWD
+mkdir -p /scratch/delafuen/
+mkdir -p /scratch/delafuen/$SLURM_JOB_ID
+chmod 777 PROGRAM
+cp -r  PROGRAM INPUT_FILE initial_wf.bin /scratch/delafuen/$SLURM_JOB_ID
+cp -r  ../HAMIL.* /scratch/delafuen/$SLURM_JOB_ID
+
+cd  /scratch/delafuen/$SLURM_JOB_ID
+
+./PROGRAM < INPUT_FILE > OUT
+
+mv /scratch/delafuen/$SLURM_JOB_ID/OUT $workdir/
+mv /scratch/delafuen/$SLURM_JOB_ID/*.dat $workdir/
+mv /scratch/delafuen/$SLURM_JOB_ID/*.bin $workdir/
+rm /scratch/delafuen/$SLURM_JOB_ID/*
+rmdir /scratch/delafuen/$SLURM_JOB_ID/
+"""
+    
+    _TEMPLATE_RUN_SLURM_PY = """
+''' Script to be run from BU_folder/VAP_BLOCKINGS '''
+import os
+
+list_def_fld = {}
+list_2K = {}
+parity  = {}
+
+parity = '0' if parity == 1 else '1'
+
+print("(AUX-RUN TEST ODD-ODD) Starting SLURM running for deformations and executions:")
+print("D:", list_def_fld) 
+print("K:", list_2K)
+for fld_def in list_def_fld:
+    print("  * ", fld_def)
+    os.chdir(fld_def)
+    for K in list_2K:
+        os.chdir('{{}}_{{}}'.format(K, parity))
+        
+        os.chmod('job_1.x',   0o755)
+        os.chmod('sub_vap.x', 0o755)
+        os.system('sbatch sub_vap.x')
+        
+        os.chdir('..')
+    os.chdir('..')
+"""
+    
+    def _slurmFolderSetUp(self):
+        
+        # FLD_RETURN = os.getcwd()
+        ## fix the deformation i to the main constraint
+        prolate = int(self._curr_deform_index >= 0)
+        b20_ = dict(self._deformations_map[prolate]).get(self._curr_deform_index)
+        setattr(self.inputObj, self.CONSTRAINT, b20_)
+        
+        set_energies = {}
+        ## block the states in order
+        sp_index_list, random_ = self._randomize_sp_to_block(randomize=False)
+        global_count   = 0
+        MAX_COUNT = len(sp_index_list)
+        if ((not self.FULLY_CONVERGE_BLOCKING_ITER_MODE) and 
+             self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
+            MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS
+        
+        dict_comb    = {}
+        global_count = 1 
+        for sp_p, sp_n in sp_index_list:
+            self._current_sp = (sp_p, sp_n)
+            ## OPTIMIZATION:
+            # * if state has different jz initial skip      (already verified)
+            # * the parity is necessary to match a pattern  (already verified)          
+            
+            self.inputObj.qp_block = (sp_p, sp_n)
+            
+            dict_comb[global_count] = "{:6} {:6}   {:>12} {:>12}".format(
+                *self._current_sp, 
+                self._sp_states_obj[sp_p].shellState, 
+                self._sp_states_obj[sp_n - self._sp_dim].shellState)
+            
+            fld_ = self._current_comb_folder_KP / str(global_count)
+            os.mkdir(fld_)
+            
+            with open(self.inputObj.DEFAULT_INPUT_FILENAME, 'w+') as f:
+                f.write(self.inputObj.getText4file())
+            shutil.move(self.inputObj.DEFAULT_INPUT_FILENAME, fld_)
+            shutil.copy(self.inputObj.PROGRAM, fld_)
+            shutil.copy(self._current_comb_folder_KP / 'initial_wf.bin', fld_)
+            
+            if global_count > MAX_COUNT:
+                break
+            
+            global_count += 1
+        
+        global_count = str(global_count)
+        _Args = _SlurmJob1DPreparation.ArgsEnum
+        ## main slurm job calling
+        attr_ = _Args.JOBS_LENGTH
+        sub = _SlurmJob1DPreparation._TEMPLATE_SLURM_SUB.replace(attr_, global_count)
+        with open(self._current_comb_folder_KP / 'sub_vap.x', 'w+') as f:
+            f.write(sub)
+        
+        ## the unitary job.
+        job_1 = self._TEMPLATE_SLURM_JOB_VAP
+        job_1 = job_1.replace(_Args.HAMIL, self.interaction)
+        job_1 = job_1.replace(_Args.INPUT_FILE, self.inputObj.DEFAULT_INPUT_FILENAME)
+        job_1 = job_1.replace(_Args.JOBS_LENGTH, global_count)
+        job_1 = job_1.replace(_Args.PROGRAM,  self.inputObj.PROGRAM)
+        with open(self._current_comb_folder_KP / 'job_1.x', 'w+') as f:
+            f.write(job_1)
+        
+        dict_comb = [f"{k} {v}" for k, v in dict_comb.items()]
+        ## export the file-map for the folders.
+        with open(self._current_comb_folder_KP / 'map_folders_sp.dat', 'w+') as f:
+            f.write('\n'.join(dict_comb))        
+        
 
 class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
     

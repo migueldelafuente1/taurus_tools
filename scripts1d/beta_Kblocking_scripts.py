@@ -13,9 +13,9 @@ from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.Enums import GognyEnum
 from tools.exec_blocking_Kprojections import \
     ExeTaurus1D_B20_OEblocking_Ksurfaces, ExeTaurus1D_B20_KMixing_OEblocking, \
-    ExeTaurus1D_B20_Ksurface_Base, ExeTaurus1D_B20_KMixing_OOblocking
+    ExeTaurus1D_B20_Ksurface_Base, ExeTaurus1D_B20_KMixing_OOblocking, \
+    ExeTaurus1D_TestOddOdd_K4AllCombinations
 from tools.helpers import importAndCompile_taurus, printf
-
 
 
 def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
@@ -394,17 +394,20 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
 
 
 
-def run_b20_testOO_Kmixing(nucleus, interactions, gogny_interaction,
-                            valid_Ks = [], 
-                            seed_base=0, ROmega=(13, 13),
-                            q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
-                            fomenko_points=(1, 1), 
-                            parity_2_block= 1, preconverge_blocking_sts=False,
-                            find_Kfor_all_sps= True,
-                            ):
+def run_b20_testOO_Kmixing4AllCombinations(
+                           nucleus, interactions, gogny_interaction,
+                           ##
+                           valid_Ks = [], 
+                           seed_base=0, ROmega=(13, 13),
+                           q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
+                           fomenko_points=(1, 1), 
+                           parity_2_block= 1, preconverge_blocking_sts=False,
+                           find_Kfor_all_sps= True,
+                           ):
     """
     Example to test the multiplicity of minima for all combinatorial posibilities
-    of an Odd-Odd nuclei. Not iterable in nuclei
+    of an Odd-Odd nuclei. Not iterable in nuclei, main evaluation of the blocking
+    is executable only with SLURM
         Reqire:
     Args:
         :nucleus: <tuple>: (z,n)
@@ -427,34 +430,17 @@ def run_b20_testOO_Kmixing(nucleus, interactions, gogny_interaction,
         and gogny_interaction != GognyEnum.B1):
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
-    ExeTaurus1D_B20_KMixing_OEblocking.IGNORE_SEED_BLOCKING  = True
-    ExeTaurus1D_B20_KMixing_OEblocking.BLOCK_ALSO_NEGATIVE_K = False
-    ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION        = True 
-    ExeTaurus1D_B20_KMixing_OEblocking.FIND_K_FOR_ALL_SPS    = find_Kfor_all_sps
-    
-    ExeTaurus1D_B20_KMixing_OEblocking.ITERATIVE_METHOD = \
-        ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD
-        
-    ExeTaurus1D_B20_KMixing_OEblocking.SAVE_DAT_FILES = [
-        # DataTaurus.DatFileExportEnum.canonicalbasis,
-        DataTaurus.DatFileExportEnum.eigenbasis_h,
-        DataTaurus.DatFileExportEnum.occupation_numbers,
-        ]
-    ExeTaurus1D_B20_KMixing_OEblocking.SEEDS_RANDOMIZATION   = convergences
-    ExeTaurus1D_B20_KMixing_OEblocking.GENERATE_RANDOM_SEEDS = bool(convergences)
-    ExeTaurus1D_B20_KMixing_OEblocking.DO_BASE_CALCULATION   = convergences >= 0
-    ExeTaurus1D_B20_KMixing_OEblocking.PARITY_TO_BLOCK       = parity_2_block
-    
-    ExeTaurus1D_B20_KMixing_OEblocking.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
-        preconverge_blocking_sts in (0, False) and (not find_Kfor_all_sps)
-    ExeTaurus1D_B20_KMixing_OEblocking.PRECONVERNGECE_BLOCKING_ITERATIONS = \
-        preconverge_blocking_sts
-    
-    if ExeTaurus1D_B20_KMixing_OEblocking.RUN_PROJECTION: 
-        ## Import the programs if they do not exist
-        importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM))
-    
     z, n = nucleus
+    args = (
+            find_Kfor_all_sps, 
+            convergences, 
+            parity_2_block, 
+            preconverge_blocking_sts
+        )
+    
+    __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args)
+    __ExeB20BlockingClass.RUN_PROJECTION = False
+    
     interaction = getInteractionFile4D1S(interactions, z, n, 
                                          gogny_interaction=gogny_interaction)
     if interaction == None or not os.path.exists(interaction+'.sho'):
@@ -512,10 +498,10 @@ def run_b20_testOO_Kmixing(nucleus, interactions, gogny_interaction,
         InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,
         # PN-PAV and J bound arguments set by the program, P-PAV = no
     }
-    ExeTaurus1D_B20_KMixing_OEblocking.EXPORT_LIST_RESULTS = \
+    ExeTaurus1D_TestOddOdd_K4AllCombinations.EXPORT_LIST_RESULTS = \
         f"export_TESb20_z{z}n{n}_{interaction}.txt"
     try:
-        exe_ = ExeTaurus1D_B20_KMixing_OEblocking(z, n, interaction)
+        exe_ = ExeTaurus1D_TestOddOdd_K4AllCombinations(z, n, interaction)
         exe_.setInputCalculationArguments(**input_args_start)
         exe_.defineDeformationRange(q_min, q_max, N_max)
         exe_.setUp()
@@ -523,7 +509,6 @@ def run_b20_testOO_Kmixing(nucleus, interactions, gogny_interaction,
         exe_.setUpProjection(**input_args_projection)
         exe_.force_converg = False
         exe_.run(fomenko_points)
-        exe_.globalTearDown()
     except ExecutionException as e:
         printf("[SCRIPT ERROR]:", e)
         
