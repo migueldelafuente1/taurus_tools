@@ -135,6 +135,7 @@ if __name__ == '__main__':
         run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
         #=======================================================================
     elif _case == __CASES._4:
+        inter_ = 'B1_MZ3'
         interactions_B1 = {(11,11): inter_, }
         nucleus = sorted(list(interactions_B1.keys()))
         args = (nucleus, interactions_B1, GognyEnum.B1)

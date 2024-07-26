@@ -430,7 +430,7 @@ def run_b20_testOO_Kmixing4AllCombinations(
         and gogny_interaction != GognyEnum.B1):
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
-    z, n = nucleus
+    z, n = nucleus if isinstance(nucleus, tuple) else nucleus[0]
     args = (
             find_Kfor_all_sps, 
             convergences, 
