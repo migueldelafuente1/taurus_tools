@@ -1311,6 +1311,8 @@ class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblockin
         _PAR = (1 - self.PARITY_TO_BLOCK)//2
         def_flds = []
         _setUpBatchOrTSPforComputation()
+        global RUN_USING_BATCH
+        RUN_USING_BATCH = False
         # Perform the projections to save each K component
         for K in self._valid_Ks:
             self._no_results_for_K = True
