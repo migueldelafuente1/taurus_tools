@@ -1334,7 +1334,7 @@ class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblockin
                     self._curr_deform_index = i_def
                     shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
                                 self._current_comb_folder_KP / "initial_wf.bin")
-                    for hftype in ('.2b', '.sho', '.com'):
+                    for hftype in ('.2b', '.sho', '.com', '.red'):
                         shutil.copy(f"{self.interaction}{hftype}", 
                                 self._current_comb_folder_KP)
                     
@@ -1496,7 +1496,7 @@ for fld_def in list_def_fld:
         _Args = _SlurmJob1DPreparation.ArgsEnum
         self.job_1_fn = 'job_1.x'   if RUN_USING_BATCH else 'job_tsp.py'
         self.sub_1_fn = 'sub_vap.x' if RUN_USING_BATCH else 'sub_vap.py'
-        print(" [JOB - K] folder set up, param USING_BATCH")
+        print(" [JOB - K] folder set up, param USING_BATCH:", RUN_USING_BATCH)
         if RUN_USING_BATCH:
             ## main slurm job calling
             attr_ = _Args.JOBS_LENGTH
