@@ -1310,6 +1310,7 @@ class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblockin
         BU_FLD = self.DTYPE.BU_folder
         _PAR = (1 - self.PARITY_TO_BLOCK)//2
         def_flds = []
+        _setUpBatchOrTSPforComputation()
         # Perform the projections to save each K component
         for K in self._valid_Ks:
             self._no_results_for_K = True
@@ -1340,7 +1341,8 @@ class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblockin
         
         with open(f'{BU_FLD}/VAP_BLOCKINGS/run_vap_def_KP.py', 'w+') as f:
             script = self._TEMPLATE_RUN_SLURM_PY
-            script = script.format(def_flds, self._valid_Ks, self.PARITY_TO_BLOCK)
+            script = script.format(def_flds, self._valid_Ks, self.PARITY_TO_BLOCK,
+                                   self.job_1_fn, self.sub_1_fn)
             f.write(script)
     
     
@@ -1432,8 +1434,8 @@ for fld_def in list_def_fld:
     for K in list_2K:
         os.chdir('{{}}_{{}}'.format(K, parity))
         
-        os.chmod('job_1.x',   0o755)
-        os.chmod('sub_vap.x', 0o755)
+        os.chmod('{}',   0o755) # job
+        os.chmod('{}', 0o755)   # sub
         os.system('sbatch sub_vap.x')
         
         os.chdir('..')
@@ -1443,8 +1445,6 @@ for fld_def in list_def_fld:
     def _slurmFolderSetUp(self):
         
         global RUN_USING_BATCH
-        _setUpBatchOrTSPforComputation()
-        
         # FLD_RETURN = os.getcwd()
         ## fix the deformation i to the main constraint
         prolate = int(self._curr_deform_index >= 0)
@@ -1492,11 +1492,14 @@ for fld_def in list_def_fld:
         global_count = str(global_count)
         
         _Args = _SlurmJob1DPreparation.ArgsEnum
+        self.job_1_fn = 'job_1.x'   if RUN_USING_BATCH else 'job_tsp.py'
+        self.sub_1_fn = 'sub_vap.x' if RUN_USING_BATCH else 'sub_vap.py'
+        print(" [JOB - K] folder set up, param USING_BATCH")
         if RUN_USING_BATCH:
             ## main slurm job calling
             attr_ = _Args.JOBS_LENGTH
             sub = _SlurmJob1DPreparation._TEMPLATE_SLURM_SUB.replace(attr_, global_count)
-            with open(self._current_comb_folder_KP / 'sub_vap.x', 'w+') as f:
+            with open(self._current_comb_folder_KP / self.sub_1_fn, 'w+') as f:
                 f.write(sub)
             
             ## the unitary job.
@@ -1506,16 +1509,15 @@ for fld_def in list_def_fld:
             job_1 = job_1.replace(_Args.JOBS_LENGTH, global_count)
             job_1 = job_1.replace(_Args.PROGRAM,  self.inputObj.PROGRAM)
         else:
-            with open(self._current_comb_folder_KP / 'sub_vap.x', 'w+') as f:
+            with open(self._current_comb_folder_KP / self.sub_1_fn, 'w+') as f:
                 f.write(_TaskSpoolerJob1DPreparation._TEMPLATE_SLURM_SUB)
             
             job_1 = _TaskSpoolerJob1DPreparation._TEMPLATE_SLURM_JOB
             job_1 = job_1.replace(_Args.HAMIL, self.interaction)
             job_1 = job_1.replace(_Args.INPUT_FILE, self.inputObj.DEFAULT_INPUT_FILENAME)
             job_1 = job_1.replace(_Args.PROGRAM, self.inputObj.PROGRAM)
-            
-        job_1_fn = 'job_1.x' if RUN_USING_BATCH else 'job_tsp.py'
-        with open(self._current_comb_folder_KP / job_1_fn, 'w+') as f:
+        
+        with open(self._current_comb_folder_KP / self.job_1_fn, 'w+') as f:
             f.write(job_1)
         
         dict_comb = [f"{k} {v}" for k, v in dict_comb.items()]
