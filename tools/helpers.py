@@ -287,7 +287,8 @@ def shellSHO_Notation(n, l, j=0, mj=0):
 
 
 
-def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False):
+def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False, 
+                            force_compilation=True):
     """
     use_dens_taurus=True uses DD modified taurus_vap, False uses normal taurus_vap
     """
@@ -301,6 +302,8 @@ def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False):
     
     for src_, folder_path in programs_to_import:
         program_ = TAURUS_EXECUTABLE_BY_FOLDER[folder_path]
+        if not force_compilation and os.path.exists(program_):
+            continue
         try:
             order_ = "git clone {}".format(src_)
             e_ = subprocess.call(order_, shell=True)
