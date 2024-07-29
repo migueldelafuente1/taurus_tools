@@ -14,10 +14,10 @@ import os, platform
 import shutil
 from pathlib import Path
 
-from tools.exec_blocking_Kprojections import _SlurmJob1DPreparation, \
-    _TaskSpoolerJob1DPreparation
 from tools.inputs import InputTaurus, InputTaurusPAV, InputTaurusMIX
 from tools.helpers import importAndCompile_taurus, elementNameByZ
+from scripts1d.script_helpers import _setUpBatchOrTSPforComputation, \
+    RUN_USING_BATCH, _JobLauncherClass
 from copy import deepcopy
 
 def sort_by_deformation_naming(def_list):
@@ -60,24 +60,6 @@ input_mix_args = {
 #===============================================================================
 # SCRIPTS
 #===============================================================================    
-_JobLauncherClass = _SlurmJob1DPreparation
-RUN_USING_BATCH   = True
-
-def _setUpBatchOrTSPforComputation():
-    """
-    In case of running in Linux system- define if is TSP or SLURM system present
-    """
-    global RUN_USING_BATCH, _JobLauncherClass
-    if not os.getcwd().startswith('C:'):
-        os.system('which sbatch > HASBATCH')
-        with open('HASBATCH', 'r') as f:
-            aux = f.read()
-            print("  [SET UP]: which sbatch:\n", aux, '\n')
-            if aux == '' or 'not sbatch' in aux: 
-                _JobLauncherClass = _TaskSpoolerJob1DPreparation
-                RUN_USING_BATCH   = False
-        os.remove('HASBATCH')
-    print("  [SET UP] RUN_USING_BATCH =", RUN_USING_BATCH)
 
 
 def basic_eveneven_mix_from_vap(MAIN_FLD):
@@ -905,11 +887,11 @@ if __name__ == '__main__':
     # MAIN_FLD = 'results/Cl/BU_folder_{inter}_z{z}n{n}'
     # MAIN_FLD = 'results/Cl/BU_folder_{inter}_z{z}n{n}/kmix_PNPAMP'
     
-    nuclei = [(17, 10+ 2*i) for i in range(2, 3)]
+    nuclei = [(17, 10+ 2*i) for i in range(0, 7)]
     flds_  = [MAIN_FLD.format(inter=inter, z=z, n=n) for z,n in nuclei] 
     # flds_ = [f'{FLD_}/kmix_PNPAMP']
-    # clear_all_pav_folders(flds_, removeProjME=True)
-    
+    clear_all_pav_folders(flds_, removeProjME=False)
+    0/0
     #===========================================================================
     # ## PAV for SINGLE - K
     #===========================================================================

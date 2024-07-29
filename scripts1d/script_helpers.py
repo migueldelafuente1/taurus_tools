@@ -123,3 +123,346 @@ def parseTimeVerboseCommandOutputFile(time_filename):
             aux[key_] = line
     return aux
 
+#===============================================================================
+# SCRIPTS MANAGER
+#===============================================================================
+
+class _SlurmJob1DPreparation():
+    
+    """
+        This auxiliary class complete the script templates to keep along with 
+    the 1-Dimension wf- PAV calculation:
+        SUB_1: group job for the paralelization
+        JOB_1: unit job for SUB_1
+        CAT  : preparation to extract all the resultant projected matrix elements
+        HWG  : sub-job to iterate the HWG calculation by J
+    
+    Usage:
+        Giving all necessary arguments, the instance saves the script texts in
+        the attributes:
+            job_1
+            sub_1
+            script_cat
+            script_hwg
+    """
+    
+    _TEMPLATE_SLURM_JOB = """#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --array=1-ARRAY_JOBS_LENGTH
+#
+## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
+
+export OMP_NUM_THREADS=1
+ulimit -s unlimited
+var=$SLURM_ARRAY_TASK_ID
+
+full_path=$PWD"/"
+cd $full_path
+cd $var
+
+workdir=$PWD
+mkdir -p /scratch/delafuen/
+mkdir -p /scratch/delafuen/$SLURM_JOB_ID
+chmod 777 PROGRAM
+cp -r  PROGRAM INPUT_FILE left_wf.bin right_wf.bin /scratch/delafuen/$SLURM_JOB_ID
+cp -r  ../HAMIL.* /scratch/delafuen/$SLURM_JOB_ID
+
+cd  /scratch/delafuen/$SLURM_JOB_ID
+
+./PROGRAM < INPUT_FILE > OUT
+
+mv /scratch/delafuen/$SLURM_JOB_ID/OUT $workdir/
+#mv /scratch/delafuen/$SLURM_JOB_ID/*.me $workdir/
+mv /scratch/delafuen/$SLURM_JOB_ID/*.bin $workdir/
+rm /scratch/delafuen/$SLURM_JOB_ID/*
+rmdir /scratch/delafuen/$SLURM_JOB_ID/
+"""
+    
+    _TEMPLATE_SLURM_SUB = """#!/bin/bash
+## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
+
+tt="1-23:59:59"
+rang="1-ARRAY_JOBS_LENGTH"
+
+sbatch --output=/dev/null --array $rang --time $tt  $PWD/job_1.x
+"""
+    
+    _TEMPLATE_CAT_ME_STATES = """#!/bin/bash
+rm projmatelem_states.bin
+mkdir outputs_PAV
+rm outputs_PAV/* 
+
+for var in {1..ARRAY_JOBS_LENGTH}; do
+var3=$(cat gcm_3 | head -$var | tail -1 | awk '{print$1}')
+cat $var3"/projmatelem_states.bin" >> projmatelem_states.bin
+
+cp $var3"/OUT" outputs_PAV"/OUT_"$var3
+done
+
+cp gcm* outputs_PAV"""
+    
+    _TEMPLATE_CAT_ME_STATES_PYTHON = """import shutil, os
+
+OUT_fld  = 'outputs_PAV'
+pme_file = 'projmatelem_states.bin'
+if os.path.exists(OUT_fld):  shutil.rmtree(OUT_fld)
+if os.path.exists(pme_file): os.    remove(pme_file)
+os.mkdir(OUT_fld)
+
+def copy_stuff(dir_list):
+    for fld_ in dir_list:
+        fld_ = fld_.strip()
+        if os.path.exists(fld_):
+            if pme_file in os.listdir(fld_): 
+                os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
+            else: print(" [ERROR] not found for {}".format(fld_))
+            if 'OUT' in os.listdir(fld_):
+                shutil.copy("{}/OUT".format(fld_), 
+                            "{}/OUT_{}".format(OUT_fld, fld_ ))
+            else: print("     [ERROR 2] not found OUT for {}".format(fld_))
+    print("* done for all files")
+
+if os.path.exists('gcm_3'):  # gcm_file
+    with open('gcm_3', 'r') as f:
+        dir_list = f.readlines()
+        dir_list = [fld_.strip() for fld_ in dir_list]
+        print(dir_list)
+        copy_stuff(dir_list)
+else: # without gcm_file
+    dir_list = filter(lambda x: os.path.isdir(x) and x.isdigit(), os.listdir())
+    dir_list = sorted([int(x) for x in dir_list])
+    dir_list = [str(x) for x in dir_list]
+    print(dir_list)
+    copy_stuff(dir_list)"""
+    
+    _TEMPLATE_JOB_HWX = """#!/bin/bash
+
+ulimit -s unlimited 
+
+LIST_JVALS
+chmod 777 PROGRAM
+for var in $LIST; do
+sed s/"J_VAL"/$var/ INPUT_FILE > INP0
+./PROGRAM < INP0 > $var".dat"
+done
+"""
+    
+    _TEMPLATE_PREPARE_PNPAMP = """#!/bin/bash
+## max = N*(N+1)/2 being N the number of q-states (prompt from preparegcm.f)
+
+for var in {1..ARRAY_JOBS_LENGTH}; do
+var1=$(cat gcm | head -$var | tail -1 | awk '{print$1}')
+var2=$(cat gcm | head -$var | tail -1 | awk '{print$2}')
+var3=$(cat gcm | head -$var | tail -1 | awk '{print$3}')
+var4=$(cat gcm | head -$var | tail -1 | awk '{print$4}')
+
+cp $var1 left_wf.bin
+cp $var2 right_wf.bin
+mkdir $var
+cp PROGRAM INPUT_FILE left_wf.bin right_wf.bin $var
+cd $var
+chmod 777 PROGRAM
+cd ../
+done"""
+    
+    
+    TAURUS_PAV = 'taurus_pav.exe'
+    TAURUS_HWG = 'taurus_mix.exe'
+    
+    class ArgsEnum:
+        JOBS_LENGTH = 'ARRAY_JOBS_LENGTH'
+        INPUT_FILE = 'INPUT_FILE'
+        PROGRAM    = 'PROGRAM'
+        LIST_JVALS = 'LIST_JVALS'
+        HAMIL = 'HAMIL'
+    
+    def __init__(self, interaction, number_of_wf, valid_J_list, 
+                 PAV_input_filename='', HWG_input_filename=''):
+        """
+        Getting all the jobs for
+        """
+        self.hamil = interaction
+        self.jobs_length = str(number_of_wf * (number_of_wf + 1) // 2)
+        if (HWG_input_filename == ''):
+            HWG_input_filename = self.ArgsEnum.INP_hwg
+        if (PAV_input_filename == ''):
+            PAV_input_filename = self.ArgsEnum.INP_pav
+        
+        
+        ## JOB-PARALLEL
+        self._prepare_job_and_submit(PAV_input_filename)
+        
+        ## PREPARE PNAMP
+        self.prepare_pnpamp = self._TEMPLATE_PREPARE_PNPAMP
+        self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.JOBS_LENGTH,
+                                                          self.jobs_length)
+        # self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.HAMIL,
+        #                                                   self.hamil)
+        self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.INPUT_FILE,
+                                                          PAV_input_filename)
+        self.prepare_pnpamp = self.prepare_pnpamp.replace(self.ArgsEnum.PROGRAM, 
+                                                          self.TAURUS_PAV)
+        ## CAT
+        self.script_cat = self._TEMPLATE_CAT_ME_STATES
+        self.script_cat = self.script_cat.replace(self.ArgsEnum.JOBS_LENGTH,
+                                                  self.jobs_length)
+        
+        ## HWG
+        J_vals = " ".join([str(j) for j in valid_J_list])
+        J_vals = f'LIST="{J_vals}"'
+        self.script_hwg = self._TEMPLATE_JOB_HWX
+        self.script_hwg = self.script_hwg.replace(self.ArgsEnum.LIST_JVALS,
+                                                  J_vals)
+        self.script_hwg = self.script_hwg.replace(self.ArgsEnum.INPUT_FILE,
+                                                  HWG_input_filename)
+        self.script_hwg = self.script_hwg.replace(self.ArgsEnum.PROGRAM,
+                                                  self.TAURUS_HWG)
+    
+    ##
+    def _prepare_job_and_submit(self, PAV_input_filename):
+        
+        self.job_1 = self._TEMPLATE_SLURM_JOB
+        self.job_1 = self.job_1.replace(self.ArgsEnum.JOBS_LENGTH,
+                                        self.jobs_length)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
+                                        PAV_input_filename)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
+        
+        self.sub_1 = self._TEMPLATE_SLURM_SUB
+        self.sub_1 = self.sub_1.replace(self.ArgsEnum.JOBS_LENGTH,
+                                        self.jobs_length)
+    
+    def getScriptsByName(self):
+        
+        scripts_ = {
+            'sub_1.x': self.sub_1, 
+            'job_1.x': self.job_1,
+            'hw.x': self.script_hwg,
+            'cat_states.me.x': self.script_cat,
+            'cat_states.py'  : self._TEMPLATE_CAT_ME_STATES_PYTHON,
+            'run_pnamp.x': self.prepare_pnpamp,
+        }
+        
+        return scripts_
+
+
+class _TaskSpoolerJob1DPreparation(_SlurmJob1DPreparation):
+    
+    """
+        This class prepare the task spooler job to run if no SLURM is present
+        The job scripts are not directly runnable, requires previous setting 
+        before running.
+    """
+    
+    _TEMPLATE_SLURM_JOB = """##
+## Job to be run, using: job_tsp.py [working_folder]
+##
+
+from sys import argv
+from datetime import datetime
+import os, shutil
+
+hamil      = 'HAMIL'
+input_file = 'INPUT_FILE'
+program    = 'PROGRAM'
+LOG_JOB_FN = 'submitted_tspError.LOG'
+
+try:
+    terminal_args_given = argv
+    assert len(terminal_args_given) == 2, \
+        "invalid argument given, 2 required, got: {}".format(terminal_args_given)
+    
+    _, fld_ = terminal_args_given
+    
+    hamil_files = filter(lambda x: x.startswith(hamil), os.listdir())
+    for hamil_f in hamil_files:
+        shutil.copy(hamil_f, fld_)
+    
+    os.chdir (fld_)
+    assert input_file in os.listdir(), \
+        "Not found input arg[{}] in folder[{}]".format(input_file, fld_)
+    
+    os.system('./{} < {} > OUT'.format(program, input_file))
+    
+    ## Clear the hamiltonians from  folder
+    for hamil_f in hamil_files: os.remove(hamil_f)
+    os.chdir ('..')
+    
+    print("  # done folder {}".format(fld_))
+    
+except BaseException as e:
+    with open(LOG_JOB_FN, 'w+') as f:
+        # Convert to string
+        dt_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        f.write("[ERROR] [{}] fld:[{}]: {}", str(dt_str, fld_, str(e)))
+"""
+    
+    _TEMPLATE_SLURM_SUB = """##
+## Folders numerated 1, 2, 3 ... with the wavefunctions, taurus and input 
+## already inside them
+
+import os, shutil
+
+JOB_NAME = 'job_tsp.py'
+
+pav_list = filter(lambda x: x.isdigit(), os.listdir())
+pav_list = sorted(list(map(lambda x: int(x), pav_list)))
+
+print("SUBMIT_JOBs [START]")
+for fld_ in pav_list:
+    fld_ = str(fld_)
+    
+    # change to the folder and run with tsp
+    os.system("tsp python3 {} {}".format(JOB_NAME, fld_))
+
+## Getting logs and clear 
+os.system('tsp -C')
+print("SUBMIT_JOBs [DONE]")"""
+    
+    def _prepare_job_and_submit(self, PAV_input_filename):
+        
+        self.job_1 = self._TEMPLATE_SLURM_JOB
+        self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
+                                        PAV_input_filename)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
+        
+        self.sub_1 = self._TEMPLATE_SLURM_SUB
+    
+    def getScriptsByName(self):
+        
+        scripts_ = {
+            'sub_tsp.py': self.sub_1, 
+            'job_tsp.py': self.job_1,
+            'hw.x': self.script_hwg,
+            'cat_states.me.x': self.script_cat,
+            'cat_states.py'  : self._TEMPLATE_CAT_ME_STATES_PYTHON,
+            'run_pnamp.x': self.prepare_pnpamp,
+        }
+        
+        return scripts_
+
+#===============================================================================
+# 
+#===============================================================================
+
+_JobLauncherClass = _SlurmJob1DPreparation
+RUN_USING_BATCH   = True
+
+def _setUpBatchOrTSPforComputation():
+    """
+    In case of running in Linux system- define if is TSP or SLURM system present
+    """
+    global RUN_USING_BATCH, _JobLauncherClass
+    if not os.getcwd().startswith('C:'):
+        os.system('which sbatch > HASBATCH')
+        with open('HASBATCH', 'r') as f:
+            aux = f.read()
+            print("  [SET UP]: which sbatch:\n", aux, '\n')
+            if aux == '' or 'not sbatch' in aux: 
+                _JobLauncherClass = _TaskSpoolerJob1DPreparation
+                RUN_USING_BATCH   = False
+        os.remove('HASBATCH')
+    print("  [SET UP] RUN_USING_BATCH =", RUN_USING_BATCH)
