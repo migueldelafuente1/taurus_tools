@@ -229,7 +229,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         else, leave the number of iterations as setted in setUpExecutions(on_run)
         """
         if not self.FULLY_CONVERGE_BLOCKING_ITER_MODE:
-            if not self._curr_deform_index in (-1, 0): 
+            if ((not self._curr_deform_index in (-1, 0)) and 
+                (type(self.PRECONVERNGECE_BLOCKING_ITERATIONS) == int)): 
                 self.inputObj.iterations = self.PRECONVERNGECE_BLOCKING_ITERATIONS
             else:
                 self.inputObj.iterations = self._iters_vap_default
