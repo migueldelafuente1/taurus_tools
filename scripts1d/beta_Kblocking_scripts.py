@@ -281,12 +281,12 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
     printf("End run_b20_surface k-mixing: ", datetime.now().time())
 
 def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
-                            valid_Ks = [], 
-                            seed_base=0, ROmega=(13, 13),
-                            q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
-                            fomenko_points=(1, 1), 
-                            parity_2_block= 1, preconverge_blocking_sts=False,
-                            find_Kfor_all_sps= True,
+                             valid_Ks = [], 
+                             seed_base=0, ROmega=(13, 13),
+                             q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
+                             fomenko_points=(1, 1), 
+                             parity_2_block= 1, preconverge_blocking_sts=False,
+                             find_Kfor_all_sps= True,
                             ):
     """
     Reqire:

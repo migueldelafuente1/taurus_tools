@@ -260,6 +260,16 @@ class EvolTaurus(_DataObjectBase):
                 else:
                     printf("[TEvol. Parse WARNING]: unknown case (skip):", line)
         
+        self.iter_max = self._iter
+        if (self.iter_time_seconds, self.time_per_iter) == (None,)*2:
+            self.iter_time_seconds = 0
+            self.time_per_iter     = 0
+        if (self.date_start, self.date_start_iter, self.date_end_iter) == (None,)*3:
+            void_datetime = "1975-01-01 00:00:01"
+            void_datetime = datetime.strptime(void_datetime, "%Y-%m-%d %H:%M:%S")
+            self.date_start      = void_datetime
+            self.date_start_iter = void_datetime
+            self.date_end_iter   = void_datetime
     
     def _read_HO_prop(self, line):
         

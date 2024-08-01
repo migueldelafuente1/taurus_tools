@@ -683,6 +683,7 @@ class _Base1DTaurusExecutor(object):
         file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
         # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
         file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
+        file2copy = FLD_TEST_+'TEMP_res_z1n12_taurus_vap.txt'
         
         txt = ''
         with open(file2copy, 'r') as f:
@@ -902,8 +903,10 @@ class _Base1DTaurusExecutor(object):
         
         ## TODO: check if broken to skip the iter_time get
         status_fin = 'X' if not result.properly_finished  else '.'
+        iter_time_s = getattr(result, 'iter_time_seconds', 0)
+        if iter_time_s == None: iter_time_s = 0
         _iter_str = "[{}/{}: {}']".format(result.iter_max, self.inputObj.iterations, 
-                                          getattr(result, 'iter_time_seconds', 0) //60 )
+                                          iter_time_s //60 )
         
         txt  =" {:2} {:2}    {}  {:>4}    {:9.3f}  {:8.3f}  {:7.3f}   {:+6.3f} "
         txt = txt.format(result.z, result.n, status_fin, 
