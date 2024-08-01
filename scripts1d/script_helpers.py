@@ -205,22 +205,27 @@ cp gcm* outputs_PAV"""
     _TEMPLATE_CAT_ME_STATES_PYTHON = """import shutil, os
 
 OUT_fld  = 'outputs_PAV'
-pme_file = 'projmatelem_states.bin'
+pme_files = [
+    'projmatelem_states.bin', 
+    'projmatelem_occnumb.bin', 'projmatelem_M1.bin', 'projmatelem_M2.bin',
+    'projmatelem_E1.bin',      'projmatelem_E2.bin', 'projmatelem_E3.bin'
+]
 if os.path.exists(OUT_fld):  shutil.rmtree(OUT_fld)
-if os.path.exists(pme_file): os.    remove(pme_file)
+for pme_file in pme_files: if os.path.exists(pme_file]):  os.remove(pme_file)
 os.mkdir(OUT_fld)
 
 def copy_stuff(dir_list):
     for fld_ in dir_list:
         fld_ = fld_.strip()
         if os.path.exists(fld_):
-            if pme_file in os.listdir(fld_): 
-                os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
-            else: print(" [ERROR] not found for {}".format(fld_))
-            if 'OUT' in os.listdir(fld_):
-                shutil.copy("{}/OUT".format(fld_), 
-                            "{}/OUT_{}".format(OUT_fld, fld_ ))
-            else: print("     [ERROR 2] not found OUT for {}".format(fld_))
+            for pme_file in pme_files:
+                if pme_file in os.listdir(fld_): 
+                    os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
+                else: print(" [ERROR] not found for {}".format(fld_))
+                if 'OUT' in os.listdir(fld_):
+                    shutil.copy("{}/OUT".format(fld_), 
+                                "{}/OUT_{}".format(OUT_fld, fld_ ))
+                else: print("     [ERROR 2] not found OUT for {}".format(fld_))
     print("* done for all files")
 
 if os.path.exists('gcm_3'):  # gcm_file
