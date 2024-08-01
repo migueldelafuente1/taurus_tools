@@ -222,7 +222,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
         assert parity in (1, -1), " Put the parities as 1/-1"
         parity = (parity, )
     
-    assert tuple(parity) in ((1, -1), (-1, 1)), " Put the parities as 1/-1" 
+    assert tuple(parity) in ((1, -1), (-1, 1), (1,), (-1,)), " Put the parities as 1/-1" 
     aux = []
     for par in sorted(parity, reverse=True):
         for K in K_list:
@@ -916,11 +916,13 @@ if __name__ == '__main__':
     par_   = (1, -1) # 1
     # nuclei = [(7, 8+ 2*i) for i in range(0, 5)]
     # MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/N/'
-    
-    # oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
-    #                                     parity = par_, PNP_fomenko=7, Jmax=11, 
-    #                                     RUN_SBATCH=True)
-    # 0/0
+    LOCAL_PTH = 'results/'
+    X = elementNameByZ[nuclei[0][0]]
+    MAIN_FLD = LOCAL_PTH + X
+    oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
+                                        parity = par_, PNP_fomenko=7, Jmax=11, 
+                                        RUN_SBATCH=True)
+    0/0
     #===========================================================================
     # ## PAV - HWG for multi K (K folders separated for each nuclei) DEPRECATED
     #===========================================================================

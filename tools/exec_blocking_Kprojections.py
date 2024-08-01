@@ -36,7 +36,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             in folders "K%%_VAP/"
     '''
     IGNORE_SEED_BLOCKING  = True  ## Option to do False Odd-Even variation
-    PARITY_TO_BLOCK       = 1
+    PARITY_TO_BLOCK       = 1     ## Options 1, -1
     FIND_K_FOR_ALL_SPS    = False
     BLOCK_ALSO_NEGATIVE_K = False
     RUN_PROJECTION        = False
@@ -1436,9 +1436,11 @@ for fld_def in list_def_fld:
     for K in list_2K:
         os.chdir('{{}}_{{}}'.format(K, parity))
         
-        os.chmod('{}',   0o755) # job
+        os.chmod('{}', 0o755)   # job
         os.chmod('{}', 0o755)   # sub
-        os.system('sbatch sub_vap.x')
+        
+        os.system('sbatch  sub_vap.x')
+        #os.system('python3 sub_vap.py')
         
         os.chdir('..')
     os.chdir('..')
@@ -1526,7 +1528,7 @@ for fld_def in list_def_fld:
         ## export the file-map for the folders.
         with open(self._current_comb_folder_KP / 'map_folders_sp.dat', 'w+') as f:
             f.write('\n'.join(dict_comb))        
-        
+    
 
 class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
     

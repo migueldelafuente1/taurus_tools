@@ -48,6 +48,7 @@ if __name__ == '__main__':
         #         printf()
         interactions_B1 = {}
         inter_ = (4, 0, None)
+        inter_ = 'SDPF-MIX'
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((11, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
@@ -63,7 +64,7 @@ if __name__ == '__main__':
         _4 = 'exe_example_OO_convergences'  # evaluates all possible sp-blocks-vap mins
     
     ## SELECT HERE ****
-    _case = __CASES._4
+    _case = __CASES._2
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -92,13 +93,13 @@ if __name__ == '__main__':
         ## KMIXING execution
         args = (nucleus, interactions_B1, GognyEnum.B1)
         kwargs = dict(
-            # valid_Ks = [1, 3, ], # 5, 7
-            valid_Ks = [0, 2, 4],
+            valid_Ks = [1, 3, 5, 7], # 
+            # valid_Ks = [0, 2, 4],
             seed_base=3, ROmega=(0,0),
-            q_min=-0.8, q_max=0.8, N_max=13, convergences=0,   ## 0.6, 25
+            q_min=-0.3, q_max=0.3, N_max=13, convergences=0,   ## 0.6, 25
             parity_2_block=1,
             fomenko_points=(7, 7),
-            preconverge_blocking_sts=10, # False,
+            preconverge_blocking_sts=False, # 10,
             find_Kfor_all_sps = True
         )
         run_b20_FalseOdd_Kmixing(*args, **kwargs)
@@ -135,7 +136,6 @@ if __name__ == '__main__':
         run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
         #=======================================================================
     elif _case == __CASES._4:
-        inter_ = 'B1_MZ3'
         interactions_B1 = {(11,11): inter_, }
         nucleus = sorted(list(interactions_B1.keys()))
         args = (nucleus, interactions_B1, GognyEnum.B1)
