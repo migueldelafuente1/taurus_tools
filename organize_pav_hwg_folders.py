@@ -890,8 +890,8 @@ if __name__ == '__main__':
     nuclei = [(17, 10+ 2*i) for i in range(0, 7)]
     flds_  = [MAIN_FLD.format(inter=inter, z=z, n=n) for z,n in nuclei] 
     # flds_ = [f'{FLD_}/kmix_PNPAMP']
-    clear_all_pav_folders(flds_, removeProjME=False)
-    0/0
+    # clear_all_pav_folders(flds_, removeProjME=False)
+    # 0/0
     #===========================================================================
     # ## PAV for SINGLE - K
     #===========================================================================
@@ -903,7 +903,7 @@ if __name__ == '__main__':
             # MAIN_FLD = f'results/MgK{K}'
             # LOCAL_PTH = f'../DATA_RESULTS/K_OddEven/B1/{X}/'
             LOCAL_PTH = 'results/'
-            MAIN_FLD = LOCAL_PTH + X
+            MAIN_FLD = LOCAL_PTH + X + f'_{(1 - par_)//2}'
             # oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei, 
             #                             parity = par_, PNP_fomenko=7, Jmax=11, 
             #                             RUN_SBATCH=True)
@@ -912,13 +912,14 @@ if __name__ == '__main__':
     # ## PAV - HWG for multi K (All the K are in each folder) 
     #===========================================================================
     
-    K_list = [1, 3, 5, ]
+    K_list = [1, 3, 5, 7]
     par_   = (1, -1) # 1
+    nuclei_= [(1, 12), ]
     # nuclei = [(7, 8+ 2*i) for i in range(0, 5)]
     # MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/N/'
     LOCAL_PTH = 'results/'
     X = elementNameByZ[nuclei[0][0]]
-    MAIN_FLD = LOCAL_PTH + X
+    MAIN_FLD = LOCAL_PTH + X + f'_{(1 - par_)//2}'
     oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
                                         parity = par_, PNP_fomenko=7, Jmax=11, 
                                         RUN_SBATCH=True)
