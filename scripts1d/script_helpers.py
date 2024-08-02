@@ -211,7 +211,8 @@ pme_files = [
     'projmatelem_E1.bin',      'projmatelem_E2.bin', 'projmatelem_E3.bin'
 ]
 if os.path.exists(OUT_fld):  shutil.rmtree(OUT_fld)
-for pme_file in pme_files: if os.path.exists(pme_file]):  os.remove(pme_file)
+for pme_file in pme_files: 
+    if os.path.exists(pme_file]):  os.remove(pme_file)
 os.mkdir(OUT_fld)
 
 def copy_stuff(dir_list):

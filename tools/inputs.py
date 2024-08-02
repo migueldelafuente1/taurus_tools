@@ -1061,8 +1061,8 @@ Number of core protons  Zc    {z_core}
 Number of core neutrons Nc    {n_core}
 Angular momentum min(2*J)     {j_val}
 Angular momentum max(2*J)     {j_val}
-Parity min(P)                 {parity}
-Parity max(P)                 {parity}
+Parity min(P)                 {parity[0]}
+Parity max(P)                 {parity[1]}
 Electric charge protons  (*e) 1.00
 Electric charge neutrons (*e) 0.00
 
@@ -1184,8 +1184,23 @@ Specific cut-off (label)      L  0 +1      941058169115  0"""
                 elif arg == self.ArgsEnum.max_energy:
                     assert isinstance(value, (int, float)) and value > 0, \
                         f"Value mist be positive number (int or float)"
+                ## parity set up.
                 elif arg == self.ArgsEnum.parity:
-                    assert value in (-1, 1), f"Parity should be 1/-1, got [{value}]"
+                    if isinstance(value, (tuple, list)):
+                        value = list(value)
+                        for i in (0, 1):
+                            value[i] = -1 if value[i] == 0 else value[i]
+                            assert value[i] in (1, -1), \
+                                f"Parity should be 1/-1, got [{value[i]} ({i})]"
+                    elif isinstance(value, int):
+                        # both parities are set equal
+                        value = -1 if value == 0 else value
+                        assert value in (-1, 1), f"Parity should be 1/-1, got [{value}]"
+                        value = [value, value]
+                    else:
+                        raise Exception(f"Parity can only be tuple/int, got [{value}]")
+                    self.parity = value
+                    continue
                 else:
                     raise(f"Unidentified argument to set: [{arg}] val[{value}]")
             else:
