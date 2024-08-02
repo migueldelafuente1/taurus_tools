@@ -253,8 +253,9 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
     input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
+    PPP = (1 - parity[0]) // 2
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
-    DEST_FLD     = "kmix_PNPAMP" if len(parity)==2 else f"kmix_PNPAMP_{parity[0]}"
+    DEST_FLD     = "kmix_PNPAMP" if len(parity)==2 else f"kmix_PNPAMP_{PPP}"
     DEST_FLD_HWG = 'HWG'
     valid_J_list = [i for i in range(1, Jmax+1, 2)]
     
