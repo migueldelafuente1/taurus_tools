@@ -137,7 +137,8 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         if os.path.exists(DEST_FLD):
             shutil.rmtree(DEST_FLD)
         os.mkdir(DEST_FLD)
-        for tail_ in ('.2b', '.com', '.sho'):
+        for tail_ in ('.2b', '.com', '.sho', '.01b'):
+            if not Path(interaction+tail_).exists(): continue
             shutil.copy(interaction+tail_, DEST_FLD)
         os.mkdir(DEST_FLD + DEST_FLD_HWG)
         
@@ -312,9 +313,9 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
                 with open(fld_mix / 'input_mix.txt', 'w+') as f:
                     f.write(mix_obj.getText4file())
                 
-                for tail_ in ('.2b', '.com', '.sho'):
+                for tail_ in ('.2b', '.com', '.sho', '.01b'):
+                    if not (fld_bu / (interaction+tail_)).exists(): continue
                     shutil.copy(fld_bu / (interaction+tail_), fld_pav)
-            
             
             ## The files migration for each k.
             if not (z,n) in fld_migration:  fld_migration[(z,n)]  = (fld_pav, fld_mix)
@@ -476,9 +477,9 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
                 with open(fld_mix / 'input_mix.txt', 'w+') as f:
                     f.write(mix_obj.getText4file())
                 
-                for tail_ in ('.2b', '.com', '.sho'):
+                for tail_ in ('.2b', '.com', '.sho', '.01b'):
+                    if not (fld_bu / (interaction+tail_)).exists(): continue
                     shutil.copy(fld_bu / (interaction+tail_), fld_pav)
-            
             
             ## The files migration for each k.
             if not (z,n) in fld_migration:  fld_migration[(z,n)]  = (fld_pav, fld_mix)
@@ -699,7 +700,8 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
                         shutil.copy(fld_pav / 'input_pav.txt', fld_i)
                         os.chmod(fld_i / 'taurus_pav.exe', 0o777) 
                 
-                for tail_ in ('.2b', '.com', '.sho'):
+                for tail_ in ('.2b', '.com', '.sho', '.01b'):
+                    if not (fld_bu / (interaction+tail_)).exists(): continue
                     shutil.copy(fld_bu / (interaction+tail_), fld_pav)
                 
                 k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
