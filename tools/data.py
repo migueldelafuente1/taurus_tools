@@ -579,6 +579,7 @@ class DataTaurus(_DataObjectBase):
         Number_of_protons  = 'Number of protons '
         Number_of_neutrons = 'Number of neutrons'
         Parity   = 'Parity'
+        Overlap  = 'Projected overlap'
         Zero_body= 'Zero-body'
         One_body = 'One-body'
         ph_part  = ' ph part'
@@ -620,6 +621,7 @@ class DataTaurus(_DataObjectBase):
         HO_hbar = 'hbar*omega (MeV)  '
         HO_len  = 'Osc. length b (fm)'
         dd_evol = ' *Top H2'
+        label_st= 'Label of the state:'
     
     class DatFileExportEnum(Enum):
         """ filename of the possible .dat files from Taurus """
@@ -630,7 +632,6 @@ class DataTaurus(_DataObjectBase):
         spatial_density_R  = 'spatial_density_R'
         spatial_density_XYZ = 'spatial_density_XYZ'
         spatial_density_RThetaPhi = 'spatial_density_RThetaPhi'
-        
         
     
     __message_startiter = '                   ITERATIVE MINIMIZATION'
@@ -688,6 +689,8 @@ class DataTaurus(_DataObjectBase):
         self.var_p = None
         self.var_n = None
         self.parity = None
+        self.overlap= 0
+        self.label_state = None
         
         self.E_zero= None
         self.kin   = None
@@ -927,8 +930,13 @@ class DataTaurus(_DataObjectBase):
             # printf(line)
             if 'Number of' in line:
                 self._getNumberNucleons(line)
+            elif self.HeaderEnum.Overlap in line:
+                self.overlap = self._getValues(line, self.HeaderEnum.Overlap)[0]
             elif self.HeaderEnum.Parity in line:
                 self.parity = self._getValues(line, self.HeaderEnum.Parity)[0]
+            elif self.HeaderEnum.label_st in line:
+                self.label_state = int(line.replace(self.HeaderEnum.label_st, ''))
+            ##
             elif self.HeaderEnum.Rmed in line:
                 vals = self._getValues(line, self.HeaderEnum.Rmed)
                 self.r_p, self.r_n = vals[0], vals[1]
@@ -1114,7 +1122,6 @@ class DataTaurus(_DataObjectBase):
         elements = dict([tuple(l.split(':')) for l in elements])
         for k, val in elements.items():
             
-            
             k = k.strip()
             val = val.strip()
             if k in 'zn':
@@ -1201,7 +1208,7 @@ class DataTaurusPAV(_DataObjectBase):
     
     class HeaderEnum(Enum):
         """ Enumerate for the line headers of every argument to process"""
-        pass
+        label_states = 'Label of state '
     
     def __init__(self, z, n, filename, empty_data=False):
         
@@ -1211,6 +1218,7 @@ class DataTaurusPAV(_DataObjectBase):
         self.broken_execution  = False
         self._nanComponentsInResults = False
         self._filename = filename
+        self.label_states = (0, 0)
         
         self.J  = []
         self.MJ = []
@@ -1270,7 +1278,7 @@ class DataTaurusPAV(_DataObjectBase):
         """
         with open(self._filename, 'r') as f:
             data = f.read()
-            data      = data.split('\n')
+            data = data.split('\n')
         if len(data) < 2 or not data[-2] == self.__message_properly_finished:
             self.properly_finished = False
             self.broken_execution  = True
@@ -1284,11 +1292,13 @@ class DataTaurusPAV(_DataObjectBase):
         self._projecting_JMK  = True
         self._projecting_P    = True
         skip_ = 0   # Skipping index, jump from the Header_block to the 1st line
-        for indx, line in enumerate(data):
+        for indx, line in enumerate(data[99:]):
             if self._ignorable_block:
                 if line.startswith(self.__message_endpav):
                     self._ignorable_block  = False
                     self.properly_finished = True
+                elif self.HeaderEnum.label_states in line:
+                    self.label_states = tuple([int(x) for x in line.split()[-2:]])
                 continue
             else:
                 if self._sumKPcomp_block and (line.startswith("%%%")):
@@ -2246,7 +2256,8 @@ class BaseResultsContainer1D(_DataObjectBase):
 if __name__ == '__main__':
     pass
     # res = DataTaurus(12, 12, '../DATA_RESULTS/Beta20/Mg_GDD_test/24_VAP9/BU_folder_hamil_gdd_100_z12n12/res_z12n12_d1_0.OUT')
-    # res = DataTaurus(10, 6, 'aux_output_Z10N6_23')
+    # res = DataTaurus(10, 6, '../data_resources/testing_files/TEMP_res_z1n12_taurus_vap.txt') # TEMP_res_z2n1_0-dbase3odd
+    
     # res = DataTaurus(10, 10, 'aux_output_Z10N6_broken')
     # res = DataTaurus(18, 18, '../res_z18n18_dbase.OUT')
     # with open(res.BU_fold_constr, 'w+') as f:
@@ -2268,7 +2279,7 @@ if __name__ == '__main__':
     # res = DataTaurusPAV(11, 20, '../test_obl01_odd_31Na/OUT_m1_m1.OUT')
     # res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_brokenoverlap.txt')
     # res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z2n1_odd_oldversion.txt')
-    res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z0n3_resultwithproblems.txt')
+    # res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z0n3_resultwithproblems.txt')
     # res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_1result.txt')
         
     _ = 0
