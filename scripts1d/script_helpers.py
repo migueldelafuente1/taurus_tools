@@ -223,10 +223,11 @@ def copy_stuff(dir_list):
                 if pme_file in os.listdir(fld_): 
                     os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
                 else: print(" [ERROR] not found for {}".format(fld_))
-                if i==0 and 'OUT' in os.listdir(fld_):
-                    shutil.copy("{}/OUT".format(fld_), 
-                                "{}/OUT_{}".format(OUT_fld, fld_ ))
-                else: print("     [ERROR 2] not found OUT for {}".format(fld_))
+                if i==0:
+                    if 'OUT' in os.listdir(fld_):
+                        shutil.copy("{}/OUT".format(fld_), 
+                                    "{}/OUT_{}".format(OUT_fld, fld_ ))
+                    else: print("     [ERROR 2] not found OUT for {}".format(fld_))
     print("* done for all files")
 
 if os.path.exists('gcm_3'):  # gcm_file
@@ -240,7 +241,7 @@ else: # without gcm_file
     dir_list = sorted([int(x) for x in dir_list])
     dir_list = [str(x) for x in dir_list]
     print(dir_list)
-    copy_stuff(dir_list)´
+    copy_stuff(dir_list)
     
 if os.path.exists('HWG'): os.system('mv projmatelem_* HWG/')
 """
