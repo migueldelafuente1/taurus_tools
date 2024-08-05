@@ -1061,8 +1061,8 @@ Number of core protons  Zc    {z_core}
 Number of core neutrons Nc    {n_core}
 Angular momentum min(2*J)     {j_val}
 Angular momentum max(2*J)     {j_val}
-Parity min(P)                 {min(parity)}
-Parity max(P)                 {max(parity)}
+Parity min(P)                 {parity[0]}
+Parity max(P)                 {parity[1]}
 Electric charge protons  (*e) 1.00
 Electric charge neutrons (*e) 0.00
 
