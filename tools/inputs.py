@@ -1061,8 +1061,8 @@ Number of core protons  Zc    {z_core}
 Number of core neutrons Nc    {n_core}
 Angular momentum min(2*J)     {j_val}
 Angular momentum max(2*J)     {j_val}
-Parity min(P)                 {parity[0]}
-Parity max(P)                 {parity[1]}
+Parity min(P)                 {min(parity)}
+Parity max(P)                 {max(parity)}
 Electric charge protons  (*e) 1.00
 Electric charge neutrons (*e) 0.00
 
@@ -1187,7 +1187,7 @@ Specific cut-off (label)      L  0 +1      941058169115  0"""
                 ## parity set up.
                 elif arg == self.ArgsEnum.parity:
                     if isinstance(value, (tuple, list)):
-                        value = list(value)
+                        value = sorted(list(value))
                         for i in (0, 1):
                             value[i] = -1 if value[i] == 0 else value[i]
                             assert value[i] in (1, -1), \

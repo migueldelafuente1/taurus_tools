@@ -212,18 +212,18 @@ pme_files = [
 ]
 if os.path.exists(OUT_fld):  shutil.rmtree(OUT_fld)
 for pme_file in pme_files: 
-    if os.path.exists(pme_file]):  os.remove(pme_file)
+    if os.path.exists(pme_file  ):  os.remove(pme_file)
 os.mkdir(OUT_fld)
 
 def copy_stuff(dir_list):
     for fld_ in dir_list:
         fld_ = fld_.strip()
         if os.path.exists(fld_):
-            for pme_file in pme_files:
+            for i, pme_file in enumerate(pme_files):
                 if pme_file in os.listdir(fld_): 
                     os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
                 else: print(" [ERROR] not found for {}".format(fld_))
-                if 'OUT' in os.listdir(fld_):
+                if i==0 and 'OUT' in os.listdir(fld_):
                     shutil.copy("{}/OUT".format(fld_), 
                                 "{}/OUT_{}".format(OUT_fld, fld_ ))
                 else: print("     [ERROR 2] not found OUT for {}".format(fld_))
@@ -240,7 +240,10 @@ else: # without gcm_file
     dir_list = sorted([int(x) for x in dir_list])
     dir_list = [str(x) for x in dir_list]
     print(dir_list)
-    copy_stuff(dir_list)"""
+    copy_stuff(dir_list)´
+    
+if os.path.exists('HWG'): os.system('mv projmatelem_* HWG/')
+"""
     
     _TEMPLATE_JOB_HWX = """#!/bin/bash
 

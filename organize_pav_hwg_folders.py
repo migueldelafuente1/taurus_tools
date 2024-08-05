@@ -920,20 +920,20 @@ if __name__ == '__main__':
     #nuclei = [(9, 8+ 2*i)  for i in range(0, 6)]
     #X = elementNameByZ[nuclei[0][0]]
     for par_ in (1, -1): # -1
-        for K in ( 1, 3, 5, 7): #  7 
+        for K in ( 1, 3, 5, ): #  7 
             # MAIN_FLD = f'results/MgK{K}'
             # LOCAL_PTH = f'../DATA_RESULTS/K_OddEven/B1/{X}/'
             LOCAL_PTH = 'results/F_0'
             MAIN_FLD = LOCAL_PTH #+ f'{X}_{(1 - par_)//2}'
             oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei, 
-                                        parity = par_, PNP_fomenko=7, Jmax=11, 
+                                        parity = par_, PNP_fomenko=11, Jmax=11, 
                                         RUN_SBATCH=True)
-    #0/0
+    0/0
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder) 
     #===========================================================================
     
-    K_list = [1, 3, 5, 7]
+    K_list = [1, 3, 5, ]
     par_   = (1, -1) # 1
     nuclei = [(1, 12), ]
     inter  = 'SDPF_MIX_J'
@@ -943,7 +943,7 @@ if __name__ == '__main__':
     X = elementNameByZ[nuclei[0][0]]
     MAIN_FLD = LOCAL_PTH +'F_0' # f'{X}_{(1 - par_)//2}'
     oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
-                                        parity = par_, PNP_fomenko=7, Jmax=11, 
+                                        parity = par_, PNP_fomenko=11, Jmax=11, 
                                         RUN_SBATCH=True, all_KP_required=False)
     0/0
     #===========================================================================
