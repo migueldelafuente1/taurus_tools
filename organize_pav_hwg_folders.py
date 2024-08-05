@@ -54,6 +54,7 @@ input_mix_args = {
     InputTaurusMIX.CutoffArgsEnum.cutoff_overlap: 1.0e-9,
     InputTaurusMIX.CutoffArgsEnum.cutoff_energy : 0.0,
     InputTaurusMIX.CutoffArgsEnum.cutoff_JzJ2   : 1.0e-6,
+    InputTaurusMIX.CutoffArgsEnum.cutoff_ZNA    : 1.0e-6,
     InputTaurusMIX.CutoffArgsEnum.cutoff_norm_eigen: 1.0e-6,
     InputTaurusMIX.CutoffArgsEnum.cutoff_negative_eigen: 1.0e-6
 }
