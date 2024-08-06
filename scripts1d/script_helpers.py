@@ -222,7 +222,7 @@ def copy_stuff(dir_list):
             for i, pme_file in enumerate(pme_files):
                 if pme_file in os.listdir(fld_): 
                     os.system("cat {}/{} >> {}".format(fld_, pme_file, pme_file))
-                else: print(" [ERROR] not found for {}".format(fld_))
+                else: print(" [ERROR] not [{}] found for {}".format(pme_file, fld_))
                 if i==0:
                     if 'OUT' in os.listdir(fld_):
                         shutil.copy("{}/OUT".format(fld_), 
@@ -243,7 +243,10 @@ else: # without gcm_file
     print(dir_list)
     copy_stuff(dir_list)
     
-if os.path.exists('HWG'): os.system('mv projmatelem_* HWG/')
+if os.path.exists('HWG'): 
+    os.system('mv projmatelem_* HWG/')
+    os.chdir('HWG')
+    os.system('./hw.x &')
 """
     
     _TEMPLATE_JOB_HWX = """#!/bin/bash
