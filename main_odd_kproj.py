@@ -20,7 +20,7 @@ if __name__ == '__main__':
     if os.getcwd().startswith('C:'):   ## TESTING
         interactions_B1 = {(2, 1): (3, 0, None), (2, 3): (2, 0, None),}
         interactions_B1 = {(1, 1): 'B1_MZ3', }
-        interactions_B1 = {( 1, 12): 'SDPF-MIX_J', }
+        interactions_B1 = {( 1, 12): 'SDPF_MIX_J', }
     else:
         
         # ---------------------------------------------------------------------
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         #         printf()
         interactions_B1 = {}
         inter_ = (4, 0, None)
-        inter_ = 'SDPF-MIX_J'
+        inter_ = 'SDPF_MIX_J'
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([(( 9, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((11, 8+ 2*i), inter_) for i in range(0, 7)])
@@ -96,12 +96,12 @@ if __name__ == '__main__':
         ## KMIXING execution
         args = (nucleus, interactions_B1, GognyEnum.B1)
         kwargs = dict(
-            valid_Ks = [1, 3, 5, 7], # 
+            valid_Ks = [1, 3, 5,], # 
             # valid_Ks = [0, 2, 4],
             seed_base=3, ROmega=(0,0),
             q_min=-0.3, q_max=0.3, N_max=13, convergences=0,   ## 0.6, 25
             parity_2_block=1,
-            fomenko_points=(7, 7),
+            fomenko_points=(11, 11),
             preconverge_blocking_sts=False, # 10,
             find_Kfor_all_sps = True
         )

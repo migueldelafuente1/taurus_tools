@@ -343,7 +343,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
                         IArgsEnum.n_Mphi : fomenko_points[1],}
         
         input_args_start = {**vap_args,
-            IArgsEnum.com : 1,
+            IArgsEnum.com : 0,
             IArgsEnum.seed: seed_base,
             IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
