@@ -18,6 +18,54 @@ from tools.exec_blocking_Kprojections import \
 from tools.helpers import importAndCompile_taurus, printf
 
 
+def __selectAndSetUp_OEOO_Blocking(z, n, 
+                                   find_Kfor_all_sps, convergences, 
+                                   parity_2_block, preconverge_blocking_sts,
+                                   ):
+    """
+    Odd-Odd and Odd-Even use the same execution parameters, merge the class 
+    class set up here.
+    """    
+    if ((z + n) % 2 == 0) and (z % 2 == 1):
+        _Executable_B20_KMixClass = ExeTaurus1D_B20_KMixing_OOblocking
+    else:
+        _Executable_B20_KMixClass = ExeTaurus1D_B20_KMixing_OEblocking
+    
+    _Executable_B20_KMixClass.IGNORE_SEED_BLOCKING  = True
+    _Executable_B20_KMixClass.BLOCK_ALSO_NEGATIVE_K = False
+    _Executable_B20_KMixClass.RUN_PROJECTION        = False 
+    _Executable_B20_KMixClass.FIND_K_FOR_ALL_SPS    = find_Kfor_all_sps
+    
+    _Executable_B20_KMixClass.ITERATIVE_METHOD = \
+        ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD
+        
+    _Executable_B20_KMixClass.SAVE_DAT_FILES = [
+        # DataTaurus.DatFileExportEnum.canonicalbasis,
+        DataTaurus.DatFileExportEnum.eigenbasis_h,
+        DataTaurus.DatFileExportEnum.occupation_numbers,
+        ]
+    _Executable_B20_KMixClass.SEEDS_RANDOMIZATION   = convergences
+    _Executable_B20_KMixClass.GENERATE_RANDOM_SEEDS = bool(convergences)
+    _Executable_B20_KMixClass.DO_BASE_CALCULATION   = convergences >= 0
+    _Executable_B20_KMixClass.PARITY_TO_BLOCK       = parity_2_block
+    
+    _Executable_B20_KMixClass.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
+        preconverge_blocking_sts in (0, False) and (not find_Kfor_all_sps)
+    _Executable_B20_KMixClass.PRECONVERNGECE_BLOCKING_ITERATIONS = \
+        preconverge_blocking_sts
+    
+    if _Executable_B20_KMixClass.RUN_PROJECTION: 
+        ## Import the programs if they do not exist
+        importAndCompile_taurus(use_dens_taurus=True,
+                                pav= not os.path.exists(InputTaurusPAV.PROGRAM),
+                                force_compilation=False)
+    
+    return _Executable_B20_KMixClass
+
+#===============================================================================
+# RUNNABLES for ODD nuclei.
+#===============================================================================
+
 def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
                           q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
@@ -115,51 +163,6 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             printf("[SCRIPT ERROR]:", e)
         
     printf("End run_b20_surface: ", datetime.now().time())
-
-
-def __selectAndSetUp_OEOO_Blocking(z, n, 
-                                   find_Kfor_all_sps, convergences, 
-                                   parity_2_block, preconverge_blocking_sts,
-                                   ):
-    """
-    Odd-Odd and Odd-Even use the same execution parameters, merge the class 
-    class set up here.
-    """    
-    if ((z + n) % 2 == 0) and (z % 2 == 1):
-        _Executable_B20_KMixClass = ExeTaurus1D_B20_KMixing_OOblocking
-    else:
-        _Executable_B20_KMixClass = ExeTaurus1D_B20_KMixing_OEblocking
-    
-    _Executable_B20_KMixClass.IGNORE_SEED_BLOCKING  = True
-    _Executable_B20_KMixClass.BLOCK_ALSO_NEGATIVE_K = False
-    _Executable_B20_KMixClass.RUN_PROJECTION        = True 
-    _Executable_B20_KMixClass.FIND_K_FOR_ALL_SPS    = find_Kfor_all_sps
-    
-    _Executable_B20_KMixClass.ITERATIVE_METHOD = \
-        ExeTaurus1D_B20_KMixing_OEblocking.IterativeEnum.EVEN_STEP_STD
-        
-    _Executable_B20_KMixClass.SAVE_DAT_FILES = [
-        # DataTaurus.DatFileExportEnum.canonicalbasis,
-        DataTaurus.DatFileExportEnum.eigenbasis_h,
-        DataTaurus.DatFileExportEnum.occupation_numbers,
-        ]
-    _Executable_B20_KMixClass.SEEDS_RANDOMIZATION   = convergences
-    _Executable_B20_KMixClass.GENERATE_RANDOM_SEEDS = bool(convergences)
-    _Executable_B20_KMixClass.DO_BASE_CALCULATION   = convergences >= 0
-    _Executable_B20_KMixClass.PARITY_TO_BLOCK       = parity_2_block
-    
-    _Executable_B20_KMixClass.FULLY_CONVERGE_BLOCKING_ITER_MODE  = \
-        preconverge_blocking_sts in (0, False) and (not find_Kfor_all_sps)
-    _Executable_B20_KMixClass.PRECONVERNGECE_BLOCKING_ITERATIONS = \
-        preconverge_blocking_sts
-    
-    if _Executable_B20_KMixClass.RUN_PROJECTION: 
-        ## Import the programs if they do not exist
-        importAndCompile_taurus(use_dens_taurus=True,
-                                pav= not os.path.exists(InputTaurusPAV.PROGRAM),
-                                force_compilation=False)
-    
-    return _Executable_B20_KMixClass
 
 def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   seed_base=0, ROmega=(13, 13),
@@ -352,7 +355,8 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            'axial_calc' : axial_calc,
+            #'axial_calc' : axial_calc,
+            'core_calc'  : True,
         }
         input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
@@ -364,7 +368,8 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            'axial_calc' : axial_calc,
+            #'axial_calc' : axial_calc,
+            'core_calc'  : True,
             'valid_Ks'   : valid_Ks,
         }
         input_args_projection = {

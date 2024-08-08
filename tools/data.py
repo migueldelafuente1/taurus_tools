@@ -1124,7 +1124,7 @@ class DataTaurus(_DataObjectBase):
             
             k = k.strip()
             val = val.strip()
-            if k in 'zn':
+            if k in ('z','n','label_state'):
                 setattr(self, k, int(val))
             elif k in ('properly_finished', 'broken_execution'):
                 bool_ = val.lower() in ('true', 't', '1') # bool("len>0 str") = True
@@ -1436,7 +1436,7 @@ class DataTaurusPAV(_DataObjectBase):
             return
         j, p = None, None
         try:
-            if self._projecting_JMK: j = int(line[0:5])
+            if self._projecting_JMK: j = int(line[0: 5])
             if self._projecting_P:   p = int(line[5:10])
             vals = [float(x) for x in line[10:].split()]
         except ValueError as ve:
@@ -1725,8 +1725,84 @@ class DataTaurusMIX(_DataObjectBase):
         return self._lines_energy_spectrum
     
 
-
-
+class CollectiveWFData(_DataObjectBase):
+    
+    DEFAULT_OUTPUT_FILENAME = 'collective_wavefunction.txt'
+    INPUT_FILENAME  = DataTaurusMIX.INPUT_FILENAME
+    BU_folder       = None
+    BU_fold_constr  = None
+    EXPORT_LIST_RESULTS = None
+    PROGRAM         = 'taurus_mix.exe'
+    
+    def __init__(self, filename, empty_data=False):
+        
+        self.properly_finished = False
+        self.broken_execution  = False
+        self._nanComponentsInResults = False
+        self._filename = filename
+        
+        self.sigmas   = []
+        self.indexes  = {}
+        self.labels   = {}
+        self.g_values = {}
+        self.g2values = {}
+        self.norm_g2_total = {}
+        
+        if not empty_data:
+            try:
+                self.getResults()
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    self._nanComponentsInResults = True
+                printf(" (TCW)>> EXCEPTION from Collective-HWG WF >> last 5 lines::",
+                       LINE_2)
+                if os.path.exists(self._filename):
+                    with open(self._filename, 'r') as f:
+                        printf("".join(f.readlines()[-5:]), LINE_2)
+                else:
+                    printf(f"   [SUPER ERR] File [{self._filename}] not found")
+                printf(" (TCW)>> resEXCEPTION from Collective-HWG WF >> self::")
+                printf(self)
+                printf(" (TCW)>> exception:: ", e, "<<(TCW)")
+                printf(" (TCW)<< EXCEPTION from Collective-HWG WF <<<<<<<< ")
+    
+    def getResults(self):
+        
+        with open(self._filename, 'r') as f:
+            data = f.read()
+            data = data.split('\n')
+        if len(data) < 2:
+            self.properly_finished = False
+            self.broken_execution  = True
+            return
+        
+        current_sigma = 0
+        for line in data[2:]:
+            line = line.strip()
+            if not line or ('----' in line): continue
+            
+            line = line.split()
+            if len(line) == 1:
+                self.norm_g2_total[current_sigma] = float(line[0])
+            else:
+                s, i, l, g, g2 = line
+                s, i, l = int(s), int(i), int(l)
+                g, g2 = float(g), float(g2)
+                
+                if s > current_sigma:
+                    current_sigma = s
+                    self.sigmas.append(s)
+                    self.indexes [s] = [i, ]
+                    self.labels  [s] = [l, ]
+                    self.g_values[s] = [g, ]
+                    self.g2values[s] = [g2,]
+                else:
+                    self.indexes [current_sigma].append(i)
+                    self.labels  [current_sigma].append(l)
+                    self.g_values[current_sigma].append(g)
+                    self.g2values[current_sigma].append(g2)
+        
+    
 #===============================================================================
 #   OTHER OUTPUT FILES
 #===============================================================================

@@ -605,9 +605,9 @@ eval/export Valence.Space   = {export_vs}
         Set up for the Valence Space configuration. Odd Multipoles must be zero
         """
         self.com = 0
-        for atr in (self.ConstrEnum.b10, self.ConstrEnum.b11,
+        for atr in (self.ConstrEnum.b10, self.ConstrEnum.b11, self.ConstrEnum.b30,
                     self.ConstrEnum.b31, self.ConstrEnum.b32, self.ConstrEnum.b33,
-                    self.ConstrEnum.b21, self.ConstrEnum.b41,):
+                    self.ConstrEnum.b21, self.ConstrEnum.b41, self.ConstrEnum.b43,):
             setattr(self, atr, None)
         
         self.setParameters(**params)

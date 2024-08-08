@@ -10,9 +10,10 @@ from scripts1d.beta_Kblocking_scripts import \
     run_b20_FalseOdd_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ, \
     run_b20_Block1KandPAV_exampleSingleJ, run_b20_testOO_Kmixing4AllCombinations
 from tools.inputs import InputTaurus
-from tools.helpers import importAndCompile_taurus, printf, __log_file
+from tools.helpers import importAndCompile_taurus, printf
 
-if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
+if not (InputTaurus.PROGRAM in os.listdir()): 
+    importAndCompile_taurus(use_dens_taurus=True, force_compilation=False)
 
 if __name__ == '__main__':
     
@@ -49,7 +50,7 @@ if __name__ == '__main__':
         #         printf()
         interactions_B1 = {}
         inter_ = (4, 0, None)
-        inter_ = 'SDPF_MIX_J'
+        inter_ = 'usdb_JF27' # 'SDPF_MIX_J' 
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([(( 9, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((11, 8+ 2*i), inter_) for i in range(0, 7)])
@@ -57,7 +58,7 @@ if __name__ == '__main__':
         #interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = {(11,11): inter_ }
-        interactions_B1 = {( 1, 12): inter_, }
+        interactions_B1 = {( 1, 12): 'usdb_JF29', ( 1, 10): 'usdb_JF27', }
     
     class __CASES:
         _0 = 'exe_surf_allK_base_noPAV' # doesnt do all-sp per K (all K)
