@@ -805,7 +805,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             ## minimize and save only if 2<Jz> = K
             res : DataTaurus = self._executeProgram()
             
-            if res == None: continue
+            if res == None or res._evol_obj == None: continue
             valid_ = not res.broken_execution # stating status of the selection
             if hasattr(res, '_evol_obj') and res._evol_obj.e_hfb.__len__() >= 2:
                 valid_ = abs(res._evol_obj.e_hfb[-2] - res._evol_obj.e_hfb[-1]) < 0.1
