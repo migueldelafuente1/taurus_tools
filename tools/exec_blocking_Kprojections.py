@@ -806,7 +806,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             res : DataTaurus = self._executeProgram()
             
             valid_ = not res.broken_execution # stating status of the selection
-            if res._evol_obj.e_hfb.__len__() >= 2:
+            if hasattr(res, '_evol_obj') and res._evol_obj.e_hfb.__len__() >= 2:
                 valid_ = abs(res._evol_obj.e_hfb[-2] - res._evol_obj.e_hfb[-1]) < 0.1
                 valid_ = valid_ or res._evol_obj.grad[-1] < 0.1
             if self._curr_deform_index in (0, -1):
