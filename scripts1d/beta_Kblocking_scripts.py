@@ -230,39 +230,40 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
                         IArgsEnum.n_Mphi : fomenko_points[1],}
         
-        input_args_start = {** vap_args,
-            IArgsEnum.com : 1,
+        input_args_start = {**vap_args,
+            IArgsEnum.com : 0,
             IArgsEnum.seed: seed_base,
-            IArgsEnum.iterations: 1000,
+            IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
             IArgsEnum.grad_tol : 0.0001,
             IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            'axial_calc' : axial_calc,
+            #'axial_calc' : axial_calc,
+            'core_calc'  : True,
         }
         input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
-            IArgsEnum.iterations: 1000,
+            IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
             IArgsEnum.eta_grad : 0.015,
             IArgsEnum.mu_grad  : 0.02, # 0.5
             IArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            'axial_calc' : axial_calc,
-            'valid_Ks'   : [K, ] 
+            #'axial_calc' : axial_calc,
+            'core_calc'  : True,
+            'valid_Ks'   : K,
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
-            InputTaurusPAV.ArgsEnum.alpha : 10,
+            InputTaurusPAV.ArgsEnum.alpha : 13,
             InputTaurusPAV.ArgsEnum.beta  : 20,
-            InputTaurusPAV.ArgsEnum.gamma : 10,
+            InputTaurusPAV.ArgsEnum.gamma : 13,
             InputTaurusPAV.ArgsEnum.empty_states : 0,
             InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0,
-            InputTaurusPAV.ArgsEnum.j_min : K, 
             InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,
             # PN-PAV and J bound arguments set by the program, P-PAV = no
         }

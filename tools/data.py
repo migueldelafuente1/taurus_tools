@@ -1763,7 +1763,7 @@ class CollectiveWFData(_DataObjectBase):
                     printf(f"   [SUPER ERR] File [{self._filename}] not found")
                 printf(" (TCW)>> resEXCEPTION from Collective-HWG WF >> self::")
                 printf(self)
-                printf(" (TCW)>> exception:: ", e, "<<(TCW)")
+                printf(" (TCW)>> exception:: \n", e, "\n<<(TCW)")
                 printf(" (TCW)<< EXCEPTION from Collective-HWG WF <<<<<<<< ")
     
     def getResults(self):
