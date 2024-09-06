@@ -256,7 +256,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             shuffle(sp_index_list)
             random_ = True
         elif not self.LIMIT_BLOCKING_COUNT in (0, None, False):
-            sp_index_list = sp_index_list[:self.LIMIT_BLOCKING_COUNT]
+            dim_ = min(self.LIMIT_BLOCKING_COUNT, len(sp_index_list))
+            sp_index_list = sp_index_list[:dim_]
             
         return sp_index_list, self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0
     
