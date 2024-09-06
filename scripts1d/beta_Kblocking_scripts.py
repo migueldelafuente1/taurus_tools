@@ -34,6 +34,13 @@ def __selectAndSetUp_OEOO_Blocking(z, n,
     _Executable_B20_KMixClass.IGNORE_SEED_BLOCKING  = True
     _Executable_B20_KMixClass.BLOCK_ALSO_NEGATIVE_K = False
     _Executable_B20_KMixClass.RUN_PROJECTION        = False 
+    
+    if not isinstance(find_Kfor_all_sps, bool):
+        assert type(find_Kfor_all_sps) == int, \
+            "If fixing 'find_Kfor_all_sps' integer is required"
+        _Executable_B20_KMixClass.LIMIT_BLOCKING_COUNT = find_Kfor_all_sps
+        find_Kfor_all_sps = True
+    
     _Executable_B20_KMixClass.FIND_K_FOR_ALL_SPS    = find_Kfor_all_sps
     
     _Executable_B20_KMixClass.ITERATIVE_METHOD = \

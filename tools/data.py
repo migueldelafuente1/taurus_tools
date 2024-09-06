@@ -1125,6 +1125,7 @@ class DataTaurus(_DataObjectBase):
             k = k.strip()
             val = val.strip()
             if k in ('z','n','label_state'):
+                if k == 'label_state' and val == 'None': val = 0
                 setattr(self, k, int(val))
             elif k in ('properly_finished', 'broken_execution'):
                 bool_ = val.lower() in ('true', 't', '1') # bool("len>0 str") = True
@@ -1723,7 +1724,6 @@ class DataTaurusMIX(_DataObjectBase):
     
     def getSpectrumLines(self):
         return self._lines_energy_spectrum
-    
 
 class CollectiveWFData(_DataObjectBase):
     
@@ -1801,8 +1801,92 @@ class CollectiveWFData(_DataObjectBase):
                     self.labels  [current_sigma].append(l)
                     self.g_values[current_sigma].append(g)
                     self.g2values[current_sigma].append(g2)
-        
+
+
+class OccupationsHWGData(_DataObjectBase):
+    """
+    Evaluation of final occupations corresponding to shell-orbital states
+    for each excited state for the HWG of angular-mom and parity: ¨J^P
+    """
     
+    DEFAULT_OUTPUT_FILENAME = 'occupation_numbers.txt'
+    INPUT_FILENAME  = DataTaurusMIX.INPUT_FILENAME
+    BU_folder       = None
+    BU_fold_constr  = None
+    EXPORT_LIST_RESULTS = None
+    PROGRAM         = 'taurus_mix.exe'
+    
+    def __init__(self, filename, empty_data=False):
+        
+        self.properly_finished = False
+        self.broken_execution  = False
+        self._nanComponentsInResults = False
+        self._filename = filename
+        
+        self.sigmas   = []
+        self.labels   = []
+        self.occupations_protons   = {}
+        self.occupations_neutrons  = {}
+        self.relative_occ_protons  = {}
+        self.relative_occ_neutrons = {}
+        
+        if not empty_data:
+            try:
+                self.getResults()
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    self._nanComponentsInResults = True
+                printf(" (TON)>> EXCEPTION from OccupationNubers-HWG WF >> last 5 lines::",
+                       LINE_2)
+                if os.path.exists(self._filename):
+                    with open(self._filename, 'r') as f:
+                        printf("".join(f.readlines()[-5:]), LINE_2)
+                else:
+                    printf(f"   [SUPER ERR] File [{self._filename}] not found")
+                printf(" (TON)>> resEXCEPTION from OccupationNubers-HWG WF >> self::")
+                printf(self)
+                printf(" (TON)>> exception:: \n", e, "\n<<(TCW)")
+                printf(" (TON)<< EXCEPTION from OccupationNubers-HWG WF <<<<<<<< ")
+    
+    def getResults(self):
+        
+        with open(self._filename, 'r') as f:
+            data = f.read()
+            data = data.split('\n')
+        if len(data) < 2:
+            self.properly_finished = False
+            self.broken_execution  = True
+            return
+        
+        current_sigma = 0
+        for line in data[2:]:
+            line = line.strip()
+            if not line or ('sum' in line): continue
+            
+            line = line.split()
+            if len(line) == 1:
+                self.norm_g2_total[current_sigma] = float(line[0])
+            else:
+                s, i, _, _, j, l, o_p, o_n = line
+                s, i, l, j = int(s), int(i), int(l), int(j)
+                o_p, o_n = float(o_p), float(o_n)
+                deg_ = (j + 1)
+                
+                if not l in self.labels: self.labels.append(l)
+                    
+                if s > current_sigma:
+                    current_sigma = s
+                    self.sigmas.append(s)
+                    self.occupations_protons  [s] = [o_p, ]
+                    self.occupations_neutrons [s] = [o_n, ]
+                    self.relative_occ_protons [s] = [o_p / deg_,]
+                    self.relative_occ_neutrons[s] = [o_n / deg_,]
+                else:
+                    self.occupations_protons  [current_sigma].append(o_p)
+                    self.occupations_neutrons [current_sigma].append(o_n)
+                    self.relative_occ_protons [current_sigma].append(o_p / deg_)
+                    self.relative_occ_neutrons[current_sigma].append(o_n / deg_)
+
 #===============================================================================
 #   OTHER OUTPUT FILES
 #===============================================================================

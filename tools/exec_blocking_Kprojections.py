@@ -45,6 +45,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     
     FULLY_CONVERGE_BLOCKING_ITER_MODE  = True  ## Get the final blocked-states solution
     PRECONVERNGECE_BLOCKING_ITERATIONS = 100
+    LIMIT_BLOCKING_COUNT  = None  ## forces the blocking sps to this number
     
     def __init__(self, z, n, interaction, *args, **kwargs):
         
@@ -254,6 +255,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
              self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
             shuffle(sp_index_list)
             random_ = True
+        elif not self.LIMIT_BLOCKING_COUNT in (0, None, False):
+            sp_index_list = sp_index_list[:self.LIMIT_BLOCKING_COUNT]
             
         return sp_index_list, self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0
     

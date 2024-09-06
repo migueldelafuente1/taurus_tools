@@ -15,7 +15,7 @@ except Exception:
 import os
 from copy import copy, deepcopy
 import collections
-from pathlib import Path
+from pathlib import Path, PurePath
 
 _BASE_CLS_ATTRS = {
     '_horizontal_margin' : -0.07,
@@ -40,12 +40,12 @@ class _BaseLevelGraph(object):
     _horizontal_margin = -0.07
     _vertical_margin   = -0.07
     
-    title_size = 0.1
+    title_size    = 0.1
     subtitle_size = 0.05
     
     LINE_SIZE     = 10
     DECIMALS_ENER = 3
-    FONTSIZE_SUBTITLES = 'x-large'
+    FONTSIZE_SUBTITLES= 'x-large'
     
     line_box_size     = 0.6
     energy_value_size = 0.35
@@ -224,7 +224,6 @@ class EnergyLevelGraph(_BaseLevelGraph):
         self._graph_y.append([*y_tuple, ])
 
 
-
 class EnergyByJGraph(EnergyLevelGraph):
     
     """ 
@@ -328,7 +327,8 @@ class BaseLevelContainer(object):
     
     ONLY_PAIRED_STATES = False  ## Only show groups of states linked for the sigma
     MAX_NUM_OF_SIGMAS  = 99     ## Limit the number of sigma-excitations to show. 
-
+    RELATIVE_ENERGY_RANGE = None ## Only valid for relativve case, 
+    
     def __init__(self):
         '''
         Constructor
@@ -567,8 +567,12 @@ class BaseLevelContainer(object):
         
         # Set tops and units for the x axis
         y_range = 2 * abs(self._maxHeight - self._minHeight)
-        ax_.set_ylim(self._minHeight + y_range * level_obj._vertical_margin, 
-                     self._maxHeight - y_range * level_obj._vertical_margin)
+        if self.RELATIVE_ENERGY_RANGE and self.RELATIVE_PLOT:
+            ax_.set_ylim(self._minHeight + y_range * level_obj._vertical_margin, 
+                         self.RELATIVE_ENERGY_RANGE)
+        else:
+            ax_.set_ylim(self._minHeight + y_range * level_obj._vertical_margin, 
+                         self._maxHeight - y_range * level_obj._vertical_margin)
         
         x_lims  = ax_.get_xlim()
         x_range = (x_lims[1] - x_lims[0]) / len(self._levelGraphs)
@@ -700,7 +704,7 @@ def getAllLevelsAsString(folder_path):
     Get the levels in the HWG folder to 
     """
     str_ = ''
-    if isinstance(folder_path, str): folder_path = [folder_path, ]
+    if isinstance(folder_path, (str, PurePath)): folder_path = [folder_path, ]
     
     for folder_ in folder_path:
         if not os.path.exists(folder_): 
@@ -709,7 +713,10 @@ def getAllLevelsAsString(folder_path):
         for file_ in os.listdir(folder_):
             if not file_.endswith('.dat'): continue
             print("  .. importing (hwg) file:", file_)
-            dat_ = DataTaurusMIX(folder_+file_)
+            if isinstance(folder_, str): 
+                dat_ = DataTaurusMIX(folder_ + file_)
+            else:
+                dat_ = DataTaurusMIX(folder_ / file_)
             str_ += dat_.getSpectrumLines()
     return str_
 
@@ -760,31 +767,31 @@ if __name__ == '__main__':
     MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/Kmix_block_PAV/BU_folder_B1_MZ4_z12n11/HWG/'
     
     example_levels = getAllLevelsAsString(MAIN_FLD)
-     
-    # with open("all_spectra_A30_Fermi.txt", 'r') as f:
-    #     example_levels_2 = f.read()
-    levels_1 = EnergyByJGraph(title='B1')
-    levels_1.setData(example_levels, program='taurus_hwg')   
-    # #
-    levels_2 = EnergyByJGraph(title='HFB sph')
-    levels_2.setData(example_levels_2, program='taurus_hwg')  
+    #
+    # # with open("all_spectra_A30_Fermi.txt", 'r') as f:
+    # #     example_levels_2 = f.read()
+    # levels_1 = EnergyByJGraph(title='B1')
+    # levels_1.setData(example_levels, program='taurus_hwg')   
+    # # #
+    # levels_2 = EnergyByJGraph(title='HFB sph')
+    # levels_2.setData(example_levels_2, program='taurus_hwg')  
+    #
+    # levels_3 = EnergyByJGraph(title='chiral')
+    # levels_3.setData(example_levels_3, program='taurus_hwg')  
+    #
+    # BaseLevelContainer.RELATIVE_PLOT = True
+    # BaseLevelContainer.ONLY_PAIRED_STATES = False
+    # BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 8
+    #
+    # _graph = JLevelContainer()
+    # _graph.global_title = "Comparison HWG D1S from densities"
+    # _graph.global_title = "23Mg HWG(B1 MZ=4), Mix 2K=1,3,5 "
+    # _graph.add_LevelGraph(levels_1)
+    # # _graph.add_LevelGraph(levels_2)
+    # # _graph.add_LevelGraph(levels_3)
+    # _graph.plot()
     
-    levels_3 = EnergyByJGraph(title='chiral')
-    levels_3.setData(example_levels_3, program='taurus_hwg')  
-    
-    BaseLevelContainer.RELATIVE_PLOT = True
-    BaseLevelContainer.ONLY_PAIRED_STATES = False
-    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 8
-    
-    _graph = JLevelContainer()
-    _graph.global_title = "Comparison HWG D1S from densities"
-    _graph.global_title = "23Mg HWG(B1 MZ=4), Mix 2K=1,3,5 "
-    _graph.add_LevelGraph(levels_1)
-    # _graph.add_LevelGraph(levels_2)
-    # _graph.add_LevelGraph(levels_3)
-    _graph.plot()
-    
-    ## ##  EXAMPLE FOR LEVEL GRAPHS ## ##
+    ## ##  EXAMPLE FOR LEVEL GRAPHS ## ## ======================================
     levels_1 = EnergyLevelGraph(title='B1')
     levels_1.setData(example_levels, program='taurus_hwg') 
     
