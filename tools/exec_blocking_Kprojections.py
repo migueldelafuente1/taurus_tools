@@ -255,10 +255,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
              self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0):
             shuffle(sp_index_list)
             random_ = True
-        elif not self.LIMIT_BLOCKING_COUNT in (0, None, False):
-            dim_ = min(self.LIMIT_BLOCKING_COUNT, len(sp_index_list))
-            sp_index_list = sp_index_list[:dim_]
-            
+        
         return sp_index_list, self.PRECONVERNGECE_BLOCKING_ITERATIONS > 0
     
     def _spIterationAndSelectionProcedure(self, i_def):
@@ -279,6 +276,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         sp_index_list, random_ = self._randomize_sp_to_block()
         count_    = 0
         MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS if random_ else self._sp_dim
+        if not self.LIMIT_BLOCKING_COUNT in (0, None, False):
+            MAX_COUNT = min(self.LIMIT_BLOCKING_COUNT, len(sp_index_list))
+        
         for i_sp in range(self._sp_dim):
             sp_ = sp_index_list[i_sp]
             self._current_sp = sp_
@@ -295,7 +295,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             
             count_ += 1
             if count_ > MAX_COUNT:
-                print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
+                print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
+                      f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
                 break
             
             self.inputObj.qp_block = sp_ + isNeu
