@@ -294,7 +294,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             if parity_ != self.PARITY_TO_BLOCK : continue 
             
             count_ += 1
-            if count_ > MAX_COUNT:
+            if count_ >= MAX_COUNT:
                 print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
                       f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
                 break
@@ -786,6 +786,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
         sp_index_list, random_ = self._randomize_sp_to_block()
         count_    = 0
         MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS if random_ else self._sp_dim
+        if not self.LIMIT_BLOCKING_COUNT in (0, None, False):
+            MAX_COUNT = min(self.LIMIT_BLOCKING_COUNT, len(sp_index_list))
         ## block the states in order
         for i_sp in range(self._sp_dim):
             sp_ = sp_index_list[i_sp]
@@ -803,7 +805,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             
             count_ += 1
             if count_ > MAX_COUNT:
-                print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
+                print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
+                      f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
                 break
             self.inputObj.qp_block = sp_ + isNeu
             
@@ -1124,7 +1127,7 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
             if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
                 ## no more minimizations for this deformation
                 count_ += 1
-                if count_ > MAX_COUNT:
+                if count_ >= MAX_COUNT:
                     print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
                     break
                 
