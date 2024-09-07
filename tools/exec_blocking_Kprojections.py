@@ -1110,6 +1110,8 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         count_, global_count  = 0, 0
         MAX_COUNT = len(sp_index_list)
         if random_: MAX_COUNT = self.PRECONVERNGECE_BLOCKING_ITERATIONS
+        if not self.LIMIT_BLOCKING_COUNT in (0, None, False):
+            MAX_COUNT = min(self.LIMIT_BLOCKING_COUNT, len(sp_index_list))
         
         for sp_p, sp_n in sp_index_list:
             self._current_sp = (sp_p, sp_n)
@@ -1128,7 +1130,8 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
                 ## no more minimizations for this deformation
                 count_ += 1
                 if count_ >= MAX_COUNT:
-                    print(f"   [DONE] found [{MAX_COUNT}] states randomized, break.")
+                    print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
+                      f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
                     break
                 
                 self._no_results_for_K *= False
