@@ -823,7 +823,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             if res == None or res._evol_obj == None: continue
             if self.STRICTLY_MINIMIZED_FOR_BLOCKING:
                 ## Option to skip exception managing for unconverged states
-                valid_ = not res.properly_finished
+                valid_ = res.properly_finished
             else:
                 valid_ = not res.broken_execution # stating status of the selection
                 if hasattr(res, '_evol_obj') and res._evol_obj.e_hfb.__len__() >= 2:
