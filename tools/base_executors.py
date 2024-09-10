@@ -679,10 +679,14 @@ class _Base1DTaurusExecutor(object):
         # program = """ """
         # exec(program)
         FLD_TEST_ = 'data_resources/testing_files/'
-        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
-        file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
+        
+        if self._blocking_section:
+            file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
+            # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
         # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
-        file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
+        # file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
+        else:
+            pass
         file2copy = FLD_TEST_+'TEMP_res_z1n12_taurus_vap.txt'
         
         txt = ''

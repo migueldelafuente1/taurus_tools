@@ -43,8 +43,13 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     
     _MIN_ENERGY_CRITERIA  = False ## only apply for FIND_K_FOR_ALL_SPS, protocol
     
-    FULLY_CONVERGE_BLOCKING_ITER_MODE  = True  ## Get the final blocked-states solution
+    FULLY_CONVERGE_BLOCKING_ITER_MODE  = True   ## Get the final blocked-states solution,
+                                                ## False: randomize sp-states 2 block and 
+                                                ## preconverge without saving for further selection
     PRECONVERNGECE_BLOCKING_ITERATIONS = 100
+    STRICTLY_MINIMIZED_FOR_BLOCKING    = True   ## When False, accepts res-K blocked 
+                                                ## with max-iters but certain grad conditions: 
+                                                ## see _spIterationAndSelectionProcedure
     LIMIT_BLOCKING_COUNT  = None  ## forces the blocking sps to this number
     
     def __init__(self, z, n, interaction, *args, **kwargs):
@@ -172,7 +177,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         self._blocking_section = False
         ExeTaurus1D_DeformB20.run(self)
-                
+        
         if fomenko_points:
             self.inputObj.z_Mphi = fomenko_points[0]
             self.inputObj.n_Mphi = fomenko_points[1]
@@ -811,15 +816,21 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             self.inputObj.qp_block = sp_ + isNeu
             
             ## minimize and save only if 2<Jz> = K
-            res : DataTaurus = self._executeProgram()
+            res = None
+            try:   res : DataTaurus = self._executeProgram()
+            except ExecutionException as e: print("\nERR.stsp >>>",str(e),"<<<\n")
             
             if res == None or res._evol_obj == None: continue
-            valid_ = not res.broken_execution # stating status of the selection
-            if hasattr(res, '_evol_obj') and res._evol_obj.e_hfb.__len__() >= 2:
-                valid_ = abs(res._evol_obj.e_hfb[-2] - res._evol_obj.e_hfb[-1]) < 0.1
-                valid_ = valid_ or res._evol_obj.grad[-1] < 0.1
-            if self._curr_deform_index in (0, -1):
-                valid_ = valid_ and res.properly_finished
+            if self.STRICT_K_MINIMIZATION:
+                ## Option to skip exception managing for unconverged states
+                valid_ = not res.properly_finished
+            else:
+                valid_ = not res.broken_execution # stating status of the selection
+                if hasattr(res, '_evol_obj') and res._evol_obj.e_hfb.__len__() >= 2:
+                    valid_ = abs(res._evol_obj.e_hfb[-2] - res._evol_obj.e_hfb[-1]) < 0.01
+                    valid_ = valid_ or res._evol_obj.grad[-1] < 0.1
+                if self._curr_deform_index in (0, -1):
+                    valid_ = valid_ and res.properly_finished
             
             if not (valid_ and res.isAxial()):
                 continue
