@@ -20,6 +20,8 @@ from scripts1d.script_helpers import _setUpBatchOrTSPforComputation, \
     RUN_USING_BATCH, _JobLauncherClass
 from copy import deepcopy
 
+MODE_NOCORE = True
+
 def sort_by_deformation_naming(def_list):
     """ sorting as [_0.8.bin, _0.6.bin, .. , 0.2.bin, 0.4.bin ...]"""
     def_list = list(def_list)
@@ -40,7 +42,7 @@ input_pav_args = {
     InputTaurusPAV.ArgsEnum.disable_simplifications_NZA: True,
     # InputTaurusPAV.ArgsEnum.j_min: min(K_list),
     # InputTaurusPAV.ArgsEnum.j_max: max(max(K_list), Jmax),
-    InputTaurusPAV.ArgsEnum.com: 1,
+    InputTaurusPAV.ArgsEnum.com: 1 if MODE_NOCORE else 0,
     InputTaurusPAV.ArgsEnum.empty_states:   0,
     # InputTaurusPAV.ArgsEnum.cutoff_overlap: 1.0e-9,
 }
@@ -73,7 +75,7 @@ def basic_eveneven_mix_from_vap(MAIN_FLD):
     pass
 
 def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei, 
-                                parity = 1, PNP_fomenko=1, Jmax=0, 
+                                parity = 1, PNP_fomenko=1, Jmin_max=(0, 0), 
                                 RUN_SBATCH=False):
     """
     Create all the folders with executable, hamil, etc.
@@ -85,6 +87,8 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
         scripts: 
     
     """
+    Jmin, Jmax = Jmin_max
+    if Jmin < K: Jmin = K
     MAIN_FLD = Path(MAIN_FLD)
     print(f"## Script begins for K={ K} P={parity}  ************************ \n")
     if not os.path.exists(MAIN_FLD): 
@@ -102,12 +106,12 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     BU_KVAP      =f"{K}_{PPP}_VAP/"
     DEST_FLD     =f'{K}_{PPP}_PNPAMP_HWG/'
     DEST_FLD_HWG = 'HWG'
-    valid_J_list = [i for i in range(1, Jmax+1, 2)]
+    valid_J_list = [i for i in range(Jmin, Jmax+1, 2)]
     
     global input_pav_args 
     input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
     input_pav_args[InputTaurusPAV.ArgsEnum.z_Mphi] = PNP_fomenko
-    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = K
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = Jmin
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = Jmax
     input_pav_args[InputTaurusMIX.ArgsEnum.parity] = parity
     
@@ -201,10 +205,193 @@ def oddeven_mix_same_K_from_vap(K, MAIN_FLD, interaction, nuclei,
     
     os.chdir(RETURN_FLD)
     print("## Script has ended for K=", K, " PARITY=", parity, '\n')
+
+
+def oddeven_PAV_diagonal_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei, 
+                                          parity = 1, PNP_fomenko=1, Jmin_max=(0, 0), 
+                                          RUN_SBATCH=False):
+    """
+    Create all the folders with executable, hamil, etc. In this case, using all
+    the K states blocked for the nuclei.
+        1, 
+        2, 
+        ,...
+        N:[left_wf.bin, right_wf.bin, hamil.* taurus_pav.exe, input_pav.exe]
+        
+        scripts: 
     
+    Args:
+    MAIN_FLD_TMP is a template for the placing of the different BU_folder_{inter}_zn:
+        
+    MULTIK_SAME_FLD: if the folder contains, for each nuclei all the Ks, set True
+        otherwise, K is being read from different folders.
+        * TRUE
+    
+    """
+    global input_mix_args, _JobLauncherClass, RUN_USING_BATCH
+    
+    MAIN_FLD = Path(MAIN_FLD)
+    K_list   = sorted(K_list)
+    Jmin, Jmax = Jmin_max
+    if Jmin < min(K_list): Jmin = min(K_list)
+    
+    if isinstance(parity, int):
+        if parity == 0: parity = -1
+        assert parity in (1, -1), " Put the parities as 1/-1"
+        parity = (parity, )
+    elif isinstance(parity, (tuple, list)) and len(parity) == 2:
+        pass
+    else:
+        print("Give parity as integer (1,-1) or tuple. EXIT")
+        return
+    
+    assert tuple(parity) in ((1, -1), (-1, 1), (1,), (-1,)), " Put the parities as 1/-1" 
+    aux = []
+    for par in sorted(parity, reverse=True):
+        for K in K_list:
+            aux.append((K, par))
+    KP_list = deepcopy( aux )
+    
+    print("## Script begin for the list K, p:", K_list, "\n ***************** \n")    
+    
+    global input_pav_args 
+    input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
+    input_pav_args[InputTaurusPAV.ArgsEnum.z_Mphi] = PNP_fomenko
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = Jmin
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
+    
+    PPP = (1 - parity[0]) // 2
+    TEMP_BU      = "BU_folder_{}_z{}n{}/"
+    DEST_FLD     = 'PNAMP'
+    valid_J_list = [i for i in range(Jmin, Jmax+1, 2)]
+    
+    first_step = True
+    nuclei_by_K_found = {}
+    path_migration, fld_migration = {}, {}
+    # copy pav folders.
+    print("  1. Creating folders, Copying binaries, etc for PAV/HWG") 
+    for K, par in KP_list:
+        
+        PPP = (1 - par) // 2
+        print("  K, P =", K, PPP, "  *first_state =", first_step)
+        BU_KVAP      =f"{K}_{PPP}_VAP/"
+        input_pav_args[InputTaurusPAV.ArgsEnum.parity] = par
+        #MAIN_FLD = Path(MAIN_FLD_TMP.format(K=K))
+        if not MAIN_FLD.exists(): 
+            print(" [ERROR] Main folder does not exists:", MAIN_FLD)
+            return
+        
+        MAIN_DEST_PATH = MAIN_FLD.parent
+        
+        if first_step:
+            ## if previous k-mix folders clear
+            for fld_ in filter(lambda x: os.path.isdir(x)
+                                         and x.startswith('kmix_PNPAMP'), 
+                               os.listdir(MAIN_DEST_PATH)):
+                fld_pav = Path(MAIN_DEST_PATH) / fld_
+                if fld_pav.exists(): shutil.rmtree(fld_pav)
+            
+        for z, n in nuclei:
+            fld_bu = MAIN_FLD / Path(TEMP_BU.format(interaction, z, n))
+            
+            ## note, save it in the same BU folder.
+            fld_pav = fld_bu  / DEST_FLD 
+            fld_migration[(z, n)] = fld_pav
+            
+            if first_step:                 
+                fld_pav.mkdir(parents=True, exist_ok=True)
+                shutil.copy('taurus_pav.exe', fld_pav)
+                os.chmod(fld_pav / 'taurus_pav.exe', 0o777)
+                
+                pav_obj = InputTaurusPAV(z, n, interaction, **input_pav_args)                
+                
+                with open(fld_pav / 'input_pav.txt', 'w+') as f:
+                    f.write(pav_obj.getText4file())
+                
+                for tail_ in ('.2b', '.com', '.sho', '.01b'):
+                    if not (fld_bu / (interaction+tail_)).exists(): continue
+                    shutil.copy(fld_bu / (interaction+tail_), fld_pav)
+            
+            ## The files migration for each k.
+            if not (z,n) in path_migration: path_migration[(z,n)] = []
+            if not (z,n) in nuclei_by_K_found: nuclei_by_K_found[(z,n)] = {}
+            fld_kvap = fld_bu / BU_KVAP 
+            if not fld_kvap.exists(): print(f" [Error] K,P ={K},{PPP} folder not present {z},{n}")
+            nuclei_by_K_found[(z,n)][(K, PPP)] = fld_kvap.exists()
+            
+            def_list = filter(lambda x: x.endswith('.bin'), os.listdir(fld_kvap))
+            def_list = sort_by_deformation_naming(def_list)
+            for bin_ in def_list:
+                bin2_ = bin_.replace('.bin', f'_{K}_{PPP}.bin')
+                path_migration[(z,n)].append(bin2_)
+                shutil.copy(fld_kvap / bin_, fld_pav / bin2_)
+        
+        if first_step: first_step = False
+    
+    # copy pav folders.
+    print("  2. Copying binaries, etc for PAV") 
+    for zn, k_founds in nuclei_by_K_found.items():
+        
+        fld_pav, bins_ = fld_migration[zn], path_migration[zn]
+        
+        if not all(k_founds.values()):
+            print(f" [ERROR] Non all K,P were present for z,n={zn}, skipping ,{k_founds}")
+        
+        os.chdir(fld_pav)
+        
+        RETURN_FLD = "/".join(['..' for _ in fld_pav.parts])
+        
+        bins2copy = []
+        k, gcm_files = 0, {'gcm': [], 'gcm_diag': [], 'gcm_3': []}
+        for i, b1 in enumerate(bins_):
+            for i2 in range(i, len(bins_)):
+                if i2 != i: continue
+                k += 1
+                bins2copy.append( (b1, bins_[i2]) )
+                gcm_files['gcm_3'].append(f"    {k: <6}")
+                gcm_files[  'gcm'].append(f"{b1: <15}    {bins_[i2]: <15}    {i+1: <4}  {i2+1: <4}")
+                gcm_files['gcm_diag'].append(f"    {k: <6}")
+        
+        for i, l_r_wf in enumerate(bins2copy):
+            fld_i = Path( str(i+1) )
+            fld_i.mkdir(parents=True, exist_ok=True)
+            shutil.copy(l_r_wf[0], fld_i / 'left_wf.bin')
+            shutil.copy(l_r_wf[1], fld_i / 'right_wf.bin')
+            shutil.copy('taurus_pav.exe', fld_i)
+            shutil.copy('input_pav.txt',  fld_i)
+            os.chmod(fld_i / 'taurus_pav.exe', 0o777)            
+        
+        # create the scripts
+        print("  3. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
+        slurm = _JobLauncherClass(interaction, len(bins_), valid_J_list,
+                                  PAV_input_filename='input_pav.txt',
+                                  HWG_input_filename='input_mix.txt')     
+        
+        for fn_, scr_ in slurm.getScriptsByName().items():
+            if fn_ == 'hw.x': continue
+            dst_fld = Path('')
+            with open(dst_fld / fn_, 'w+') as f: f.write(scr_)
+            os.chmod(dst_fld / fn_, 0o777)
+        for fn_, scr_ in gcm_files.items():
+            with open(fn_, 'w+') as f: f.write("\n".join(scr_))
+        
+        # run sbatch
+        if RUN_SBATCH: 
+            if RUN_USING_BATCH: 
+                os.system('sbatch sub_1.x')
+            else:
+                os.system('python3 sub_tsp.py')
+            print(  f"   [Executing] sbatch/tsp [{RUN_USING_BATCH}]")
+        else: print("   [Not Executing] sbatch")
+    
+        ## done, go back
+        os.chdir(RETURN_FLD)
+        print("   * done for z,n=", zn, f' Ks:{k_founds.keys()}, len={len(bins2copy)}\n')
+    
+    print(f"## Script completed for {MAIN_FLD} - {interaction}")
 
 def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
-                                        parity=1, PNP_fomenko=1, Jmax=1, 
+                                        parity=1, PNP_fomenko=1, Jmin_max=(1, 1), 
                                         RUN_SBATCH=False, all_KP_required=True):
     """
     Create all the folders with executable, hamil, etc. In this case, using all
@@ -228,6 +415,8 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
     
     MAIN_FLD = Path(MAIN_FLD)
     K_list = sorted(K_list)
+    Jmin, Jmax = Jmin_max
+    if Jmin < min(K_list): Jmin = min(K_list)
     
     if isinstance(parity, int):
         if parity == 0: parity = -1
@@ -252,14 +441,14 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
     global input_pav_args 
     input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
     input_pav_args[InputTaurusPAV.ArgsEnum.z_Mphi] = PNP_fomenko
-    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = Jmin
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
     PPP = (1 - parity[0]) // 2
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     DEST_FLD     = "kmix_PNPAMP" if len(parity)==2 else f"kmix_PNPAMP_{PPP}"
     DEST_FLD_HWG = 'HWG'
-    valid_J_list = [i for i in range(1, Jmax+1, 2)]
+    valid_J_list = [i for i in range(Jmin, Jmax+1, 2)]
     
     first_step = True
     nuclei_by_K_found = {}
@@ -397,7 +586,7 @@ def oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
     print(f"## Script completed for {MAIN_FLD} - {interaction}")
     
 def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, nuclei,
-                                        PNP_fomenko=1, Jmax=1, RUN_SBATCH=False):
+                                        PNP_fomenko=1, Jmin_max=(1, 1), RUN_SBATCH=False):
     """
     Create all the folders with executable, hamil, etc. In this case, using all
     the K states blocked for the nuclei.
@@ -417,12 +606,14 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
     
     """
     K_list = sorted(K_list)
+    Jmin, Jmax = Jmin_max
+    if Jmin < min(K_list): Jmin = min(K_list)
     print("## Script begin for the list K:", K_list, " ***************** \n")
         
     global input_pav_args 
     input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
     input_pav_args[InputTaurusPAV.ArgsEnum.z_Mphi] = PNP_fomenko
-    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = min(K_list)
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = Jmin
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = max(max(K_list), Jmax)
     
     global input_mix_args, _JobLauncherClass, RUN_USING_BATCH
@@ -430,7 +621,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
     TEMP_BU      = "BU_folder_{}_z{}n{}/"
     DEST_FLD     = 'kmix_PNPAMP_z{}n{}/'
     DEST_FLD_HWG = 'HWG'
-    valid_J_list = [i for i in range(1, Jmax+1, 2)]
+    valid_J_list = [i for i in range(Jmin, Jmax+1, 2)]
     
     first_step = True
     nuclei_by_K_found = {}
@@ -561,7 +752,7 @@ def oddeven_mix_multiK_from_differentFld_vap(K_list, MAIN_FLD_TMP, interaction, 
     print(f"## Script completed for {MAIN_FLD_TMP} - {interaction}")
 
 def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
-                          PNP_fomenko=1, Jmax=1, K_list = [],
+                          PNP_fomenko=1, Jmin_max=(1,1), K_list = [],
                           CHANGE_FLD_SETUP=False,
                           RUN_PAV_JOB=False, RUN_HWG_JOB=False):
     """
@@ -591,11 +782,13 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     if (CHANGE_FLD_SETUP * RUN_HWG_JOB):
         print("Cannot remake the folders and do the HWG . cancelling CHANGE_FLD.")
         CHANGE_FLD_SETUP = False
+    Jmin, Jmax = Jmin_max
+    if Jmin < min(K_list): Jmin = min(K_list)
     
     global input_pav_args 
     input_pav_args[InputTaurusPAV.ArgsEnum.n_Mphi] = PNP_fomenko
     input_pav_args[InputTaurusPAV.ArgsEnum.z_Mphi] = PNP_fomenko
-    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = 1
+    input_pav_args[InputTaurusPAV.ArgsEnum.j_min]  = Jmin
     input_pav_args[InputTaurusPAV.ArgsEnum.j_max]  = Jmax
     
     global input_mix_args, _JobLauncherClass, RUN_USING_BATCH
@@ -604,7 +797,7 @@ def oddeven_vertical_kmix(MAIN_FLD_TMP, interaction, nuclei,
     TEMP_K_BU    = "{}_0_VAP"
     DEST_FLD     = 'def{}_PAV/'
     DEST_FLD_HWG = 'HWG'
-    valid_J_list = [i for i in range(1, Jmax+1, 2)]
+    valid_J_list = [i for i in range(Jmin, Jmax+1, 2)]
     
     for z,n in nuclei:
         
@@ -914,6 +1107,18 @@ if __name__ == '__main__':
     # flds_ = [f'{FLD_}/kmix_PNPAMP']
     # clear_all_pav_folders(flds_, removeProjME=False)
     # 0/0
+    
+    #===========================================================================
+    # ## PAV for K - Group, only DIAGONAL matrix elements
+    #===========================================================================
+    K_list = [1, 3, 5, ]
+    par_   = 1 # ( 1,-1)
+    nuclei = [(12, 13), ]
+    kwargs  = {'parity':par_, 'PNP_fomenko':7, 'Jmin_max':(1,10), 'RUN_SBATCH':True}
+    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/Mg/'
+    oddeven_PAV_diagonal_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, **kwargs)
+    0/0
+    
     #===========================================================================
     # ## PAV for SINGLE - K
     #===========================================================================
@@ -922,13 +1127,13 @@ if __name__ == '__main__':
     X = elementNameByZ[nuclei[0][0]]
     for par_ in (-1, ): # -1
         for K in ( 1, 3, 5, ): #  7 
+            kwargs  = {'parity':par_, 'PNP_fomenko':7, 'Jmin_max':(1,11), 
+                       'RUN_SBATCH':True}
             # MAIN_FLD = f'results/MgK{K}'
             # LOCAL_PTH = f'../DATA_RESULTS/K_OddEven/B1/{X}/'
             LOCAL_PTH = 'results/'
             MAIN_FLD = LOCAL_PTH + f'{X}_{(1 - par_)//2}'
-            oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei, 
-                                        parity = par_, PNP_fomenko=7, Jmax=11, 
-                                        RUN_SBATCH=True)
+            oddeven_mix_same_K_from_vap(K, MAIN_FLD, inter, nuclei, **kwargs)
     
     #===========================================================================
     # ## PAV - HWG for multi K (All the K are in each folder) 
@@ -936,6 +1141,9 @@ if __name__ == '__main__':
     
     K_list = [1, 3, 5, ]
     par_   = (-1, ) # 1
+    kwargs  = {'parity':par_, 'PNP_fomenko':7, 'Jmin_max':(1,11), 
+               'RUN_SBATCH':False}
+    
     nuclei = [(12, 19), ]
     #inter  = 'SDPF_MIX_J'
     nuclei = [(7, 8+ 2*i) for i in range(0, 7)]
@@ -943,9 +1151,8 @@ if __name__ == '__main__':
     LOCAL_PTH = 'results/'
     X = elementNameByZ[nuclei[0][0]]
     MAIN_FLD = LOCAL_PTH + f'{X}_{(1 - par_)//2}'
-    oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, 
-                                        parity = par_, PNP_fomenko=7, Jmax=11, 
-                                        RUN_SBATCH=True, all_KP_required=False)
+    
+    oddeven_mix_multiK_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, **kwargs)
     0/0
     #===========================================================================
     # ## PAV - HWG for multi K (K folders separated for each nuclei) DEPRECATED
