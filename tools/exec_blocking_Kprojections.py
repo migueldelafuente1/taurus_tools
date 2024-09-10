@@ -821,7 +821,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
             except ExecutionException as e: print("\nERR.stsp >>>",str(e),"<<<\n")
             
             if res == None or res._evol_obj == None: continue
-            if self.STRICT_K_MINIMIZATION:
+            if self.STRICTLY_MINIMIZED_FOR_BLOCKING:
                 ## Option to skip exception managing for unconverged states
                 valid_ = not res.properly_finished
             else:
