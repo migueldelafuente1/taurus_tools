@@ -362,9 +362,9 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            #'axial_calc' : axial_calc,
-            'core_calc'  : True,
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
+            #'core_calc'  : True,
         }
         input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
@@ -375,9 +375,9 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.mu_grad  : 0.02, # 0.5
             IArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            #'axial_calc' : axial_calc,
-            'core_calc'  : True,
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
+            #'core_calc'  : True,
             #'valid_Ks'   : valid_Ks,
         }
         input_args_projection = {
