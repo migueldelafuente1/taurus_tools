@@ -170,7 +170,7 @@ cp -r  ../HAMIL.* /scratch/delafuen/$SLURM_JOB_ID
 
 cd  /scratch/delafuen/$SLURM_JOB_ID
 
-./PROGRAM < INPUT_FILE > OUT
+./PROGRAM < INPUT_FILE > OUT_FILENAME
 
 mv /scratch/delafuen/$SLURM_JOB_ID/OUT $workdir/
 #mv /scratch/delafuen/$SLURM_JOB_ID/*.me $workdir/
@@ -287,6 +287,7 @@ done"""
         JOBS_LENGTH = 'ARRAY_JOBS_LENGTH'
         INPUT_FILE = 'INPUT_FILE'
         PROGRAM    = 'PROGRAM'
+        OUT_FILENAME = 'OUT_FILENAME'
         LIST_JVALS = 'LIST_JVALS'
         HAMIL = 'HAMIL'
     
@@ -333,7 +334,7 @@ done"""
                                                   self.TAURUS_HWG)
     
     ##
-    def _prepare_job_and_submit(self, PAV_input_filename):
+    def _prepare_job_and_submit(self, PAV_input_filename, output_filename='OUT'):
         
         self.job_1 = self._TEMPLATE_SLURM_JOB
         self.job_1 = self.job_1.replace(self.ArgsEnum.JOBS_LENGTH,
@@ -341,6 +342,8 @@ done"""
         self.job_1 = self.job_1.replace(self.ArgsEnum.HAMIL, self.hamil)
         self.job_1 = self.job_1.replace(self.ArgsEnum.INPUT_FILE, 
                                         PAV_input_filename)
+        self.job_1 = self.job_1.replace(self.ArgsEnum.OUT_FILENAME, 
+                                        output_filename)
         self.job_1 = self.job_1.replace(self.ArgsEnum.PROGRAM, self.TAURUS_PAV)
         
         self.sub_1 = self._TEMPLATE_SLURM_SUB
