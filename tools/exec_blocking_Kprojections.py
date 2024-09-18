@@ -1416,7 +1416,7 @@ class ExeTaurus1D_B20_KwithIndependentSP_OEblocking(ExeTaurus1D_B20_KMixing_OEbl
         sp_ = self._current_sp
         set_energies = {}
                 
-        if self._curr_deform_index == 0:
+        if self._curr_deform_index in (-1, 0):
             isNeu = self._sp_dim if self.numberParity[1] else 0
             self.inputObj.qp_block = sp_ + isNeu
         else:

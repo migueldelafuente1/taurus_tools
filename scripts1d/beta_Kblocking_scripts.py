@@ -241,7 +241,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                         IArgsEnum.n_Mphi : fomenko_points[1],}
         
         input_args_start = {**vap_args,
-            IArgsEnum.com : 0,
+            IArgsEnum.com : 1,
             IArgsEnum.seed: seed_base,
             IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
@@ -249,7 +249,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             IArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
             #'core_calc'  : True,
         }
@@ -262,7 +262,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             IArgsEnum.mu_grad  : 0.02, # 0.5
             IArgsEnum.grad_tol : 0.0001,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
             #'core_calc'  : True,
             'valid_Ks'   : K,
@@ -357,7 +357,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
                         IArgsEnum.n_Mphi : fomenko_points[1],}
         
         input_args_start = {**vap_args,
-            IArgsEnum.com : 0,
+            IArgsEnum.com : 1,
             IArgsEnum.seed: seed_base,
             IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
@@ -475,7 +475,7 @@ def run_b20_FalseOdd_exampleAllSpForKIndependly(nucleus, interactions, gogny_int
                         IArgsEnum.n_Mphi : fomenko_points[1],}
         
         input_args_start = {**vap_args,
-            IArgsEnum.com : 0,
+            IArgsEnum.com : 1,
             IArgsEnum.seed: seed_base,
             IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
