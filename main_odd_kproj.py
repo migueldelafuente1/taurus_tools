@@ -8,7 +8,8 @@ from tools.Enums import GognyEnum
 from scripts1d.beta_Kblocking_scripts import \
     run_b20_FalseOE_Kprojections_Gogny, run_b20_FalseOE_Block1KAndPAV, \
     run_b20_FalseOdd_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ, \
-    run_b20_Block1KandPAV_exampleSingleJ, run_b20_testOO_Kmixing4AllCombinations
+    run_b20_Block1KandPAV_exampleSingleJ, run_b20_testOO_Kmixing4AllCombinations, \
+    run_b20_FalseOdd_exampleAllSpForKIndependly
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf
 
@@ -20,8 +21,8 @@ if __name__ == '__main__':
     
     if os.getcwd().startswith('C:'):   ## TESTING
         interactions_B1 = {(2, 1): (3, 0, None), (2, 3): (2, 0, None),}
-        interactions_B1 = {(1, 1): 'B1_MZ3', }
-        interactions_B1 = {( 1, 12): 'SDPF_MIX_J', }
+        interactions_B1 = {(1, 0): 'B1_MZ3', }
+        # interactions_B1 = {( 1, 12): 'SDPF_MIX_J', }
     else:
         
         # ---------------------------------------------------------------------
@@ -64,11 +65,13 @@ if __name__ == '__main__':
         _0 = 'exe_surf_allK_base_noPAV' # doesnt do all-sp per K (all K)
         _1 = 'exe_surf_1K_and_PAV'      # does all-sp for K, also PAV
         _2 = 'exe_surf_Kmixing_and_PAV' # does all-sp for all K, also PAV
-        _3 = 'exe_example_h11/2_singleJ'
-        _4 = 'exe_example_OO_convergences'  # evaluates all possible sp-blocks-vap mins
+        
+        _3 = 'exe_example_allblockKsurf'    # repeat the k-surface for each sp- independly
+        _4 = 'exe_example_h11/2_singleJ'
+        _5 = 'exe_example_OO_convergences'  # evaluates all possible sp-blocks-vap mins
     
     ## SELECT HERE ****
-    _case = __CASES._2
+    _case = __CASES._3
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -104,11 +107,26 @@ if __name__ == '__main__':
             parity_2_block=1,
             fomenko_points=(11, 11),
             preconverge_blocking_sts=False, # 10,
-            find_Kfor_all_sps = True
+            find_Kfor_all_sps = 3, #True
         )
         run_b20_FalseOdd_Kmixing(*args, **kwargs)
         #=======================================================================
     elif _case == __CASES._3:
+        ## TEST execute for all sp in K independently and store results
+        args = (nucleus, interactions_B1, GognyEnum.B1)
+        kwargs = dict(
+            valid_Ks = [1, 3, 5, 7], # 
+            # valid_Ks = [0, 2, 4],
+            seed_base=3, ROmega=(0,0),
+            q_min=-0.7, q_max=0.7, N_max=39, convergences=0,   ## 0.6, 25
+            parity_2_block=1,
+            fomenko_points=(7, 7),
+            preconverge_blocking_sts=False, # 10,
+            find_Kfor_all_sps = True
+        )
+        run_b20_FalseOdd_exampleAllSpForKIndependly(*args, **kwargs)
+        #=======================================================================
+    elif _case == __CASES._4:
         ## TEST with the h11/2 state
         
         interactions_B1 = {(0, 3):  'B1_h11o2', }
@@ -139,7 +157,7 @@ if __name__ == '__main__':
             
         run_b20_FalseOE_Kmixing_exampleSingleJ(*args, **kwargs)
         #=======================================================================
-    elif _case == __CASES._4:
+    elif _case == __CASES._5:
         interactions_B1 = {(11,11): inter_, }
         nucleus = sorted(list(interactions_B1.keys()))
         args = (nucleus, interactions_B1, GognyEnum.B1)

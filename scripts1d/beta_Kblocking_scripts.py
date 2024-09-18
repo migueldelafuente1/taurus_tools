@@ -14,14 +14,15 @@ from tools.Enums import GognyEnum
 from tools.exec_blocking_Kprojections import \
     ExeTaurus1D_B20_OEblocking_Ksurfaces, ExeTaurus1D_B20_KMixing_OEblocking, \
     ExeTaurus1D_B20_Ksurface_Base, ExeTaurus1D_B20_KMixing_OOblocking, \
-    ExeTaurus1D_TestOddOdd_K4AllCombinations
+    ExeTaurus1D_TestOddOdd_K4AllCombinations, \
+    ExeTaurus1D_B20_KwithIndependentSP_OEblocking
 from tools.helpers import importAndCompile_taurus, printf
 
 
 def __selectAndSetUp_OEOO_Blocking(z, n, 
                                    find_Kfor_all_sps, convergences, 
                                    parity_2_block, preconverge_blocking_sts,
-                                   ):
+                                   test_independent_sp4K=False):
     """
     Odd-Odd and Odd-Even use the same execution parameters, merge the class 
     class set up here.
@@ -30,6 +31,8 @@ def __selectAndSetUp_OEOO_Blocking(z, n,
         _Executable_B20_KMixClass = ExeTaurus1D_B20_KMixing_OOblocking
     else:
         _Executable_B20_KMixClass = ExeTaurus1D_B20_KMixing_OEblocking
+    if test_independent_sp4K:
+        _Executable_B20_KMixClass = ExeTaurus1D_B20_KwithIndependentSP_OEblocking
     
     _Executable_B20_KMixClass.IGNORE_SEED_BLOCKING  = True
     _Executable_B20_KMixClass.BLOCK_ALSO_NEGATIVE_K = False
@@ -408,6 +411,104 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
     printf("End run_b20_surface k-mixing: ", datetime.now().time())
 
 
+def run_b20_FalseOdd_exampleAllSpForKIndependly(nucleus, interactions, gogny_interaction,
+                             valid_Ks = [], 
+                             seed_base=0, ROmega=(13, 13),
+                             q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
+                             fomenko_points=(1, 1), 
+                             parity_2_block= 1, preconverge_blocking_sts=False,
+                             find_Kfor_all_sps= True,
+                            ):
+    """
+    Reqire:
+    Args:
+        :nucleus: <list>: (z1,n1), (z2,n2), ..
+        :interactions: <dict> [Nucleus (z, n)]: (MZm_max, Mz_min, b_length)
+        :gogny_interaction: str from GognyEnum
+    Optional:
+        :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
+        :ROmega: <tuple>=(R, Omega) grid of Integration (Default is 10, 10)
+        :j_min
+        :j_max
+        :N_steps:
+        
+        :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :fomenko_points: (M protons, M neutron), default is HFB
+        :parity_2_block: parity of the states to block
+        :preconverge_blocking_states <int> = 0  :fully converge, > 0 -> number of steps
+        :find_Kfor_all_sps =True, evaluate all valid sps (recomended but slower)
+    """
+    if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
+        and gogny_interaction != GognyEnum.B1):
+        raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
+    
+    for z, n in nucleus:
+        args = (
+            find_Kfor_all_sps, 
+            convergences, 
+            parity_2_block, 
+            preconverge_blocking_sts
+        )
+        kwargs = {'test_independent_sp4K': True, }
+        __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args, **kwargs)
+        
+        interaction = getInteractionFile4D1S(interactions, z, n, 
+                                             gogny_interaction=gogny_interaction)
+        if interaction == None or not os.path.exists(interaction+'.sho'):
+            printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
+            continue
+        
+        InputTaurus.set_inputDDparamsFile(
+            **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim     : ROmega[0],
+               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
+        
+        axial_calc = seed_base in (2, 3, 9)
+        
+        ## Note: For false o-e projection, fomenko_points are given in run()
+        ##          see Note in script run_b20_FalseOE_Block1KAndPAV()
+        IArgsEnum = InputTaurus.ArgsEnum
+        vap_args = {IArgsEnum.z_Mphi : 0, IArgsEnum.n_Mphi : 0,}
+        if ((z+n) % 2 == 0 and n % 2 == 0 and not 1 in (z, n)):
+            ## in case of even-even one can do the VAP
+            vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
+                        IArgsEnum.n_Mphi : fomenko_points[1],}
+        
+        input_args_start = {**vap_args,
+            IArgsEnum.com : 0,
+            IArgsEnum.seed: seed_base,
+            IArgsEnum.iterations: 1500,
+            IArgsEnum.grad_type: 1,
+            IArgsEnum.grad_tol : 0.0001,
+            IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
+            IArgsEnum.pair_schm: 1,
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            'axial_calc' : axial_calc,
+            #'core_calc'  : True,
+        }
+        input_args_onrun = {**vap_args, **input_args_start,
+            IArgsEnum.red_hamil: 1,
+            IArgsEnum.seed: 1,
+        }
+        input_args_projection = {}
+        
+        __ExeB20BlockingClass.EXPORT_LIST_RESULTS = \
+            f"export_TESb20_z{z}n{n}_{interaction}.txt"
+        try:
+            exe_ = __ExeB20BlockingClass(z, n, interaction)
+            exe_.setInputCalculationArguments(**input_args_start)
+            exe_.defineDeformationRange(q_min, q_max, N_max)
+            exe_.setUp()
+            exe_.setUpExecution(**input_args_onrun)
+            exe_.setUpProjection(**input_args_projection)
+            exe_.force_converg = False
+            exe_.run(fomenko_points)
+            exe_.globalTearDown()
+        except ExecutionException as e:
+            printf("[SCRIPT ERROR]:", e)
+        
+    printf("End run_b20_surface k-mixing: ", datetime.now().time())
 
 def run_b20_testOO_Kmixing4AllCombinations(
                            nucleus, interactions, gogny_interaction,

@@ -292,12 +292,17 @@ done"""
         HAMIL = 'HAMIL'
     
     def __init__(self, interaction, number_of_wf, valid_J_list, 
-                 PAV_input_filename='', HWG_input_filename=''):
+                 PAV_input_filename='', HWG_input_filename='', 
+                 only_diagonal_PAV=False):
         """
         Getting all the jobs for
         """
         self.hamil = interaction
-        self.jobs_length = str(number_of_wf * (number_of_wf + 1) // 2)
+        if only_diagonal_PAV: 
+            self.jobs_length = number_of_wf
+        else:
+            self.jobs_length = str(number_of_wf * (number_of_wf + 1) // 2)
+        
         if (HWG_input_filename == ''):
             HWG_input_filename = self.ArgsEnum.INP_hwg
         if (PAV_input_filename == ''):

@@ -181,8 +181,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         if fomenko_points:
             self.inputObj.z_Mphi = fomenko_points[0]
             self.inputObj.n_Mphi = fomenko_points[1]
-            self.inputObj_PAV.z_Mphi = fomenko_points[0]
-            self.inputObj_PAV.n_Mphi = fomenko_points[1]            
+            if self.RUN_PROJECTION:
+                self.inputObj_PAV.z_Mphi = fomenko_points[0]
+                self.inputObj_PAV.n_Mphi = fomenko_points[1]  
         ##  
         self._blocking_section = True
         if self.numberParity == (0, 0): return
@@ -919,6 +920,8 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
     
     """
     
+    SAVE_K_WFS_FOR_EACH_DEFORMATION = False # True creates defFolders with the K wfs.
+    
     def _KComponentSetUp(self):
         ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)
         
@@ -926,32 +929,34 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
             return
         
         self._export_PAV_Folders = {}
-        # Proceed to create the folders for each deformation
-        for prolate in (0, 1):
-            for i in self._final_bin_list_data[prolate].keys():
-                
-                BU_FLD_DEF_BLOCK = f"{self.DTYPE.BU_folder}/def{i}_PAV"
-                BU_FLD_DEF_BLOCK = BU_FLD_DEF_BLOCK.replace('-', '_')
-                # Create new BU folder
-                if os.path.exists(BU_FLD_DEF_BLOCK):
-                    shutil.rmtree(BU_FLD_DEF_BLOCK)
-                os.mkdir(BU_FLD_DEF_BLOCK)
-                self._export_PAV_Folders[i] = BU_FLD_DEF_BLOCK + '/'
+        if self.SAVE_K_WFS_FOR_EACH_DEFORMATION:
+            # Proceed to create the folders for each deformation
+            for prolate in (0, 1):
+                for i in self._final_bin_list_data[prolate].keys():
+                    
+                    BU_FLD_DEF_BLOCK = f"{self.DTYPE.BU_folder}/def{i}_PAV"
+                    BU_FLD_DEF_BLOCK = BU_FLD_DEF_BLOCK.replace('-', '_')
+                    # Create new BU folder
+                    if os.path.exists(BU_FLD_DEF_BLOCK):
+                        shutil.rmtree(BU_FLD_DEF_BLOCK)
+                    os.mkdir(BU_FLD_DEF_BLOCK)
+                    self._export_PAV_Folders[i] = BU_FLD_DEF_BLOCK + '/'
                     
     
-    def _K_foundActionsTearDown(self, res:DataTaurus):
-        """ Overwriting to save the results in d """        
-        ExeTaurus1D_B20_OEblocking_Ksurfaces.\
-            _K_foundActionsTearDown(self, res)
+        def _K_foundActionsTearDown(self, res:DataTaurus):
+            """ Overwriting to save the results in d """        
+            ExeTaurus1D_B20_OEblocking_Ksurfaces.\
+                _K_foundActionsTearDown(self, res)
+            
+            ## ALL SP results require not to store until all done
+            if not self._save_results: return
+            
+            if self.SAVE_K_WFS_FOR_EACH_DEFORMATION:
+                _PAR = (1 - self.PARITY_TO_BLOCK)//2
+                dest_ = f"{self._current_K}_{_PAR}.bin"
+                shutil.copy('final_wf.bin', 
+                            self._export_PAV_Folders[self._curr_deform_index] + dest_)
         
-        ## ALL SP results require not to store until all done
-        if not self._save_results: return
-        
-        _PAR = (1 - self.PARITY_TO_BLOCK)//2
-        dest_ = f"{self._current_K}_{_PAR}.bin"
-        shutil.copy('final_wf.bin', 
-                    self._export_PAV_Folders[self._curr_deform_index] + dest_)
-    
     def _get_gcm_filetexts(self, list_wf):
         """
         Creates auxiliary files for PNVAP_preparation scripts in linux.
@@ -989,6 +994,8 @@ class ExeTaurus1D_B20_KMixing_OEblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         
         ExeTaurus1D_B20_OEblocking_Ksurfaces\
             .globalTearDown(self, zip_bufolder=zip_bufolder, *args, **kwargs)       
+        
+        if not self.SAVE_K_WFS_FOR_EACH_DEFORMATION: return
         
         ## Import the programs if they do not exist
         importAndCompile_taurus(pav= not os.path.exists(InputTaurusPAV.PROGRAM),
@@ -1272,7 +1279,254 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
         return id_min, res, bin_, datfiles
     
 
-
+class ExeTaurus1D_B20_KwithIndependentSP_OEblocking(ExeTaurus1D_B20_KMixing_OEblocking):
+    """
+    Example that iterates for each sp independetly for the K.
+    
+    Differs from ExeTaurus1D_B20_KMixing_OEblocking by not finding the sp-iteration
+    selection for every deformation false-oe seed.
+    
+    The different K surfaces are stored in the K folders by export-Taurus-vap.txt
+    """
+    
+    def __init__(self, z, n, interaction, *args, **kwargs):
+        ExeTaurus1D_B20_KMixing_OEblocking.__init__(self, z, n, interaction, 
+                                                    *args, **kwargs)
+        
+        self._valid_SPs = []
+        self._exportable_BU_K_sp = {}
+    
+    def run(self, fomenko_points=None):
+        
+        """
+        Modifyed method to obtain the reminization with a blocked state.
+        """
+        self._blocking_section = False
+        ExeTaurus1D_DeformB20.run(self)
+        
+        if fomenko_points:
+            self.inputObj.z_Mphi = fomenko_points[0]
+            self.inputObj.n_Mphi = fomenko_points[1]
+            if self.RUN_PROJECTION:
+                self.inputObj_PAV.z_Mphi = fomenko_points[0]
+                self.inputObj_PAV.n_Mphi = fomenko_points[1]            
+        ##  
+        self._blocking_section = True
+        if self.numberParity == (0, 0): return
+        printf(LINE_1, " [DONE] False Odd-Even TES, begin blocking section")
+        printf(f"   Finding all sp-K results: {self.FIND_K_FOR_ALL_SPS}")
+        printf(f"   Doing also Projection:    {self.RUN_PROJECTION}")
+        printf(f"   Checking also negative K: {self.BLOCK_ALSO_NEGATIVE_K}")
+        printf(f"   Valid Ks = {self._valid_Ks}")
+        printf( "   Iteration by Independent sp-states associated to K.\n")
+        
+        self.inputObj.seed = 1
+        self.inputObj.eta_grad  = 0.03 
+        self.inputObj.mu_grad   = 0.00
+        self.inputObj.grad_type = 1
+        self._iters_vap_default = self.inputObj.iterations
+        
+        # Perform the projections to save each K component
+        for K in self._valid_Ks:
+            self._no_results_for_K = True
+            self._current_K = K
+            self._KComponentSetUp()
+            
+            for sp_ in self._valid_SPs:
+                self._current_sp = sp_
+                self._export_txt_for_K = {}
+                self._exportable_BU_FLD_KBLOCK = self._exportable_BU_K_sp[sp_]
+                # oblate part
+                for prolate in (0, 1):
+                    for i_def, tail_ in self._final_bin_list_data[prolate].items():
+                        
+                        self._curr_deform_index = i_def
+                        if i_def in (-1, 0):
+                            shutil.copy(f"{self.DTYPE.BU_folder}/seed_{tail_}.bin", 
+                                        "initial_wf.bin")
+                        else:
+                            shutil.copy('final_wf.bin', 'initial_wf.bin')
+                        
+                        self._resetTheIterationsForKcomponentIterations()
+                        ## NOTE: Projection is not allowed for the _executeProgram,
+                        ## in order to do it after checking (or not) all sp-K, 
+                        ## PAV is done in _selectStateFromCalculationSetTearDown()
+                        ##
+                        ## However, in case of not searching all sp-states-K do it.
+                        self._projectionAllowed *= (not self.FIND_K_FOR_ALL_SPS)
+                        self._spIterationAndSelectionProcedure(i_def)
+                        
+                    self._previous_bin_path = None
+                if self._no_results_for_K: 
+                    printf("  [WARNING] No blocked result for 2K=", K)
+                # sp-loop
+                _ = 0
+            # K-loop
+        _ = 0
+    
+    def _KComponentSetUp(self):
+        """
+        Create foders K_P_VAP/(1, 5, 9, 15, ...sps for KP)
+        Store the valid sps as object.
+        """
+        ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)
+        
+        if self._current_K != self._valid_Ks[0]: 
+            return
+        
+        sp_index_list = [sp_ for sp_ in range(1, self._sp_dim +1)]
+        self._exportable_BU_K_sp = {}
+        
+        for i_sp in range(self._sp_dim):
+            sp_ = sp_index_list[i_sp]
+            parity_ = (-1)**self._sp_states_obj[sp_].l
+            
+            if self._sp_states_obj[sp_].m != self._current_K : continue
+            if parity_ != self.PARITY_TO_BLOCK : continue 
+                        
+            self._valid_SPs.append(sp_)
+            sh_ = self._sp_states_obj[sp_].AntoineStrIndex_l_greatThan10
+            self._exportable_BU_K_sp [sp_] = self._exportable_BU_FLD_KBLOCK + f"/{sh_}"
+            os.mkdir(self._exportable_BU_K_sp[sp_])
+        
+        if self.SAVE_K_WFS_FOR_EACH_DEFORMATION:
+            self._export_PAV_Folders = {}
+            # Proceed to create the folders for each deformation
+            for prolate in (0, 1):
+                for i in self._final_bin_list_data[prolate].keys():
+                    
+                    BU_FLD_DEF_BLOCK = f"{self.DTYPE.BU_folder}/def{i}_PAV"
+                    BU_FLD_DEF_BLOCK = BU_FLD_DEF_BLOCK.replace('-', '_')
+                    # Create new BU folder
+                    if os.path.exists(BU_FLD_DEF_BLOCK):
+                        shutil.rmtree(BU_FLD_DEF_BLOCK)
+                    os.mkdir(BU_FLD_DEF_BLOCK)
+                    self._export_PAV_Folders[i] = BU_FLD_DEF_BLOCK + '/'
+    
+    def _spIterationAndSelectionProcedure(self, i_def):
+        """
+        Iteration over all the single-particle states until getting a correct 
+        solution (axial and same K)
+        * Getting the first solution or try over all the possible blockings
+        """
+        ## fix the deformation i to the main constraint
+        prolate = int(i_def >= 0)
+        b20_ = dict(self._deformations_map[prolate]).get(i_def)
+        setattr(self.inputObj, self.CONSTRAINT, b20_)
+        sp_ = self._current_sp
+        set_energies = {}
+                
+        if self._curr_deform_index == 0:
+            isNeu = self._sp_dim if self.numberParity[1] else 0
+            self.inputObj.qp_block = sp_ + isNeu
+        else:
+            self.inputObj.qp_block = None
+        
+        ## minimize and save only if 2<Jz> = K
+        res : DataTaurus = self._executeProgram()
+        if not (res.properly_finished and res.isAxial()):
+            return
+        if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+            ## no more minimizations for this deformation
+            self._no_results_for_K *= False
+            self._K_foundActionsTearDown(res)
+            set_energies[sp_] = f"{res.E_HFB:6.4f}"
+        elif sp_ == self._sp_dim:
+            printf(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
+        else:
+            self._K_notFoundActionsTearDown(res)
+        
+        if (self.FIND_K_FOR_ALL_SPS and not self._no_results_for_K):
+            # only apply if multiple E
+            self._selectStateFromCalculationSetTearDown(set_energies)
+    
+    # def saveFinalWFprocedure(self, result:DataTaurus, base_execution=False):
+    #     """
+    #     overwriting of exporting procedure:
+    #         naming, dat files, output in the BU folder
+    #
+    #     Modification: 
+    #         Output filenames and .dat filenames were MOVED, to extend the class
+    #         and avoid further errors it will be copied
+    #     """
+    #     if self._blocking_section:
+    #         if not self._save_results:
+    #             id_ = self._idNamingForContainerOfFinalWF()
+    #             self._container.append(result, id_=id_, binary='final_wf.bin',
+    #                                    datfiles=self.SAVE_DAT_FILES)
+    #             return
+    #
+    #         # copy the final wave function and output with the deformation
+    #         # naming (_0.365.OUT, 0.023.bin, etc )
+    #         #
+    #         # NOTE: if the function is not valid skip or ignore
+    #         i = self._curr_deform_index
+    #         b20_  = self.deform_oblate[-i-1] if (i < 0) else self.deform_prolate[i]
+    #         # prolate = 0 if i < 0 else 1 
+    #         # b20_ = dict(self._deformations_map[prolate]).get(i)
+    #         fndat = f"{b20_:6.3f}".replace('-', '_').strip()
+    #         fnbin = f"{fndat}.bin"
+    #
+    #         _invalid = result.broken_execution or not result.properly_finished
+    #         if _invalid:
+    #             shutil.copy(self.DTYPE.DEFAULT_OUTPUT_FILENAME,  
+    #                         f"{self._exportable_BU_FLD_KBLOCK}/broken_{fndat}.OUT")
+    #             for dat_f in self.SAVE_DAT_FILES:
+    #                 dat_f += '.dat'
+    #                 dat_fn = f"broken_{fndat}_{dat_f}"
+    #                 shutil.copy(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
+    #             return
+    #
+    #         shutil.copy("final_wf.bin", 
+    #                     f"{self._exportable_BU_FLD_KBLOCK}/{fnbin}")
+    #         shutil.copy(self.DTYPE.DEFAULT_OUTPUT_FILENAME, 
+    #                     f"{self._exportable_BU_FLD_KBLOCK}/{fndat}.OUT")
+    #         for dat_f in self.SAVE_DAT_FILES:
+    #             dat_f += '.dat'
+    #             dat_fn = f"{fndat}_{dat_f}"
+    #             shutil.copy(dat_f, f"{self._exportable_BU_FLD_KBLOCK}/{dat_fn}")
+    #
+    #         if not (fnbin in self._exportable_LISTDAT_forK or _invalid):        
+    #             if self.ITERATIVE_METHOD != self.IterativeEnum.EVEN_STEP_STD:
+    #                 printf(" [WARING] CheckOut the BU_folderK/list.dat ORDER, ",
+    #                        "iterative method considered for EVEN_STEP_STD.")
+    #             if self._curr_deform_index < 0:
+    #                 self._exportable_LISTDAT_forK.insert(0, fnbin)
+    #             else:
+    #                 self._exportable_LISTDAT_forK.append(fnbin)
+    #     else:
+    #         ## Normal execution
+    #         ExeTaurus1D_DeformB20.saveFinalWFprocedure(self, 
+    #                                                    result, base_execution)
+    #
+    # def executionTearDown(self, result:DataTaurus, base_execution, *args, **kwargs):
+    #     """
+    #         Separate the two parts for obtaining the 'exportResult()' for 
+    #         minimization after blocking.
+    #     """
+    #     if self._blocking_section:            
+    #         if not self._save_results: 
+    #             return
+    #         ## save the list dat into folder
+    #         with open(f'{self._exportable_BU_FLD_KBLOCK}/list.dat', 'w+') as f:
+    #             if len(self._exportable_LISTDAT_forK):
+    #                 f.write("\n".join(self._exportable_LISTDAT_forK) )
+    #
+    #         K = self._current_K
+    #         with open(f'{self._exportable_BU_FLD_KBLOCK}/' + 
+    #                   self.EXPORT_LIST_RESULTS.replace('TESb20', f'TESb20_K{K}')
+    #                   , 'w+') as f:
+    #             exportable_txt = [self._export_txt_for_K[k] 
+    #                               for k in sorted(self._export_txt_for_K.keys())]
+    #             exportable_txt.insert(0, "{}, {}".format('DataTaurus', 
+    #                                                      self.CONSTRAINT_DT))
+    #             if len(self._export_txt_for_K):
+    #                 f.write("\n".join(exportable_txt))
+    #     else:
+    #         ## Normal execution
+    #         ExeTaurus1D_DeformB20.executionTearDown(self, result, base_execution, 
+    #                                                 *args, **kwargs)
+    
 class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblocking):
     
     """
@@ -1317,8 +1571,9 @@ class ExeTaurus1D_TestOddOdd_K4AllCombinations(ExeTaurus1D_B20_KMixing_OOblockin
         if fomenko_points:
             self.inputObj.z_Mphi = fomenko_points[0]
             self.inputObj.n_Mphi = fomenko_points[1]
-            self.inputObj_PAV.z_Mphi = fomenko_points[0]
-            self.inputObj_PAV.n_Mphi = fomenko_points[1]            
+            if self.RUN_PROJECTION:
+                self.inputObj_PAV.z_Mphi = fomenko_points[0]
+                self.inputObj_PAV.n_Mphi = fomenko_points[1]  
         ##  
         self._blocking_section = True
         if self.numberParity == (0, 0): return

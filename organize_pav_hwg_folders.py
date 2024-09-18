@@ -365,7 +365,8 @@ def oddeven_PAV_diagonal_from_sameFld_vap(K_list, MAIN_FLD, interaction, nuclei,
         print("  3. Creating SLURM job scripts.", _JobLauncherClass.__name__) 
         slurm = _JobLauncherClass(interaction, len(bins_), valid_J_list,
                                   PAV_input_filename='input_pav.txt',
-                                  HWG_input_filename='input_mix.txt')     
+                                  HWG_input_filename='input_mix.txt',
+                                  only_diagonal_PAV=True)     
         
         for fn_, scr_ in slurm.getScriptsByName().items():
             if fn_ == 'hw.x': continue
@@ -1114,8 +1115,9 @@ if __name__ == '__main__':
     K_list = [1, 3, 5, ]
     par_   = 1 # ( 1,-1)
     nuclei = [(12, 13), ]
-    kwargs  = {'parity':par_, 'PNP_fomenko':7, 'Jmin_max':(1,10), 'RUN_SBATCH':True}
+    kwargs  = {'parity':par_, 'PNP_fomenko':7, 'Jmin_max':(1,11), 'RUN_SBATCH':True}
     MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/Mg/'
+    MAIN_FLD = 'results/Mg'
     oddeven_PAV_diagonal_from_sameFld_vap(K_list, MAIN_FLD, inter, nuclei, **kwargs)
     0/0
     
