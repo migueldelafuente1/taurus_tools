@@ -1371,9 +1371,6 @@ class ExeTaurus1D_B20_KwithIndependentSP_OEblocking(ExeTaurus1D_B20_KMixing_OEbl
         """
         ExeTaurus1D_B20_OEblocking_Ksurfaces._KComponentSetUp(self)
         
-        if self._current_K != self._valid_Ks[0]: 
-            return
-        
         sp_index_list = [sp_ for sp_ in range(1, self._sp_dim +1)]
         self._exportable_BU_K_sp = {}
         
