@@ -1373,6 +1373,7 @@ class ExeTaurus1D_B20_KwithIndependentSP_OEblocking(ExeTaurus1D_B20_KMixing_OEbl
         
         sp_index_list = [sp_ for sp_ in range(1, self._sp_dim +1)]
         self._exportable_BU_K_sp = {}
+        self._valid_SPs = []
         
         for i_sp in range(self._sp_dim):
             sp_ = sp_index_list[i_sp]
