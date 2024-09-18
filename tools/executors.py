@@ -127,6 +127,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         Defines the parameters for the projection of the nucleus.
         The z, n, interaction, com, Fomenko-points, and Jvals from the program
         """
+        if len(params) == 0: return
         self.inputObj_PAV = InputTaurusPAV(self.z, self.n, self.interaction)
         
         self.inputObj_PAV.com = self.inputObj.com
