@@ -40,6 +40,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
     FIND_K_FOR_ALL_SPS    = False
     BLOCK_ALSO_NEGATIVE_K = False
     RUN_PROJECTION        = False
+    REQUIRE_AXIAL_KP_CONDITION = True
     
     _MIN_ENERGY_CRITERIA  = False ## only apply for FIND_K_FOR_ALL_SPS, protocol
     
@@ -309,9 +310,15 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             
             ## minimize and save only if 2<Jz> = K
             res : DataTaurus = self._executeProgram()
-            if not (res.properly_finished and res.isAxial()):
-                continue
-            if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+            
+            accepted_ = True
+            if (not res.properly_finished): continue
+            if self.REQUIRE_AXIAL_KP_CONDITION:
+                if (not res.isAxial()): continue
+                if not almostEqual(2 * res.Jz, self._current_K, 1.0e-5): 
+                    accepted_ = False
+            
+            if accepted_:
                 ## no more minimizations for this deformation
                 self._no_results_for_K *= False
                 self._K_foundActionsTearDown(res)
@@ -833,11 +840,25 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces(ExeTaurus1D_B20_OEblocking_Ksurfaces_
                 if self._curr_deform_index in (0, -1):
                     valid_ = valid_ and res.properly_finished
             
-            if not (valid_ and res.isAxial()):
-                continue
-            if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+            # if not (valid_ and res.isAxial()):
+            #     continue
+            # if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+            #     ## no more minimizations for this deformation
+            #
+            #     self._no_results_for_K *= False
+            #     self._K_foundActionsTearDown(res)
+            #     set_energies[sp_] = f"{res.E_HFB:6.4f}"
+            #     if not self.FIND_K_FOR_ALL_SPS: break
+            
+            accepted_ = True
+            if (not valid_): continue
+            if self.REQUIRE_AXIAL_KP_CONDITION:
+                if (not res.isAxial()): continue
+                if not almostEqual(2 * res.Jz, self._current_K, 1.0e-5): 
+                    accepted_ = False
+            
+            if accepted_:
                 ## no more minimizations for this deformation
-                                
                 self._no_results_for_K *= False
                 self._K_foundActionsTearDown(res)
                 set_energies[sp_] = f"{res.E_HFB:6.4f}"
@@ -1142,20 +1163,41 @@ class ExeTaurus1D_B20_KMixing_OOblocking(ExeTaurus1D_B20_OEblocking_Ksurfaces):
             self.inputObj.qp_block = (sp_p, sp_n)
             ## minimize and save only if 2<Jz> = K
             res : DataTaurus = self._executeProgram()
-            if not (res.properly_finished and res.isAxial()):
-                continue
-            if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+            # if not (res.properly_finished and res.isAxial()):
+            #     continue
+            # if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+            #     ## no more minimizations for this deformation
+            #     count_ += 1
+            #     if count_ >= MAX_COUNT:
+            #         print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
+            #           f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
+            #         break
+            #
+            #     self._no_results_for_K *= False
+            #     self._K_foundActionsTearDown(res)
+            #     set_energies[self._current_sp] = f"{res.E_HFB:6.4f}"
+            #     if not self.FIND_K_FOR_ALL_SPS: break            
+            
+            accepted_ = True
+            if (not res.properly_finished): continue
+            if self.REQUIRE_AXIAL_KP_CONDITION:
+                if (not res.isAxial()): continue
+                if not almostEqual(2 * res.Jz, self._current_K, 1.0e-5): 
+                    accepted_ = False
+                else:
+                    count_ += 1
+                    if count_ >= MAX_COUNT:
+                        print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
+                          f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
+                        break
+            
+            if accepted_:
                 ## no more minimizations for this deformation
-                count_ += 1
-                if count_ >= MAX_COUNT:
-                    print(f"   [DONE] found [{MAX_COUNT}] states randomized [{random_}]",
-                      f"or blocking count limit stablished=[{self.LIMIT_BLOCKING_COUNT}], break.")
-                    break
-                
                 self._no_results_for_K *= False
                 self._K_foundActionsTearDown(res)
                 set_energies[self._current_sp] = f"{res.E_HFB:6.4f}"
-                if not self.FIND_K_FOR_ALL_SPS: break
+                if not self.FIND_K_FOR_ALL_SPS: break  
+            # elif sp_ == self._sp_dim:
             elif global_count == len(sp_index_list):
                 printf(f"  [no K={self._current_K}] no state for def[{i_def}]={b20_:>6.3f}")
             else:
@@ -1422,9 +1464,22 @@ class ExeTaurus1D_B20_KwithIndependentSP_OEblocking(ExeTaurus1D_B20_KMixing_OEbl
         
         ## minimize and save only if 2<Jz> = K
         res : DataTaurus = self._executeProgram()
-        if not (res.properly_finished and res.isAxial()):
-            return
-        if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+        # if not (res.properly_finished and res.isAxial()):
+        #     return
+        # if almostEqual(2 * res.Jz, self._current_K, 1.0e-5):
+        #     ## no more minimizations for this deformation
+        #     self._no_results_for_K *= False
+        #     self._K_foundActionsTearDown(res)
+        #     set_energies[sp_] = f"{res.E_HFB:6.4f}"
+        
+        accepted_ = True
+        if (not res.properly_finished): return
+        if self.REQUIRE_AXIAL_KP_CONDITION:
+            if (not res.isAxial()): return
+            if not almostEqual(2 * res.Jz, self._current_K, 1.0e-5): 
+                accepted_ = False
+        
+        if accepted_:
             ## no more minimizations for this deformation
             self._no_results_for_K *= False
             self._K_foundActionsTearDown(res)

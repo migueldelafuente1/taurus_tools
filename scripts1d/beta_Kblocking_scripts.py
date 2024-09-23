@@ -22,6 +22,7 @@ from tools.helpers import importAndCompile_taurus, printf
 def __selectAndSetUp_OEOO_Blocking(z, n, 
                                    find_Kfor_all_sps, convergences, 
                                    parity_2_block, preconverge_blocking_sts,
+                                   seed_base,
                                    test_independent_sp4K=False):
     """
     Odd-Odd and Odd-Even use the same execution parameters, merge the class 
@@ -36,7 +37,8 @@ def __selectAndSetUp_OEOO_Blocking(z, n,
     
     _Executable_B20_KMixClass.IGNORE_SEED_BLOCKING  = True
     _Executable_B20_KMixClass.BLOCK_ALSO_NEGATIVE_K = False
-    _Executable_B20_KMixClass.RUN_PROJECTION        = False 
+    _Executable_B20_KMixClass.RUN_PROJECTION        = False
+    _Executable_B20_KMixClass.REQUIRE_AXIAL_KP_CONDITION = seed_base in (2,3,9)
     
     if not isinstance(find_Kfor_all_sps, bool):
         assert type(find_Kfor_all_sps) == int, \
@@ -101,8 +103,11 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         and gogny_interaction != GognyEnum.B1):
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
+    _axial_seed = seed_base in (2, 3, 9)
+    
     ExeTaurus1D_B20_OEblocking_Ksurfaces.IGNORE_SEED_BLOCKING  = True
     ExeTaurus1D_B20_OEblocking_Ksurfaces.BLOCK_ALSO_NEGATIVE_K = False
+    ExeTaurus1D_B20_OEblocking_Ksurfaces.REQUIRE_AXIAL_KP_CONDITION = _axial_seed
     
     ExeTaurus1D_B20_OEblocking_Ksurfaces.ITERATIVE_METHOD = \
         ExeTaurus1D_B20_OEblocking_Ksurfaces.IterativeEnum.EVEN_STEP_STD
@@ -127,9 +132,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
                InputTaurus.InpDDEnum.r_dim     : ROmega[0],
                InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
-        
-        axial_calc = seed_base in (2, 3, 9)
-        
+                
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
             InputTaurus.ArgsEnum.z_Mphi : 0,
@@ -142,7 +145,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.pair_schm: 1,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            'axial_calc' : axial_calc,
+            'axial_calc' : _axial_seed,
         }        
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
@@ -156,7 +159,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
-            'axial_calc' : axial_calc,
+            'axial_calc' : _axial_seed,
         }        
         ExeTaurus1D_B20_OEblocking_Ksurfaces.EXPORT_LIST_RESULTS = \
             f"export_TESb20_z{z}n{n}_{interaction}.txt"
@@ -181,7 +184,6 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   parity_2_block= 1, 
                                   preconverge_blocking_sts=False,
                                   find_Kfor_all_sps=True):
-    
     """
         This script evaluate the projection after the blocking from a previous
         false- odd-even b20 TES.
@@ -213,7 +215,8 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             find_Kfor_all_sps, 
             convergences, 
             parity_2_block, 
-            preconverge_blocking_sts
+            preconverge_blocking_sts, 
+            seed_base,
         )
         __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args)
         
@@ -330,7 +333,8 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             find_Kfor_all_sps, 
             convergences, 
             parity_2_block, 
-            preconverge_blocking_sts
+            preconverge_blocking_sts,
+            seed_base,
         )
         __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args)
         
@@ -447,7 +451,8 @@ def run_b20_FalseOdd_exampleAllSpForKIndependly(nucleus, interactions, gogny_int
             find_Kfor_all_sps, 
             convergences, 
             parity_2_block, 
-            preconverge_blocking_sts
+            preconverge_blocking_sts,
+            seed_base,
         )
         kwargs = {'test_independent_sp4K': True, }
         __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args, **kwargs)
@@ -551,7 +556,8 @@ def run_b20_testOO_Kmixing4AllCombinations(
             find_Kfor_all_sps, 
             convergences, 
             parity_2_block, 
-            preconverge_blocking_sts
+            preconverge_blocking_sts,
+            seed_base,
         )
     
     __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args)
