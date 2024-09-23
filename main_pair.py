@@ -10,6 +10,7 @@ from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
 from scripts1d.pair_scripts import run_pair_surface_D1S
 from scripts1d.cranking_scripts import run_J_surface
+from tools.Enums import GognyEnum
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
@@ -37,6 +38,13 @@ if __name__ == '__main__':
     #     # (20,19): (5, 0, 1.85),
     # }
     
+    ## MZ large test
+    interactions = {
+        (10,10): (7, 0, None), 
+        (16,16): (7, 0, None),
+        (24,24): (7, 0, None), 
+    }
+    
     nucleus = sorted(list(interactions.keys()))    
     
     PAIR_CONSTRS = [
@@ -45,10 +53,13 @@ if __name__ == '__main__':
     ]
     
     constr_onrun = {
-        InputTaurus.ConstrEnum.Jx: 0.0}
+        #InputTaurus.ConstrEnum.Jx: 0.0
+    }
     
-    run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS, 
-                         ROmega=(14,16), convergences=3,
+    run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS,
+                         gogny_interaction=GognyEnum.B1,
+                         ROmega=(0,0), convergences=4,
+                         #ROmega=(14,16), convergences=3,
                          seed_base=0, 
                          p_min=-0.05, p_max=2.0, N_max=41,
                          **constr_onrun

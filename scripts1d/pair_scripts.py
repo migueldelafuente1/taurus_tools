@@ -12,9 +12,11 @@ from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
 from tools.helpers import LINE_2, prettyPrintDictionary, printf
+from tools.Enums import GognyEnum
 
 
-def run_pair_surface_D1S(nucleus, interactions, pair_constrs, 
+def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
+                         gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
                          p_min=-0.05, p_max=2.0, N_max=41, convergences=0,
                          **constr_onrun):
@@ -60,7 +62,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
               datetime.now().time(), "\n")
         
-        interaction = getInteractionFile4D1S(interactions, z, n)
+        interaction = getInteractionFile4D1S(interactions, z, n, 
+                                             gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
             printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
