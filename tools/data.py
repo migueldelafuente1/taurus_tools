@@ -1267,7 +1267,11 @@ class DataTaurusPAV(_DataObjectBase):
     @property
     def nanComponentsInResults(self):
         return self._nanComponentsInResults
-        
+    
+    @property
+    def dim(self):
+        return self.proj_energy.__len__()
+    
     def get_results(self):
         """
         Read all the lines and export

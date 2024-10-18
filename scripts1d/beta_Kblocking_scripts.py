@@ -359,6 +359,14 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             ## in case of even-even one can do the VAP
             vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
                         IArgsEnum.n_Mphi : fomenko_points[1],}
+        vap_constraints = {
+            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b41 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b42 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b43 : (0.00, 0.00),
+            InputTaurus.ConstrEnum.b44 : (0.00, 0.00)
+            }
         
         input_args_start = {**vap_args,
             IArgsEnum.com : 1,
@@ -368,8 +376,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.grad_tol : 0.0001,
             IArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             IArgsEnum.pair_schm: 1,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            **vap_constraints,
             'axial_calc' : axial_calc,
             #'core_calc'  : True,
         }
@@ -381,8 +388,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.eta_grad : 0.015,
             IArgsEnum.mu_grad  : 0.02, # 0.5
             IArgsEnum.grad_tol : 0.0001,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
+            **vap_constraints,
             'axial_calc' : axial_calc,
             #'core_calc'  : True,
             #'valid_Ks'   : valid_Ks,
