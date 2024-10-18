@@ -8,7 +8,7 @@ Module for script setting
 '''
 import os
 import shutil
-from numpy.random import randint
+import numpy as np
 from copy import deepcopy, copy
 
 from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
@@ -287,15 +287,15 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             bk_sh_p, bk_sh_n = 0, 0
             bk_sp, bk_sh = None, None
             if odd_p:
-                bk_sh_p = randint(0, len(sh_states))
+                bk_sh_p = np.random.randint(0, len(sh_states))
                 cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_p)])
-                bk_sp_p = cdim + randint(1, sp_states[sh_states[bk_sh_p]] +1)
+                bk_sp_p = cdim + np.random.randint(1, sp_states[sh_states[bk_sh_p]] +1)
                 bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
             if odd_n:
-                bk_sh_n = randint(0, len(sp_states))
+                bk_sh_n = np.random.randint(0, len(sp_states))
                 cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_n)])
                 cdim += sp_dim
-                bk_sp_n = cdim + randint(1, sp_states[sh_states[bk_sh_n]] +1)
+                bk_sp_n = cdim + np.random.randint(1, sp_states[sh_states[bk_sh_n]] +1)
                 bk_sp = (bk_sp, bk_sp_n) if bk_sp else bk_sp_n
                 bk_sh = (bk_sh, sh_states[bk_sh_n]) if bk_sh else sh_states[bk_sh_n]
             
