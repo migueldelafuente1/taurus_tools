@@ -510,6 +510,8 @@ class OccupationNumberData(_DataObjectBase):
         self._numbers_by_label = {}
         
         self.filename = filename
+        
+        if self.filename: self.getResults()
     
     def getResults(self):
         """

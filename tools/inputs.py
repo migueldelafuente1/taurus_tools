@@ -612,7 +612,22 @@ eval/export Valence.Space   = {export_vs}
         
         self.setParameters(**params)
     
-    def setUpNoCoreAxialCalculation(self, **params):
+    def setUpNoCoreCalculation(self, **params):
+        """ 
+        Set up for the No-Core configuration. PN pairing must be suppressed, and
+        default seed is 5, requires COM correction
+        """
+        self.com  = 1
+        self.seed = 5
+        for atr in (self.ConstrEnum.b10, self.ConstrEnum.b11,
+                    self.ConstrEnum.b21,
+                    self.ConstrEnum.b31, self.ConstrEnum.b33,
+                    self.ConstrEnum.b41, self.ConstrEnum.b43):
+            setattr(self, atr, 0.0)
+        
+        self.setParameters(**params)
+    
+    def setUpNoCore_axial_Calculation(self, **params):
         """ 
         Set up for the No-Core configuration. PN pairing must be suppressed, and
         default seed is 3, requires COM correction

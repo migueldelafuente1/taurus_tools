@@ -173,7 +173,7 @@ class _EnergyLevelSimpleGraph():
         x_margin = x_len * self.X_BOX_MARGIN
         x_0_item  = 0
         
-        fig, ax = plt.subplots(1, 1, figsize=(x_len_global, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(5.5,6))#figsize=(x_len_global, 8))
         
         for item_, data_it in enumerate(self._plot_data):
             n_ = self._max_group[item_]
@@ -190,12 +190,12 @@ class _EnergyLevelSimpleGraph():
                     ax.plot(x[1:], (elems_[1], )*2, linewidth= 1, color='black')
                     jp_str.append(f"${elems_[0]}$"
                                    .replace('+', '^+').replace('-', '^-'))
-                jp_str = ' '.join(jp_str)
+                jp_str = ' '.join(jp_str) + ' '
                 ax.annotate(jp_str, 
-                            xy= (x[0] + (x[1]-x[0])/2, data[0][1]),
+                            xy= (x[0] + (x[1]-x[0])/2, data[0][1] + 0.1),
                             #xytext=(0, 4),  # 4 points vertical offset.
                             # textcoords='offset points',
-                            fontsize= 8 - len(data) + 1,
+                            fontsize= 9 - len(data) + 1,
                             ha='center', va='center',
                             rotation=20*(len(data) != 1),
                             )            
@@ -210,8 +210,8 @@ class _EnergyLevelSimpleGraph():
         
         ax.set_xlim(             - self.X_BOX_MARGIN * x_len, 
                     x_len_global + self.X_BOX_MARGIN * x_len)
-        # ax.spines['top']   .set_visible(False)
-        # ax.spines['right'] .set_visible(False)
+        ax.spines['top']   .set_visible(False)
+        ax.spines['right'] .set_visible(False)
         ax.spines['left']  .set_visible(False)
         ax.spines['bottom'].set_visible(False)
         

@@ -1,5 +1,5 @@
 '''
-Created on Jan 19, 2023
+Created on Oct 25, 2024
 
 @author: Miguel
 '''
@@ -7,31 +7,29 @@ import os
 from datetime import datetime
 import shutil
 
-from tools.executors import ExeTaurus1D_PairCoupling, ExecutionException
-from tools.inputs import InputTaurus
+from tools.executors   import ExecutionException
+from tools.executors2D import ExeTaurus2D_MultiConstrained
+from tools.inputs      import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
-from tools.data import DataTaurus
+from tools.data    import DataTaurus
 from tools.helpers import LINE_2, prettyPrintDictionary, printf
-from tools.Enums import GognyEnum
+from tools.Enums   import GognyEnum
 
-
-def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
+def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
-                         p_min=-0.05, p_max=2.0, N_max=41, convergences=0,
+                         convergences=0,
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
     Args:
         :nucleus: <list>: (z1,n1), (z2,n2), ..
         :interactions: <dict> [Nucleus (z, n)]: (MZm_max, Mz_min, b_length)
-        :pair_constrs = <list> [P_TJ**, P_TJ'**, ...]
+        :pair_constrs = <dict> 
+                            {P_TJ**: (p_min, p_max, N_steps), P_TJ'**, ... }
     Optional:
         :seed_base (taurus_input seeds, pn-mix True= 0 & 4)
         :ROmega tuple of the integration grids
-        :p_min
-        :p_max
-        :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :constr_onrun other constraints to set up the calculation.
     """
@@ -46,17 +44,17 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     constr_onrun = {**constr_onrun, **_3d_PT0JM}
     
     ## Normal execution.
-    ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
-        ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_SWEEPING
+    ExeTaurus2D_MultiConstrained.ITERATIVE_METHOD = \
+        ExeTaurus2D_MultiConstrained.IterativeEnum.EVEN_STEP_SWEEPING
         
-    ExeTaurus1D_PairCoupling.SAVE_DAT_FILES = [
+    ExeTaurus2D_MultiConstrained.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
         DataTaurus.DatFileExportEnum.eigenbasis_h,
         DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     
-    ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION   = convergences
-    ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus2D_MultiConstrained.SEEDS_RANDOMIZATION   = convergences
+    ExeTaurus2D_MultiConstrained.GENERATE_RANDOM_SEEDS = bool(convergences)
     
     for z, n in nucleus:
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
@@ -69,8 +67,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             continue
         
         InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.eval_dd : ROmega != (0, 0),
-               InputTaurus.InpDDEnum.r_dim : ROmega[0],
+            **{InputTaurus.InpDDEnum.eval_dd   : ROmega != (0, 0),
+               InputTaurus.InpDDEnum.r_dim     : ROmega[0],
                InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
         input_args_start = {
@@ -93,48 +91,26 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             **constr_onrun
         }
         
-        ExeTaurus1D_PairCoupling.setPairConstraint(pair_constrs[0])
-        ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
+        ExeTaurus2D_MultiConstrained.setExecutorConstraints(pair_constrs)
+        ExeTaurus2D_MultiConstrained.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
         
+        ## First unconstrained minimum
         try:
-            exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
-            exe_.setInputCalculationArguments(axial_calc=True, 
-                                              **input_args_start)
-            exe_.defineDeformationRange(p_min,  p_max, N_max)
+            exe_ = ExeTaurus2D_MultiConstrained(z, n, interaction)
+            exe_.setInputCalculationArguments(axial_calc=True, **input_args_start)
+            exe_.defineDeformationRange(pair_constrs)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
             exe_.globalTearDown(zip_bufolder=True, base_calc=True)
         except ExecutionException as e:
-            printf("[PAIR_SCRIPT ERROR] :: Execution Exception rose:")
+            printf("[2D_SCRIPT ERROR] :: Execution Exception rose:")
             printf(e)
-            printf("[PAIR_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
+            printf("[2D_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
             continue
-        
-        for ip, pair_constr in enumerate(pair_constrs):
-            
-            ExeTaurus1D_PairCoupling.setPairConstraint(pair_constr)
-            # ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
-            
-            try:
-                # if ip == 0:
-                #     exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
-                # else:
-                exe_.resetExecutorObject(keep_1stMinimum=True)
-                # input_args_start = input_args_onrun
+                        
+        exe_.setInputCalculationArguments(axial_calc=True, **input_args_onrun)
+        exe_.force_converg = True
+        exe_.run()
+        exe_.globalTearDown()
                 
-                # exe_.setInputCalculationArguments(**input_args_start)
-                exe_.setInputCalculationArguments(axial_calc=True, 
-                                                  **input_args_onrun)
-                exe_.defineDeformationRange(p_min,  p_max, N_max)
-                exe_.setUp()
-                exe_.setUpExecution(**input_args_onrun)
-                exe_.force_converg = True
-                exe_.run()
-                exe_.globalTearDown()
-            except ExecutionException as e:
-                printf(e)
-            
-            printf("End run_pair_surface: ", pair_constr, datetime.now().time(), "\n")
-        
         printf("End all run_pair_surfaces: ", datetime.now().time(), "\n\n")
-

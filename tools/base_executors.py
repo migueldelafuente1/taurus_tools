@@ -75,9 +75,9 @@ class _Base1DTaurusExecutor(object):
         
         self.inputObj  : self.ITYPE  = None
         self._DDparams : dict = None
-        self.inputObj_PAV   : InputTaurusPAV  = None
-        self._1stSeedMinima : self.DTYPE  = None
-        self._current_result: self.DTYPE  = None
+        self.inputObj_PAV    : InputTaurusPAV = None
+        self._1stSeedMinimum : self.DTYPE  = None
+        self._current_result : self.DTYPE  = None
         self._curr_PAV_result : DataTaurusPAV = None
         
         self.activeDDterm = True
@@ -133,7 +133,7 @@ class _Base1DTaurusExecutor(object):
         
         if not keep_1stMinimum:
             
-            self._1stSeedMinima : self.DTYPE  = None
+            self._1stSeedMinimum : self.DTYPE  = None
             self._base_wf_filename = None
             
             self._deform_lim_max = None
@@ -149,7 +149,7 @@ class _Base1DTaurusExecutor(object):
         Tests for the method to verify the calculation.
         """
         if ((self.CONSTRAINT != None) and 
-            (self.CONSTRAINT not in self.ITYPE.ConstrEnum.members()) ):
+            (not self.CONSTRAINT in self.ITYPE.ConstrEnum.members()) ):
             raise ExecutionException("Main constraint for the calculation is invalid"
                 f", given [{self.CONSTRAINT}] but must be in Input***.ConstrEnum" )
         
@@ -164,7 +164,7 @@ class _Base1DTaurusExecutor(object):
             printf("[WARNING Executor] Seed was not defined, it will be copied (s=1).")
         
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False,
-                                     spherical_calc=False,
+                                     spherical_calc=False,  no_core_calc=False,
                                      **input_kwargs):
         """
         Set arguments or constraints to be STATIC in the calculation, 
@@ -176,9 +176,12 @@ class _Base1DTaurusExecutor(object):
         InputTaurus.ConstrEnum
         
         Set up for special modes boolean (mutually exclusive):
-            :axial_calculation: calls for pn-separated, b_l(m!=0) = 0 set up 
+            :no_core_calc: do not require axial symmetry
                                 (no core calculation)
-            :core_calculation: core calculation with same parity states require
+            :axial_calc  : calls for pn-separated, b_l(m!=0) = 0 set up,
+                           axial constraints set up.
+                                (no core calculation)
+            :core_cal    : core calculation with same parity states require
                                 odd l-multipole constraints to be 0.
         EXCEPTIONS:
         !! Executor constraint present in input_kwargs will raise an exception
@@ -190,15 +193,23 @@ class _Base1DTaurusExecutor(object):
         
         assert not(core_calc and axial_calc), ExecutionException(
             "No-core Axial and valence set ups are mutually exclusive")
-        if self.CONSTRAINT in input_kwargs.keys():
+        assert not(core_calc and no_core_calc), ExecutionException(
+            "No-core and valence-core set ups are mutually exclusive")
+        
+        ## Updated to include multi-dimensional calculations
+        cntrs_ = self.CONSTRAINT if isinstance(self.CONSTRAINT, list) else [self.CONSTRAINT, ]
+        if any([ctr_ in input_kwargs.keys() for ctr_ in cntrs_]):
             raise ExecutionException("The executor constraint must not be set static, remove it.")
         
         self.inputObj = self.ITYPE(self.z, self.n, self.interaction)
         
         if core_calc:
             self.inputObj.setUpValenceSpaceCalculation()
+        elif no_core_calc:
+            self.inputObj.setUpNoCore_axial_Calculation()
+            self.axialSymetryRequired = False
         elif axial_calc or spherical_calc:
-            self.inputObj.setUpNoCoreAxialCalculation()
+            self.inputObj.setUpNoCore_axial_Calculation()
             self.axialSymetryRequired = True
             if spherical_calc:
                 self.sphericalSymmetryRequired = True
@@ -224,6 +235,12 @@ class _Base1DTaurusExecutor(object):
         self._base_seed_type = self.inputObj.seed
         # NOTE:  by assign the _DD (class) dictionary in input, changes in the
         # attribute _DDparams is transfered to the input.
+    
+    def _getCurrentDeformation(self):
+        """ Auxiliary method to obtain the current deformation value"""
+        indx_ = self._curr_deform_index
+        part = 0 if indx_ < 0 else 1
+        return dict(self._deformations_map[part])[indx_]
     
     def _getStatesAndDimensionsOfHamiltonian(self):
         """
@@ -332,25 +349,33 @@ class _Base1DTaurusExecutor(object):
         self._deformations_map[1] = list(enumerate(array_))
         #
     
-    def _setDeformationFromMinimum(self, p_min, p_max, N_max):
+    def _setDeformationFromMinimum(self, *args):
         """ 
+        :p_min <float>
+        :p_max <float>    
+        :N_max <int>  
         Complete the deformations to the left(oblate) and right(prol)
         for the pairing minimum. dq defined by N_max, final total length= N_max+1
         """
+        if len(args) == 0:
+            p_min, p_max = self._deform_lim_min, self._deform_lim_max
+            N_max        = self._N_steps
+        else:
+            p_min, p_max, N_max = args
         
         if not (p_max!=None and p_min!=None) or N_max == 0:
             ## consider as ITERATIVE_METHOD SINGLE EVALUATION (save the deform)
-            q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, 0.0)
+            q0 = getattr(self._1stSeedMinimum, self.CONSTRAINT_DT, 0.0)
             self._deform_base = q0
             self.deform_prolate = [q0, ]
             self._deformations_map[1] = [(0, q0)]
-            self._results[1].append(self._1stSeedMinima)
+            self._results[1].append(self._1stSeedMinimum)
             return
         
         # p_min = max(p_min, 0.0)
         deform_oblate, deform_prolate = [], []
         dq = round((p_max - p_min) / N_max,  3)
-        q0 = getattr(self._1stSeedMinima, self.CONSTRAINT_DT, 0.0)
+        q0 = getattr(self._1stSeedMinimum, self.CONSTRAINT_DT, 0.0)
         if   q0 < p_min: # p0 outside to the left (add the difference to the left)
             p_min = q0 + (q0 - p_min)
         elif q0 > p_max: # p0 outside to the right (add the diff. to the right)
@@ -368,16 +393,19 @@ class _Base1DTaurusExecutor(object):
                 deform_oblate.append(q)
             else:
                 deform_oblate.append(p_min)
-        q = q0
+        q = q
         while (q < p_max):
             q = q + dq
             if  (q < p_max):
                 deform_prolate.append(q)
             else:
                 deform_prolate.append(p_max)
-                
-        self._results[1].append(self._1stSeedMinima)
-        self._deform_base   = q0
+        
+        self._results[1].append(self._1stSeedMinimum)
+        self._deform_base    = q0
+        self._deform_lim_min = min(deform_oblate)  if len(deform_oblate) else p_min
+        self._deform_lim_max = max(deform_prolate) if len(deform_prolate)else p_max
+        self._N_steps        = len(deform_oblate) + len(deform_prolate)
         ## Variable step fill the 
         if self.ITERATIVE_METHOD != self.IterativeEnum.VARIABLE_STEP:
             self.deform_oblate  = deform_oblate
@@ -571,7 +599,7 @@ class _Base1DTaurusExecutor(object):
         Fucntion inherit from legacy:
             TODO: Not Tested!!
         """        
-        if self._1stSeedMinima == None or self._base_wf_filename == None:
+        if self._1stSeedMinimum == None or self._base_wf_filename == None:
             raise ExecutionException("Running runVarialeStep without a first "
                                      "converged result, stop. \n Suggestion:"
                                      "Call setUpExecution")
@@ -579,7 +607,7 @@ class _Base1DTaurusExecutor(object):
         
         N_MAX   = 10 * self._N_steps
         dq_base = abs(self._deform_lim_max - self._deform_lim_min)/self._N_steps 
-        ener_base     = float(self._1stSeedMinima.E_HFB)
+        ener_base     = float(self._1stSeedMinimum.E_HFB)
         dqDivisionMax = 3
         
         self.inputObj.seed = 1 
@@ -680,7 +708,7 @@ class _Base1DTaurusExecutor(object):
         # exec(program)
         FLD_TEST_ = 'data_resources/testing_files/'
         
-        if self._blocking_section:
+        if hasattr(self, '_blocking_section') and self._blocking_section:
             file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
             # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
         # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
@@ -720,12 +748,17 @@ class _Base1DTaurusExecutor(object):
                 txt = f.read()
             with open(f"{file_}.dat", 'w+') as f:
                 f.write(txt) 
-        
+    
+    def _nameCurrentDeformationIndexString(self):
+        """ Overwritable criteria to export the tail of the saved files. """
+        return self._curr_deform_index
+    
     def _namingFilesToSaveInTheBUfolder(self):
         """ 
         Naming and  tracking of the unconverged and converged results 
         """
-        tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}"
+        deform_str = self._nameCurrentDeformationIndexString()
+        tail = f"z{self.z}n{self.n}_d{deform_str}"
         s_list = [x for x in os.listdir(self.DTYPE.BU_folder)]
         s_list = list(filter(lambda x: tail in x, s_list))
         s_list = list(filter(lambda x: x.endswith(".OUT"), s_list))
@@ -745,7 +778,7 @@ class _Base1DTaurusExecutor(object):
             #    estados de ida (no convergidos) con un resultado valido pero que ocurrio a la vuelta
             # else:
             s_n = str(s_n + unconv_n)
-        tail = f"z{self.z}n{self.n}_d{self._curr_deform_index}_{s_n}"
+        tail = f"z{self.z}n{self.n}_d{deform_str}_{s_n}"
         return tail
     
     def saveFinalWFprocedure(self, result, base_execution=False):
@@ -804,7 +837,9 @@ class _Base1DTaurusExecutor(object):
             for f in f_delete:
                 os.remove(f)
         else:
-            _e = subprocess.call('rm *.dat *.gut', shell=True)
+            rmble = ['*.dat' if any([x.endswith('.dat') for x in os.listdir()]) else '',
+                     '*.gut' if any([x.endswith('.gut') for x in os.listdir()]) else '', ]
+            _e = subprocess.call(f'rm {" ".join(rmble)}', shell=True)
     
     def _getMinimumIterationTimeTaurus(self):
         """
@@ -930,7 +965,7 @@ class _Base1DTaurusExecutor(object):
         printf(LINE_2)
         printf(f" ** Executor 1D [{self.__class__.__name__}] Parameters:")
         printf(LINE_1)
-        priv_attr = ('_1stSeedMinima', '_DDparams', '_deform_base', 
+        priv_attr = ('_1stSeedMinimum', '_DDparams', '_deform_base', 
                      '_N_steps', '_iter', '_output_filename')
         priv_attr = dict([(k,getattr(self, k, None)) for k in priv_attr])
         priv_attr = {'PRIVATE_ATTR:': priv_attr}
@@ -953,7 +988,7 @@ class _Base1DTaurusExecutor(object):
             return
         
         if base_execution:
-            self._1stSeedMinima = result
+            self._1stSeedMinimum = result
         else:
             ## save the intermediate Export File
             self.exportResults()
@@ -1213,7 +1248,7 @@ class _BaseParallelTaurusExecutor(_Base1DTaurusExecutor):
         
         if not keep_1stMinimum:
             
-            self._1stSeedMinima : self.DTYPE  = None
+            self._1stSeedMinimum : self.DTYPE  = None
             self._base_wf_filename = None
             
             self._deform_lim_max = None
@@ -1242,7 +1277,7 @@ class _BaseParallelTaurusExecutor(_Base1DTaurusExecutor):
     def saveFinalWFprocedure(self, result, base_execution=False):
         pass
 
-exe = _BaseParallelTaurusExecutor(2, 1, "B1_MZ1")
-exe.setMaximumNumberOfNodes(3)
+# exe = _BaseParallelTaurusExecutor(2, 1, "B1_MZ1")
+# exe.setMaximumNumberOfNodes(3)
 
 

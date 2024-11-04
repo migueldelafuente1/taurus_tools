@@ -157,7 +157,25 @@ def linear_regression(X, Y, get_errors=False):
     EB = EA * (np.sum(x**2) / len(x))**.5
     
     return A, B, EA, EB
-    
+
+def getValueCombinationsSorted(data_lists, lev=0):
+    """ 
+    Get some lists of values sorted as tuples, returning a list of the combinations:
+    i.e: [ (4,5,1,3), (0,-1), (3,2,1)] 
+    >>> [(1,-1,1), (1,-1,2), (1,-1,3), (1,0,1), (1,0,2), (1,0,3), (3,-1,1), ...]
+    """
+    assert len(data_lists) > 0, "use this with nonempty lists"
+    if len(data_lists) > 1:
+        aux = data_lists[0]        
+        sort_2 = []
+        for i in aux:
+            for j_vals in getValueCombinationsSorted(data_lists[1:], lev + 1):
+                sort_2.append( (i, *j_vals) )
+        if lev > 0: return [sort_2, ]
+        return sort_2
+    else:
+        return [(i, ) for i in sorted(data_lists[0])]
+
 def almostEqual(a, b, tolerance=0):
     """ Input """
     if tolerance == 0:

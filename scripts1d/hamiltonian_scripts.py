@@ -79,15 +79,15 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
                 exe_.run()
                 exe_.globalTearDown(zip_bufolder=False)
                 
-                line = exe_._1stSeedMinima.getAttributesDictLike
+                line = exe_._1stSeedMinimum.getAttributesDictLike
             except ExecutionException as e:
                 printf(e)
             
             
             if line not in  ('', '\n'):
                 # register the Optimal length
-                if exe_._1stSeedMinima.E_HFB < b_Ehfb_min[1]:
-                    b_Ehfb_min = (b_len, exe_._1stSeedMinima.E_HFB)
+                if exe_._1stSeedMinimum.E_HFB < b_Ehfb_min[1]:
+                    b_Ehfb_min = (b_len, exe_._1stSeedMinimum.E_HFB)
                 
                 with open(summary_results, 'a+') as f:
                     header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"
@@ -173,14 +173,14 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
                 exe_.run()
                 exe_.globalTearDown(zip_bufolder=False)
                                 
-                line = exe_._1stSeedMinima.getAttributesDictLike
+                line = exe_._1stSeedMinimum.getAttributesDictLike
             except ExecutionException as e:
                 printf(e)
             
             if line not in  ('', '\n'):
                 # register the Optimal length
-                if exe_._1stSeedMinima.E_HFB < b_Ehfb_min[1]:
-                    b_Ehfb_min = (b_len, exe_._1stSeedMinima.E_HFB)
+                if exe_._1stSeedMinimum.E_HFB < b_Ehfb_min[1]:
+                    b_Ehfb_min = (b_len, exe_._1stSeedMinimum.E_HFB)
                 
                 with open(summary_results, 'a+') as f:
                     header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"

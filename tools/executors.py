@@ -57,6 +57,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 shutil.copy(self.interaction+ext_,  self.DTYPE.BU_folder)
         _=0
     
+    def _define_BaseConstraintDeformationAsZero(self):
+        """ Set the deformations to zero for 1 constraint """
+        self._deform_base = 0.0
+        setattr(self.inputObj, self.CONSTRAINT, 0.0)
+    
     def setUpExecution(self, reset_seed=False,  *args, **kwargs):
         """
         base solution pre-convergence.
@@ -65,7 +70,6 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         :reset_seed: If there is/or not a seed minimum for the calculation and
                      we want to repeat the convergence process, turn it  <True>
-        
         """
         
         self.calculationParameters
@@ -75,7 +79,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self.printExecutionResult(None, print_head=True)
         
         _DO_ODD = 1 in self.numberParity and (not self.IGNORE_SEED_BLOCKING)
-        if self._1stSeedMinima == None or reset_seed:                
+        if self._1stSeedMinimum == None or reset_seed:                
             if self.GENERATE_RANDOM_SEEDS:
                 if _DO_ODD:
                     ## procedure to evaluate odd-even nuclei
@@ -90,8 +94,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             else:
                 if not self.DO_BASE_CALCULATION:
                     ## Force convergence to point=0
-                    self._deform_base = 0.0
-                    setattr(self.inputObj, self.CONSTRAINT, 0.0)
+                    self._define_BaseConstraintDeformationAsZero()
                 
                 if _DO_ODD:
                     ## procedure to evaluate odd-even nuclei
@@ -103,11 +106,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                     while not self._preconvergenceAccepted(res):
                         res = self._executeProgram(base_execution=True)
         
-        self._final_bin_list_data[1][0] = self._1stSeedMinima._exported_filename
+        if not isinstance(self.CONSTRAINT, list):
+            self._final_bin_list_data[1][0] = self._1stSeedMinimum._exported_filename
         
         ## negative values might be obtained        
-        self._setDeformationFromMinimum(self._deform_lim_min, 
-                                        self._deform_lim_max, self._N_steps)
+        self._setDeformationFromMinimum()
         
         _new_input_args = dict(filter(lambda x: x[0] in self.ITYPE.ArgsEnum.members(), 
                                       kwargs.items() ))
@@ -312,7 +315,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             blocked_energies     [bk_sp] = 4.20e+69
             
             self._preconvergence_steps = 0
-            self._1stSeedMinima = None
+            self._1stSeedMinimum = None
             
             res = None
             while not self._preconvergenceAccepted(res):
@@ -349,7 +352,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## after the convegence, remove the blocked states and copy the 
         # copy the lowest energy solution and output.
         self.inputObj.qp_block = 0
-        self._1stSeedMinima = blocked_seeds_results[bk_min]
+        self._1stSeedMinimum = blocked_seeds_results[bk_min]
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
         self._exportBaseResultFile(bu_results)    
     
@@ -377,7 +380,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             energies     [bk_sp] = 4.20e+69
             
             self._preconvergence_steps = 0
-            self._1stSeedMinima = None
+            self._1stSeedMinimum = None
             
             res = None
             while not self._preconvergenceAccepted(res):
@@ -415,7 +418,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         ## after the convegence, remove the blocked states and copy the 
         # copy the lowest energy solution and output.
-        self._1stSeedMinima = seeds_results[bk_min]
+        self._1stSeedMinimum = seeds_results[bk_min]
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
         
         self._exportBaseResultFile(bu_results)
@@ -449,7 +452,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             skip (to run another constraint from a previous minimum)
         """
         
-        if self._preconvergence_steps == 0 and self._1stSeedMinima != None:
+        if self._preconvergence_steps == 0 and self._1stSeedMinimum != None:
             self.inputObj.seed = 1
             if   isinstance(self.inputObj, InputTaurus):
                 shutil.copy(self._base_wf_filename, 'initial_wf.bin')
@@ -495,7 +498,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         ## TODO: might require additional changes
         _Base1DTaurusExecutor.run(self)
     
-    def globalTearDown(self, zip_bufolder=True, *args, **kwargs):
+    def globalTearDown(self, zip_bufolder=True, base_calc=False, *args, **kwargs):
         """
         Proceedings for the execution to do. i.e:
             zipping files, launch tests on the results, plotting things
@@ -532,8 +535,13 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         shutil.copy('list_dict.dat', self.DTYPE.BU_folder)
         shutil.copy('list_outputs.dat', self.DTYPE.BU_folder)
         
+        export_fn = self.EXPORT_LIST_RESULTS
+        if base_calc:
+            args.insert(0, 'BASE')
+            export_fn =    'BASE-' + self.EXPORT_LIST_RESULTS
+        
         args = [self.z,self.n,self.interaction]+list(args)+list(kwargs.values())
-        shutil.copy(self.EXPORT_LIST_RESULTS, DataTaurus.BU_folder)
+        shutil.copy(export_fn, DataTaurus.BU_folder)
         if zip_bufolder:
             if self.CONSTRAINT != None:
                 args.append(self.CONSTRAINT)
@@ -721,7 +729,7 @@ class ExeTaurus1D_PairCoupling(ExeTaurus1D_DeformB20):
         cls.CONSTRAINT_DT = DataTaurus.getDataVariable(pair_constr, beta_schm=0)
         
         cls.EXPORT_LIST_RESULTS = f'export_TES_{pair_constr}'
-        DataTaurus.BU_folder = f'export_TES_{pair_constr}'
+        DataTaurus.BU_folder    = f'export_TES_{pair_constr}'
     
 
 #===============================================================================
@@ -840,7 +848,7 @@ class ExeTaurus0D_PAVProjection(_Base1DTaurusExecutor):
         
         if not keep_1stMinimum:
             
-            self._1stSeedMinima : self.DTYPE  = None
+            self._1stSeedMinimum : self.DTYPE  = None
             self._base_wf_filename = None
             
             self._deform_lim_max = None

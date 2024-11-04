@@ -1962,7 +1962,7 @@ class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
             blocked_energies     [bk_sp] = 4.20e+69
             
             self._preconvergence_steps = 0
-            self._1stSeedMinima = None
+            self._1stSeedMinimum = None
             
             res = None
             while not self._preconvergenceAccepted(res):
@@ -2001,7 +2001,7 @@ class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
         ## after the convegence, remove the blocked states and copy the 
         # copy the lowest energy solution and output.
         self.inputObj.qp_block = 0
-        self._1stSeedMinima = blocked_seeds_results[bk_min]
+        self._1stSeedMinimum = blocked_seeds_results[bk_min]
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
         self._exportBaseResultFile(bu_results)   
     

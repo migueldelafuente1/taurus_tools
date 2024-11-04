@@ -14,11 +14,20 @@ from tools.helpers import elementNameByZ, printf, OUTPUT_HEADER_SEPARATOR
 
 from copy import deepcopy
 from tools.data import DataTaurus, DataTaurusPAV, DataTaurusMIX, \
-    CollectiveWFData, OccupationsHWGData
+    CollectiveWFData, OccupationsHWGData, OccupationNumberData
 from tools.plotter_levels import EnergyLevelGraph, BaseLevelContainer,\
-    getAllLevelsAsString
+    getAllLevelsAsString, MATPLOTLIB_INSTALLED
 from scripts1d.plots1DLevels import _EnergyLevelSimpleGraph
 from black.output import _err
+
+if MATPLOTLIB_INSTALLED:
+    import matplotlib.pyplot as plt
+    # Enable LaTeX in Matplotlib
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.serif": ["Computer Modern Roman"],
+    })
 
 __K_COLORS = ['red', 'blue', 'green', 'magenta', 'cyan', 'yellow', 'black']
 # __K_LSTYLE = ['-', '--', ':', '-.', ' ', '']*2
@@ -27,7 +36,7 @@ __K_COLORS = ['red', 'blue', 'green', 'magenta', 'cyan', 'yellow', 'black']
 __K_LSTYLE = ['solid', (0, (5,1)), (5, (10,3)), 'dashed', 'dashdot', 
             (0, (3,1,1,1)), (0, (3,5,1,5)), (0, (5,10)), 'dotted',
             (0, (3,10,1,10)), (0, (3,10,1,10)), (0, (1,10))]
-__J_MARKER = ['.',  'd', 'v', '^','+',"1", "2", "3", "x"]
+__J_MARKER = ['.',  'd', 's', 'h', 'v', '^','+',"1", "2", "3", "x"]
 
 GLOBAL_TAIL_INTER = ''
 
@@ -179,6 +188,236 @@ def particlePlusRotor_SCL_spectra(data_j, b20_deform, J2_vals, K_val,
     C = np.array([C[i]/B[i] for i in range(len(C))])
     return data_interpolated, A, B, C, model_diff
 
+def particlePlusRotor_NCL_spectra(data_j, b20_deform, J2_vals, K):
+    """
+    Fitting of the first states of the PAV- spectra to the 
+    Weak-coupling-Limit formula for single-j case.
+    
+    K : fixes the limit for the PAV - J states to count.
+    """
+    from scipy.interpolate import interp1d
+    J_vals = [j/2 for j in J2_vals]
+    j_sp   = [1, 3, 5] # intrinsic j values
+    if K > max(j_sp): 
+        return    
+    data_Esorted_by_def = []
+    y01, y02, yj1, yj2 = [],[],[],[]
+    J2_vals_2 = filter(lambda J: len(data_j[J]) == len(b20_deform), J2_vals)
+    J2_vals_2 = list(J2_vals_2)
+    for i in range(len(data_j[J2_vals[0]])):
+        srtd_list = [(J, data_j[J][i]) for J in J2_vals_2]
+        srtd_list = sorted(srtd_list, key=lambda x: x[1])
+        
+        data_Esorted_by_def.append(deepcopy(srtd_list))
+        y01.append(srtd_list[0][1])
+        y02.append(srtd_list[1][1])
+        yj1.append(srtd_list[0][0] / 2.)
+        yj2.append(srtd_list[1][0] / 2.)
+        
+    dim_ = data_Esorted_by_def.__len__()        
+    
+    x_new = np.linspace(min(b20_deform), max(b20_deform), 101, endpoint=True)
+    y01, yj1 = np.array(y01), np.array(yj1)
+    y02, yj2 = np.array(y02), np.array(yj2)
+    
+    model_diff, model_ener = {}, {}
+    E_intr, _2I_imom = {}, {}
+    for _2j in j_sp:
+        _j = _2j / 2
+        
+        A, B = np.zeros(len(y01)), np.zeros(len(y01))
+        
+        for i in range(dim_):
+            b  = (y02[i] - y01[i])
+            b /= (yj2[i] - yj1[i]) * (yj2[i] + yj1[i] - _2j - 1)
+            a = y01[i] - b * ((yj1[i]**2 - (_2j + 1)*yj1[i] - _j*(_j - 1)) )
+            
+            A[i] = a
+            B[i] = b
+        
+        E_intr  [_2j] = A
+        _2I_imom[_2j] = B
+        
+        model_diff[_2j] = {}
+        model_ener[_2j] = {}
+        for i in range(dim_):
+            e_data = dict(data_Esorted_by_def[i])
+            for J in J_vals:
+                _2J = int(2*J) 
+                if _2J < K: continue
+                e = E_intr[_2j][i] + _2I_imom[_2j][i]*(J - _j)*(J - _j + 1)
+                
+                e_d = e_data[_2J]
+                
+                if i == 0:
+                    model_ener[_2j][_2J] = [e, ]
+                    model_diff[_2j][_2J] = [e - e_d, ]
+                else:
+                    model_ener[_2j][_2J].append(e)
+                    model_diff[_2j][_2J].append(e - e_d)
+    
+    data_interpolated = {}
+    ## SKIP plot
+    return  data_interpolated, A, B, model_diff
+    
+    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+    _MARKERS = '.o*^v+*'
+    _COLORS  = ['red', 'blue', 'green', 'magenta', 'cyan', ]
+    for _2J in J2_vals:
+        ## data - from PAV
+        y0 = np.array(data_j[_2J]) - 0.05 * np.ones(dim_) 
+        ax.plot(b20_deform, y0, color='black',
+                linestyle='--', marker=_MARKERS[(_2J-1)//2],
+                label=f'data J = {_2J}/2')
+    
+    for _2j in j_sp:
+        data_interpolated[_2j] = {}
+        for _2J, y_j in model_ener[_2j].items():
+            
+            ax.plot(b20_deform, y_j, color=_COLORS[(_2j-1)//2],
+                    linestyle='--', #marker=_MARKERS[(_2J-1)//2],
+                    marker=f"${_2J}/2$", markersize=12,
+                    label=f'NCL J = {_2J}/2')
+            
+            # J = J_vals[i]
+            # interp_func = interp1d(b20_deform, y_j, kind='cubic') # 'quadratic'
+            # # Generate points for the interpolated curve
+            # y_new = interp_func(x_new)
+            # data_interpolated[J2_vals[i]] = (x_new, y_new)
+    ax.set_title(f"NCL for PPR model from K={K}, and 2j in {j_sp}")
+    ax.legend()
+    plt.show()
+    
+    return data_interpolated, A, B, model_diff
+
+def particlePlusRotor_RAL_spectra(data_k12J):
+    """
+    Proposal to evaluate the Coriolis spectra from K-mixing data.
+    """
+    return
+    J_max   = 13
+    
+    I2_vals = [i for i in range(1, J_max+1, 2)]
+    K_vals  = list(data_k12J[len(data_k12J) // 2].keys())
+    K_vals.remove('b20') 
+    K_vals  = list(set(map   (lambda x: x[0], K_vals)))
+    K_vals.sort()
+    
+    b20_deforms = [data_k12J[i]['b20'] for i in range(len(data_k12J))]
+    
+    waveFunct_by_Ij = {}
+    Hmatrix_by_Ij   = {}
+    paramsRAL_by_j  = {}
+    for j_sp in K_vals:
+        Hmatrix_by_Ij  [j_sp] = np.zeros( (len(K_vals), len(K_vals)) )
+        waveFunct_by_Ij[j_sp] = np.zeros( len(K_vals) )
+        paramsRAL_by_j [j_sp] = [0, 0, {}, {}] # Inertia, E_intr, dict{<Om|j+-|Om'>: vals}
+    
+    enerb20_by_k1k2J = {}
+    for i, dict_bkk in data_k12J.items():
+        if [] in dict_bkk.values(): continue ## States with <1|2> = 0
+        
+        k_tuples = list(dict_bkk.keys())
+        k_tuples.remove('b20')
+        k_min = sorted(list(filter(lambda x: x[0]==x[1], k_tuples)))
+        k_min = k_min[0][0]
+        
+        I1, I2 = k_min, k_min+2
+        
+        # Diagonal values
+        for j_sp in K_vals[K_vals.index(k_min):]:
+            k = k_min
+            cte_1 = (j_sp/2*(j_sp/2 + 1) - (k/2)**2) \
+                    + (I1/2*(I1/2 + 1) - k/2*(k/2 + 1))
+            cte_2 = (j_sp/2*(j_sp/2 + 1) - (k/2)**2) \
+                    + (I2/2*(I2/2 + 1) - k/2*(k/2 + 1))
+                    
+            e_jk1 = dict_bkk[(k, k)][I1][1]
+            e_jk2 = dict_bkk[(k, k)][I2][1]
+            
+            inertia = (e_jk1 - e_jk2) / (cte_1 - cte_2)
+            e_intr  = e_jk1 - inertia * cte_1
+            
+            paramsRAL_by_j[j_sp][0] = inertia
+            paramsRAL_by_j[j_sp][1] = e_intr
+        
+        I = I1 if I1 > 1 else I2
+        
+        # Coriolis        
+        k2fit = [k for k in range(1, I+1, 2)]
+        k2fit = [(k, k+2) for k in k2fit[:-1]]
+        
+        for k1, k2 in k2fit:
+            n = dict_bkk[(k1, k2)].__len__()
+            JbyK = dict([(dict_bkk[(k1, k2)][i][0], i) for i in range(n)])
+            
+            e_jk12 = dict_bkk[(k1, k2)][JbyK[I]][1]
+            # cte  = (I/2*(I/2 + 1) - k1/2*(k1/2 + 1))
+            cte = np.sqrt((I/2 - k1/2) - (I/2 + k1/2 + 1))
+            
+            for j_sp in K_vals:
+                inertia = paramsRAL_by_j[j_sp][0]
+                paramsRAL_by_j[j_sp][2][(k1, k2)] = e_jk12 / (cte * inertia)
+            
+        
+        ## Coriolis formula for other Is
+        b20 = dict_bkk['b20']
+        for k1k2, jvals in dict_bkk.items():
+            if k1k2 == 'b20': continue
+            if not k1k2 in enerb20_by_k1k2J:
+                enerb20_by_k1k2J[k1k2] = dict([(x[0],([b20,], [x[1],], [abs(x[2]),])) 
+                                               for x in jvals])
+            else:
+                for x in jvals:
+                    if not x[0] in enerb20_by_k1k2J[k1k2]:
+                        enerb20_by_k1k2J[k1k2][x[0]] = ([], [], [])
+                    enerb20_by_k1k2J[k1k2][x[0]][0].append(b20)
+                    enerb20_by_k1k2J[k1k2][x[0]][1].append(x[1])
+                    enerb20_by_k1k2J[k1k2][x[0]][2].append(abs(x[2]))
+        
+    _ = 0
+    
+    _COLORS = ['red', 'blue', 'green', 'cyan', 'magenta', 'yellow']
+    _MARKRS, list_mark_12 = '.v*^do+x'*2, {}
+    fig, ax   = plt.subplots(1, len(I2_vals), figsize=(6+len(I2_vals)//2, 6))
+    fig2, ax2 = plt.subplots(1, len(I2_vals), figsize=(6+len(I2_vals)//2, 6))
+    for k1k2, jvals in enerb20_by_k1k2J.items():
+        k1, k2 = k1k2
+        for j, prt_vals in jvals.items():
+            if (k1==k2): 
+                ax[j//2].plot(prt_vals[0], prt_vals[1], marker=_MARKRS[k1//2], 
+                              color=_COLORS[k1//2], label=f'J:{j}(2Om={k1}) diag')
+                ax2[j//2].semilogy(prt_vals[0], prt_vals[2], marker=_MARKRS[k1//2], 
+                               color=_COLORS[k1//2], label=f'J:{j}(2Om={k1}) diag')
+            else:
+                if not k1k2 in list_mark_12: list_mark_12[k1k2] = len(list_mark_12)
+                
+                ax[j//2].plot(prt_vals[0], prt_vals[1], 
+                              marker=_MARKRS[list_mark_12[k1k2]], 
+                              color='black', label=f'J:{j}(2Om={k1},{k2})')
+                ax2[j//2].semilogy(prt_vals[0], prt_vals[2], 
+                              marker=_MARKRS[list_mark_12[k1k2]], 
+                              color='black', label=f'J:{j}(2Om={k1},{k2})')
+    
+    for j in I2_vals:
+        ax[j//2].set_title(f'I={j}/2')
+        ax[j//2].legend()
+        
+        ax2[j//2].set_title(f'I={j}/2')
+        ax2[j//2].legend()
+        
+        ax2[j//2].set_ylim((0.001, 0.6))
+    fig.suptitle("$E^{PAV}$")
+    fig2.suptitle("Norm overlap")
+    plt.tight_layout()
+    plt.show()
+    _ =0
+    
+    ## plot
+    
+    
+    
+
 def _plotPAVresultsFromFolders(folders_2_import, MAIN_FLD_TMP, K_val, parity=0,
                                plot_SCL_interpolation=False):
     """
@@ -266,9 +505,7 @@ def _plotPAVresultsFromFolders(folders_2_import, MAIN_FLD_TMP, K_val, parity=0,
             list_dat = filter(lambda x: x.endswith('.dat'), os.listdir(FLD_HWG))
             list_dat = list(list_dat)
             data_hwg = [DataTaurusMIX(FLD_HWG / f) for f in list_dat]
-        
-        import matplotlib.pyplot as plt
-        
+                
         fig, ax = plt.subplots(1, 1)
         energy_by_J = {}
         for id_, dat in enumerate(data):
@@ -393,10 +630,57 @@ def _plotPAVresultsFromFolders(folders_2_import, MAIN_FLD_TMP, K_val, parity=0,
             _graph.plot()
 
 
+def _get_dataKmix_byDef(PVAP_FLD):
+    """
+    from file gcm (wf by deform and K) 
+    :returns:
+    {'def_index': 
+        {'b20': <float> value
+         (k1, k2): 
+            [(<int> J, <float> E projected, <float> Norm projected),
+             ...
+            ]
+        ...
+        }, ...
+    }
+    """
+    gcm_file = PVAP_FLD[-135].parent / 'gcm'
+    pav_fldr = PVAP_FLD[-135].parent / 'outputs_PAV'
+    b20_data, data_K1K2 = {}, {}
+    with open(gcm_file, 'r') as f:
+        data = f.readlines()
+        for k, line in enumerate(data):
+            b1, b2, i1, i2 = line.split()
+            b1_str = b1.replace('.bin', '')[:-2]
+            b1 = b1.replace('.bin', '').split('_')
+            b2 = b2.replace('.bin', '').split('_')
+            b1, k1 = ((-1)**(b1[0]=='')) * float(b1[-2]), int(b1[-1])
+            b2, k2 = ((-1)**(b2[0]=='')) * float(b2[-2]), int(b2[-1])
+            b1, b2 = round(b1, 3), round(b2, 3)
+            if abs(b1 - b2) > 0.0001: continue
+            else:
+                if not b1_str in b20_data:
+                    i = len(b20_data)
+                    b20_data [b1_str] = i
+                    data_K1K2[i] = {'b20': b1, (k1, k2): None}
+                else:
+                    i = b20_data[b1_str]
+                    if not (k1, k2) in data_K1K2[i]:
+                        data_K1K2[i][(k1,k2)] = None
+                pth = pav_fldr / f'OUT_{k+1}'
+                obj = DataTaurusPAV(0,0,pth)
+                
+                jEn = [(obj.J[i], obj.proj_energy[i], obj.proj_norm[i]) 
+                       for i in range(obj.dim)]
+                jEn = filter(lambda x: abs(x[2]) > 1.0e-5, jEn)
+                data_K1K2[i][(k1,k2)] = list(jEn)
+    
+    return data_K1K2
+
 def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pav_K, 
                                       b20_by_K_and_J, energy_by_J, Jmax_2_plot, 
                                       data_hwg_K,
-                                      parity=0, plot_PAV=True, plot_SCL_interpolation=True, 
+                                      parity=0, plot_PAV=True, plot_PPR_interpolation=True, 
                                       FOLDER2SAVE=None, nucl='***',
                                       **kwargs):
     """
@@ -405,25 +689,21 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
     set outside.
     """
     global GLOBAL_TAIL_INTER
-    PLOT_PPRC = False
+    PLOT_PPRC   = False
+    Jmax_2_plot = 33 if not Jmax_2_plot else Jmax_2_plot
     _hIntKJ = all([k%2 == 1 for k in b20_by_K_and_J.keys()])
     _frac2 = '/2' if _hIntKJ else ''
-    import matplotlib.pyplot as plt
-    # Enable LaTeX in Matplotlib
-    plt.rcParams.update({
-        "text.usetex": True,
-        "font.family": "serif",
-        "font.serif": ["Computer Modern Roman"],
-    })
+    
     ## Verify the VAP-K surfaces
-    fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-    ax.plot(b20_hfb, E_hfb, '.-', label='false o-e')
-    for K in K_vals:
-        ax.plot(b20_vap_K[K], E_vap_K[K], '.-', label=f'k={K}')
-    ax.legend()
-    ax.grid()
-    ax.set_title("V-VAP K blocked preliminary TES")
-    #plt.show()
+    if not plot_PAV:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 6))
+        ax.plot(b20_hfb, E_hfb, '.-', label='false o-e')
+        for K in K_vals:
+            ax.plot(b20_vap_K[K], E_vap_K[K], '.-', label=f'k={K}')
+        ax.legend()
+        ax.grid()
+        ax.set_title("V-VAP K blocked preliminary TES")
+        plt.show()
     
     fig, ax = plt.subplots(1, 1, figsize=(10, 6))
     # b20_deform = [i-(len(energy_by_J[1])//2) for i in range(len(energy_by_J[1]))]
@@ -432,11 +712,14 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
     model_diff_by_K = {}
     _lims, _y_lims = [], [+999999, -999999]
     for K in K_vals:
+        fig2, ax2 = plt.subplots(1, 1, figsize=(5, 5))
         if plot_PAV:
-            J_vals = sorted(energy_by_J[K].keys())
+            J_vals = filter(lambda x: x <= Jmax_2_plot, energy_by_J[K].keys())
+            J_vals = sorted(J_vals)
             for J in J_vals:
-                if Jmax_2_plot and (J > Jmax_2_plot): continue 
                 ener = energy_by_J[K][J]
+                _y_lims = min(_y_lims[0], min(ener)), max(_y_lims[1], max(ener))
+                
                 # if b20_deform[K].__len__() != ener.__len__():
                 #     printf("   >>> ", J, ener)
                 #     continue
@@ -444,9 +727,22 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
                         linestyle=__K_LSTYLE[8],#[J_vals.index(J)+1],
                         marker=f"${J}{_frac2}$", markersize=11,
                         color=__K_COLORS[K//2])
-                _y_lims = min(_y_lims[0], min(ener)), max(_y_lims[1], max(ener))
+                
+                x = list(filter(lambda x: x < 0, b20_by_K_and_J[K][J]))
+                y = [ener[i] for i in  range(len(x))]
+                ax2.plot(x, y, label=f'J={J}{_frac2} K={K}{_frac2}', 
+                         linestyle=__K_LSTYLE[8],#[J_vals.index(J)+1],
+                         marker=__J_MARKER[J//2],
+                         # marker=f"${J}$", markersize=11,
+                         color=__K_COLORS[K//2])
+                x = [b20_by_K_and_J[K][J][i] for i in range(len(x), len(ener))]
+                y = [ener[i] for i in  range(len(y), len(ener))]
+                ax2.plot(x, y, linestyle=__K_LSTYLE[8], 
+                         marker=__J_MARKER[J//2],
+                         # marker=f"${J}$", markersize=11
+                         color=__K_COLORS[K//2],)
         
-        if len(energy_by_J.get(K, [])) > 1 and plot_SCL_interpolation:
+        if len(energy_by_J.get(K, [])) > 1 and plot_PPR_interpolation:
             data_5o2 = energy_by_J[K][J_vals[2]] if K == 1 else None
             _array_b20 = b20_hfb[K] if isinstance(b20_hfb, dict) else b20_hfb
             _array_b20 = b20_pav_K[K]
@@ -464,13 +760,45 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
                     continue 
                 ax.plot(*interp[J], '--', label=f'PPRM-SCL J,K={J}{_frac2} {K}{_frac2}',
                                           color=__K_COLORS[K//2])
+                ax2.plot(*interp[J], '--', label=f'PPRM-SCL J,K={J}{_frac2} {K}{_frac2}',
+                                          color=__K_COLORS[K//2])
+                
         # ax.plot(b20_hfb [K], E_hfb [K], "o-", label=f'HFB(K={K}/2)')
         ax.plot(b20_vap_K[K], E_vap_K[K], "o-", 
                 color=__K_COLORS[K//2], label=f'HFB-VAP K={K}{_frac2}',
                 linewidth=3)
+        ax2.plot(b20_vap_K[K], E_vap_K[K], "o-", 
+                color=__K_COLORS[K//2], label=f'HFB-VAP K={K}{_frac2}',
+                linewidth=3)
+        
         _lims = _lims + b20_vap_K[K]
+        
+        if len(energy_by_J.get(K, [])) > 1 and plot_PPR_interpolation:
+            interp = particlePlusRotor_NCL_spectra(energy_by_J[K], _array_b20, J_vals, K)
         #plt.pause(2)
+        
+        ## Plot nicely the different K blocked surfaces:
+        ax2.set_ylim([-230, -140])
+        ax2.set_xlim([-0.7,  0.8])
+        # x = min(b20_vap_K[K]), max(b20_vap_K[K])
+        # _rngs = x[1] - x[0]
+        # ax2.set_xlim( [x[0] - .1*_rngs, x[1] + .2*_rngs ])
+        # x1 = [(min(energy_by_J[K][J]), max(energy_by_J[K][J])) for J in J_vals]
+        # x1, x = zip(*x1)
+        # x = min(x1), max(x)
+        # _rngs = x[1] - x[0]
+        # ax2.set_ylim( [x[0] - .05*_rngs, x[1] + .05*_rngs ] )
+        ax2.set_xlabel(r"$\beta_{20}$")
+        ax2.set_ylabel(r"$E\ (MeV)$")
+        _txt = f"{nucl[1]} PAV energies for $K={K}/2^+$ blocking."
+        ax2.set_title(_txt)
+        ax2.legend()
+        # ax2.legend(bbox_to_anchor=(1.1, 1.05))
+        plt.tight_layout()
+        _tail = f'_k{K}'
+        fig2.savefig(FOLDER2SAVE / f"plot_pav_pprm_{nucl[0]}{_tail}{GLOBAL_TAIL_INTER}.pdf")
     
+        
     _lims = [min(_lims), max(_lims)]
     _rngs = _lims[1] - _lims[0]
     if _y_lims and max([max(E_vap_K[K]) for K in K_vals]) > _y_lims[1]:
@@ -478,50 +806,89 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
         
         _rngs = _y_lims[1] - _y_lims[0]
         ax.set_ylim( [_y_lims[0] - .05*_rngs, _y_lims[1] + .05*_rngs ] )
-    plt.ylim([-143, -100])
-    # plt.xlim([-0.7, 1.2])
+    # ax.set_ylim([-143, -100])
+    # ax.set_xlim([-0.7, 1.2])
     ax.set_xlabel(r"$\beta_{20}$")
     ax.set_ylabel(r"$E\ (MeV)$")
     _txt = f"{nucl[1]} PAV energies for all K-blockings"
-    if PLOT_PPRC and plot_SCL_interpolation: _txt += " and PPRM interpolation"
-    plt.title(_txt)
+    if PLOT_PPRC and plot_PPR_interpolation: _txt += " and PPRM interpolation"
+    ax.set_title(_txt)
     plt.legend(bbox_to_anchor=(1.1, 1.05))
     plt.tight_layout()
-    _tail = '' if len(K_vals)>1 else f'_k{K_vals[0]}'
+    _tail = '_allK'
     plt.savefig(FOLDER2SAVE / f"plot_pav_pprm_{nucl[0]}{_tail}{GLOBAL_TAIL_INTER}.pdf")
     if not plot_PAV:
         plt.show()
         return
     
+    #===========================================================================
+    if plot_PPR_interpolation and False:
+        fig, ax = plt.subplots(1, 3, figsize=(10, 6))
+        # b20_deform = [i-(len(energy_by_J[1])//2) for i in range(len(energy_by_J[1]))]
+        # b20_deform = [i for i in range(len(energy_by_J[1]))]
+        e_inter_ncl_by_K, _1o2IM_ncl_by_K = {}, {}
+        model_ncl_diff_by_K = {}
+        for K in K_vals:
+            if plot_PAV:
+                J_vals = sorted(energy_by_J[K].keys())
+                
+            _array_b20 = b20_hfb[K] if isinstance(b20_hfb, dict) else b20_hfb
+            _array_b20 = b20_pav_K[K]
+            interp = particlePlusRotor_NCL_spectra(energy_by_J[K], 
+                                                   _array_b20, J_vals, K)
+            if not interp: continue
+            interp, sp_e_inter, _1o2IM_inter, model_diff = interp
+            e_inter_ncl_by_K [K]    = sp_e_inter
+            _1o2IM_ncl_by_K  [K]    = _1o2IM_inter
+            model_ncl_diff_by_K [K] = model_diff
+            
+            # for J in J_vals:
+            #     if (not PLOT_PPRC) or (Jmax_2_plot and (J > Jmax_2_plot)): 
+            #         continue 
+            #     ax.plot(*interp[J], '--', label=f'PPRM-NCL J,K={J}{_frac2} {K}{_frac2}',
+            #                               color=__K_COLORS[K//2])
+        
+        if 'FLD_KPAV' in kwargs and -135 in kwargs['FLD_KPAV']:
+            data_pavKmix = _get_dataKmix_byDef(kwargs['FLD_KPAV'])
+            
+            interp = particlePlusRotor_RAL_spectra(data_pavKmix)
+    
+    #===========================================================================
+    
+    
     fig, ax = plt.subplots(1, 3 if len(coriolis_coupl_by_K)>0 else 2,
-                           figsize=(10, 4))
+                           figsize=(7, 5))
     any_ = False
-    for K in K_vals:
-        if len(energy_by_J[K]) > 1 and plot_SCL_interpolation:
-            ax[0].plot(b20_pav_K[K], sp_e_inter_by_K[K])
-            ax[1].plot(b20_pav_K[K], 0.5/_1o2IM_inter_by_K[K], label=f"{K}{_frac2}+")
+    for i, K in enumerate(K_vals):
+        _M = '.*^d'
+        if len(energy_by_J[K]) > 1 and plot_PPR_interpolation:
+            _kwargs = {'marker': _M[i], 'label': f"K={K}{_frac2}", 'markersize':5}
+            ax[0].plot(b20_pav_K[K], sp_e_inter_by_K[K], **_kwargs)
+            ax[1].plot(b20_pav_K[K], 0.5/_1o2IM_inter_by_K[K], **_kwargs)
             if len(coriolis_coupl_by_K)>0:
-                ax[2].plot(b20_pav_K[K], coriolis_coupl_by_K[K], label=f"{K}{_frac2}+")
+                ax[2].plot(b20_pav_K[K], coriolis_coupl_by_K[K], **_kwargs)
             any_ = True
     if any_:
-        ax[0].set_title("sp energies")
-        ax[1].set_title("1/2$\mathcal{I}$ Inertia Mom.")
+        ax[0].set_title("sp energies (MeV)")
+        ax[1].axhline(0, linestyle='--')
+        ax[1].set_title("$\hbar^2/2\mathcal{I}$ Inertia Mom. (MeV)")
         if len(coriolis_coupl_by_K)>0:
             ax[2].set_title("Decoupling factor")
-        plt.suptitle(f"{nucl[1]} PPRM derived quantities for all K from interpolation")
+        plt.suptitle(f"{nucl[1]} PPRM derived quantities from interpolation")
+        fig.tight_layout()
         plt.savefig(FOLDER2SAVE / f"derived_pprm_parameters_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
-        plt.legend()
+        ax[2].legend()
     else:
         plt.show()
     
-    if plot_SCL_interpolation:
+    if plot_PPR_interpolation:
         fig2, ax2 = plt.subplots(1, 1, figsize=(7, 5))
         for K in K_vals:
             i = 0
             for J, model_diff in model_diff_by_K[K].items():
                 ax2.semilogy(b20_by_K_and_J[K][J], [abs(x) for x in model_diff], 
-                         marker=__J_MARKER[i], color=__K_COLORS[K//2],
-                         label=f'$K={K}{_frac2}^+$ $J={J}{_frac2}^+$')
+                             marker=__J_MARKER[i], color=__K_COLORS[K//2],
+                             label=f'$K={K}{_frac2}^+$ $J={J}{_frac2}^+$')
                 i += 1 
         ax2.set_title(f"Correspondence PAV - PPR model SCL ({nucl[1]})")
         ax2.set_ylabel(r"$\delta(E^{PAV} - E^{SCL})_{K, J} [MeV]$")
@@ -562,6 +929,78 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
     ####
     plt.show()
 
+def _plot_occupationNumbers_vap_by_b20(occnumb_vap_K, FOLDER2SAVE=None, nucl='***'):
+    """
+    print occupation of the levels from each K and the deformations.
+    """
+    all_sh_states = {}
+    UNPROJ = 0          # 0 for unprojected, 1 for projected PN 
+    JMAX = 5
+    for K, vals_K in occnumb_vap_K.items():
+        b20_sorted = dict([(float(b), b) for b in vals_K.keys()])
+        x, yobj = [], []
+        states = {-1: {}, 1: {}}
+        for b in sorted(list(b20_sorted.keys())):
+            x.append(b)
+            obj_ : OccupationNumberData =  vals_K[b20_sorted[b]]
+            yobj.append(obj_)
+            if UNPROJ == 1: 
+                assert obj_.hasProjectedOccupations, "Non projected VAP results"
+            
+            for sh_, qqnn in obj_.get_numbers.items():
+                if not sh_ in all_sh_states: all_sh_states[sh_] = qqnn
+                if not sh_ in states[-1]:
+                    states[-1][sh_], states[ 1][sh_] = [], []
+                for t in (-1, 1):
+                    val = obj_.get_occupations[UNPROJ][t][sh_]
+                    states[t][sh_].append(val)
+        _ = 0
+        
+        fig, ax = plt.subplots(2, 1, figsize=(5, 4.5))
+        for t in (-1, 1):
+            i_ax = (1 + t) // 2
+            
+            js = []
+            kwargs = {'color':'black', 'linestyle':'--', 'linewidth': 1}
+            for sh_ in all_sh_states:
+                j = all_sh_states[sh_][2]
+                if j in js or j >= JMAX: continue
+                else: js.append(j)
+                ax[i_ax].axhline(j + 1, **kwargs)
+            ax[i_ax].axhline(0, **kwargs)
+            
+            i=0
+            _MARKERS = 'oPX*ds^v><_+xP1234'
+            _COLORS_ = ['black', 'blue', 'red', 'green', 'magenta', 'cyan', 'orange']
+            for sh_, vals in states[t].items():
+                n,l,j = all_sh_states[sh_]
+                N = 2*n + l
+                _L = 'spdfghij'
+                sh_ = f"${n}{_L[l]}_{{{j}/2}}$"
+                label_ = None if t == +1 else f'{sh_}'
+                ax[i_ax].plot(x, vals, marker=_MARKERS[i], linestyle='--',
+                              markersize=5,
+                              color=_COLORS_[N], label=label_)
+                i += 1
+                
+        ax[0].set_ylabel('Occ. protons')
+        ax[1].set_ylabel('Occ. neutrons')
+        ax[1].set_xlabel('$\\beta_{20}$')
+        
+        fig.suptitle(f'MF SHO-orbital occupations evolution ({nucl[1]}). Blocked to K={K}/2 ')
+        # Create a single legend for both subplots, placed to the right
+        # handles, labels = ax[0].get_legend_handles_labels()
+        # ax[0].legend(handles, labels, loc='center left', bbox_to_anchor=(0.0, 0.0))
+        fig.legend(loc='center right', framealpha=1.0)
+        plt.subplots_adjust(left=0.1,  right=0.85)
+            
+        fig.savefig(FOLDER2SAVE / f'occupanciesVAP-k{K}_{nucl[0]}.pdf')
+
+    print("[Done] Plotting the occupancies VAP.")
+        
+        
+        
+
 def __tryFitPPR_SCL_ForFirsHWGStates(graph, k):
     """Auxiliary function to verfy if the HWG get the results from the SCL """
     if k == -135: return
@@ -575,6 +1014,9 @@ def __tryFitPPR_SCL_ForFirsHWGStates(graph, k):
     
     J2_vals.sort()
     # data_interpolated, A, B, C, model_diff 
+    if len(J2_vals) <= 2 + int(k==1):
+        print(" ERROR_fitPPRSCL try:, not enough states for Jvals from _EnergyObjct. SKIP")
+        return
     arg = particlePlusRotor_SCL_spectra(data_j, b20_deform, J2_vals, k, data_5o2)
     print(" ** Testing PPRM-SCL with HWG: K =", k, "/2")
     for j, err in arg[4].items() : print(f"   j:{j}/2  diff= {err[0]:5.4f} MeV")
@@ -585,9 +1027,9 @@ def _simpleGraphPlot(FOLDER2SAVE, FLD_KPAV, nucleus=('', '')):
     Include the simple plot without the complex spectra plotter/EnergyLevelGraph
     """
     # _EnergyLevelSimpleGraph.RELATIVE_PLOT      = True
-    # _EnergyLevelSimpleGraph.MAX_NUM_OF_SIGMAS  = 10
-    _EnergyLevelSimpleGraph.MAX_ENERGY_DISPLAY = 7.0
-    _graph = _EnergyLevelSimpleGraph("HWG spectra from each K blocking")
+    _EnergyLevelSimpleGraph.MAX_NUM_OF_SIGMAS  = 3
+    _EnergyLevelSimpleGraph.MAX_ENERGY_DISPLAY = 5.5
+    _graph = _EnergyLevelSimpleGraph("") #"HWG spectra from each K blocking")
     
     sorting_order = [k for k in range(20)] + [-135]    
     for k in sorting_order:
@@ -705,7 +1147,6 @@ def _plot_images_collective_wf_hwg(b20_hfb, b20_vap_K,
         
     print("\n".join(error_print))
     
-    import matplotlib.pyplot as plt
     individual_figs = []
     orbitals   = [str(i) for i in orbitals]
     x_orbitals = [i for i in range(len(orbitals))]
@@ -718,7 +1159,8 @@ def _plot_images_collective_wf_hwg(b20_hfb, b20_vap_K,
             _jstr = jp[0] if _hIntKJ else jp[0] // 2
             title_ = f" Coll-wf and orbital occupation $J^\pi={_jstr}{_frac2} ^{{{par_str}}}$ for each $\sigma<${MAX_SIGMA}"
             
-            fig, axs = plt.subplots(MAX_SIGMA, 2, figsize=(10, int(8)))
+            fig, axs = plt.subplots(MAX_SIGMA, 2, figsize=(6, int(4)), 
+                                    gridspec_kw={'width_ratios': [1, 2]})
             if (K != -135):
                 fig.suptitle(title_ +f'\n K={K}{_frac2}')
                 
@@ -980,13 +1422,6 @@ def _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD_TEMP, K_vals,
         #-------------------------------------------------------------------- ##
         ##    Figures.
         #-------------------------------------------------------------------- ##
-        import matplotlib.pyplot as plt
-        # Enable LaTeX in Matplotlib
-        plt.rcParams.update({
-            "text.usetex": True,
-            "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"],
-        })
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         # b20_deform = [i-(len(energy_by_J[1])//2) for i in range(len(energy_by_J[1]))]
         # b20_deform = [i for i in range(len(energy_by_J[1]))]
@@ -1117,7 +1552,7 @@ def _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD_TEMP, K_vals,
         
 
 def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parity=0,
-                                       plot_SCL_interpolation=True, plot_PAV=True,
+                                       plot_PPR_interpolation=True, plot_PAV=True,
                                        Jmax_2_plot=None):
     """
     :folders_2_import <nucleus>  ((z,n), Folder_BU, export_filename.txt) - templates
@@ -1132,7 +1567,7 @@ def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parit
         b20_hfb, b20_vap_K, b20_pav_K = [], {}, {}
         data_hfb, data_vap_K, data_pav_K, data_hwg_K = [], {}, {}, {}
         coll_hwg_K, occn_hwg_K = {}, {}
-        E_hfb, E_vap_K, energy_by_J = [], {}, {}
+        E_hfb, E_vap_K, occnumb_vap_K, energy_by_J = [], {}, {}, {}
         
         z, n = folder_args[0]
         _core_0 = 0
@@ -1141,7 +1576,7 @@ def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parit
                 rf"$^{{{z_real+n_real}}}${{{elementNameByZ[z_real]}}}")
         
         if (z%2, n%2) == (0, 0): 
-            K_vals, plot_SCL_interpolation = [0, ], False
+            K_vals, plot_PPR_interpolation = [0, ], False
         print(f"[{z}, {n}]   ******** ")
         FLD  = folder_args[1].format(MAIN_FLD=MAIN_FLD, z=z, n=n)
         FLD  = Path(FLD)
@@ -1191,6 +1626,16 @@ def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parit
                     obj_.setDataFromCSVLine(line)
                     data_vap_K[K].append(obj_)
                     E_vap_K[K].append(obj_.E_HFB)
+            
+            ## Store occupation numbers if exists
+            occ_numb = os.listdir(FLD_KVAP[K])
+            occ_numb = list(filter(lambda x: x.endswith('_occupation_numbers.dat'), occ_numb))
+            if any(occ_numb):
+                occnumb_vap_K[K] = {}
+                for fn_ in occ_numb:
+                    b20 = fn_.split('_occupation_numbers.dat')[0].replace('_', '-')
+                    obj_ = OccupationNumberData(FLD_KVAP[K] / fn_)
+                    occnumb_vap_K[K][b20] = obj_
             
             if FLD_KPAV[K].exists():
                 index_K_elements_log[K] = []
@@ -1242,7 +1687,7 @@ def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parit
                     
                     ener, jval, b20J = [], [], []
                     for i, _ in kval:
-                        if abs(dat.proj_norm[i]) < 1.0e-8:
+                        if abs(dat.proj_norm[i]) < 1.0e-6:
                             printf("[Warning] PAV norm = 0 state found. i_b20_def=",
                                   id_, "\n  ***", index_K_elements_log[K][id_])#, data_pav_K[K][id_])
                             continue
@@ -1280,16 +1725,21 @@ def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parit
                     coll_hwg_K[-135][(J,p)] = CollectiveWFData  (_aux_path_multi / f)
                     ff = f.replace('collective_wavefunction_', 'occupation_numbers_')
                     occn_hwg_K[-135][(J,p)] = OccupationsHWGData(_aux_path_multi / ff)
+            
+            # K loop end
+        if occnumb_vap_K:
+            _plot_occupationNumbers_vap_by_b20(occnumb_vap_K, 
+                                                FOLDER2SAVE=FOLDER2SAVE, nucl=nucl)
         
-        # _generate_images_hfb_vapK_pav_hwg(
-        #     b20_hfb, E_hfb, b20_vap_K, E_vap_K, 
-        #     b20_pav_K, b20_by_K_and_J, energy_by_J, Jmax_2_plot, 
-        #     data_hwg_K,
-        #     plot_PAV=True, plot_SCL_interpolation=plot_SCL_interpolation, 
-        #     FOLDER2SAVE=FOLDER2SAVE, parity=parity, nucl=nucl, 
-        #     ## kwargs
-        #     FLD_KPAV=FLD_KPAV
-        # )
+        _generate_images_hfb_vapK_pav_hwg(
+            b20_hfb, E_hfb, b20_vap_K, E_vap_K, 
+            b20_pav_K, b20_by_K_and_J, energy_by_J, Jmax_2_plot, 
+            data_hwg_K,
+            plot_PAV=True, plot_PPR_interpolation=plot_PPR_interpolation, 
+            FOLDER2SAVE=FOLDER2SAVE, parity=parity, nucl=nucl, 
+            ## kwargs
+            FLD_KPAV=FLD_KPAV
+        )
         if coll_hwg_K and occn_hwg_K:
             _plot_images_collective_wf_hwg(
                 b20_hfb, b20_vap_K, data_vap_K, data_hwg_K, coll_hwg_K, occn_hwg_K, 
@@ -1409,42 +1859,57 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
             _, K = fld_.replace('BU_states_d', '').split('K')
             for fn in os.listdir(FLD / fld_):
                 if not fn.endswith('OUT'): continue
+                if int(K) not in K_vals:   continue
+                
                 obj_ = DataTaurus(z, n, FLD / (fld_+'/'+fn))
                 data_vap_K[int(K)].append(obj_)
+                
         ## Figures,
         ## Intrinsic states for all K and diagonal PAV
-        import matplotlib.pyplot as plt
-        plt.rcParams.update({
-            "text.usetex": True,
-            "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"],
-        })
-        fig, ax =  plt.subplots(1, 1, figsize=(6, 4))
-        _markers_, _colors_ = '.o*^v<>+d', ['red', 'blue', 'green', 'magenta', 'orange', 'olive']
-        for K, dat_list in data_vap_K.items():
-            x = [obj_.b20_isoscalar for obj_ in dat_list]
-            y = [obj_.E_HFB         for obj_ in dat_list]
-            ax.scatter(x, y, label=f'K={K}/2',
-                       marker='o', facecolor='None',  #_markers_[K_vals.index(K)], 
-                       color=_colors_[K_vals.index(K)],)
-        ax.set_ylim( (-145, -85) )
-        ax.set_title(f"Results for all $K^{_parity_str}$")
-        ax.plot(b20_hfb, E_hfb, '.-k', label='false OE')
-        ax.set_xlabel(r'$\beta_{20}$')
-        ax.set_ylabel(r'$E_{HFB}$')
-        ax.legend()
+        fig, ax =  plt.subplots(2, 1, figsize=(5, 6),
+                                gridspec_kw={'height_ratios': [1.5, 1]})
+        _markers_, _colors_ = '.osh^v<>+d', ['red', 'blue', 'green', 'magenta', 'orange', 'olive']
+        for i in range(2):
+            for K, dat_list in data_vap_K.items():
+                if i == 1 and K > 5: continue
+                x = [obj_.b20_isoscalar for obj_ in dat_list]
+                y = [obj_.E_HFB         for obj_ in dat_list]
+                ax[i].scatter(x, y, label=f'K={K}/2',
+                           marker=_markers_[K//2], 
+                           facecolor='None',  #_markers_[K_vals.index(K)], 
+                           color=_colors_[K//2],)
+            #add rectangle
+            if i == 0:
+                from matplotlib.patches import Rectangle
+                ax[i].add_patch(Rectangle((0,-143),0.75,17,
+                                linestyle='--',
+                                edgecolor='black',
+                                facecolor='none',
+                                lw=1))
+            ax[i].tick_params(direction='in')
+            if i == 0:
+                ax[i].set_ylim( (-145, -85) )
+            else:
+                ax[i].set_xlim( (0.0, 0.75) )
+                ax[i].set_ylim( (-143, -126) )
+            if i == 0:
+                ax[i].set_title(f"Results for all $K^{_parity_str}$ - {nucl[1]}")
+            ax[i].plot(b20_hfb, E_hfb, '.-k', label='false OE')
+            ax[i].set_xlabel(r'$\beta_{20}$')
+            ax[i].set_ylabel(r'$E_{HFB}$')
+            ax[i].legend()
         plt.tight_layout()
         plt.savefig(FOLDER2SAVE / f"scatter_blocking_Kvap_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
-        #plt.show()
+        # plt.show()
         
         if not FLD_KPAV.exists(): return 
         for K, dat_list in data_pav_K.items():
             fig, ax =  plt.subplots(1, 2, figsize=(9, 4))
             
             y = [obj_.E_HFB for obj_ in data_vap_K_cp[K]]
-            ax[0].scatter(b20_pav_K_cp[K], y, label=f'K={K}/2',
-                       marker='.', linestyle='-', facecolor='None',   
-                       color=_colors_[K_vals.index(K)],)
+            ax[0].scatter(b20_vap_K[K], y, label=f'K={K}/2',
+                          marker='.', linestyle='-', facecolor='None',   
+                          color=_colors_[K_vals.index(K)],)
             elem : DataTaurusPAV = None
             x = b20_pav_K_cp[K]
             J_vals = [j for j in range(max_2_plot)]
@@ -1458,7 +1923,16 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
                 if surf_by_J[J] == []: continue
                 n, e = zip(*surf_by_J[J])
                 if len(e) != len(x): continue
-                ax[0].plot(x, e, label=f'j={J}/2', linestyle='--', linewidth=1, markersize=3, 
+                
+                # split left and right side b20
+                x1 = list(filter(lambda x: x < 0, x))
+                x2 = [x[i] for i in range(len(x1), len(x))]
+                e1 = [e[i] for i in range(len(x1))]
+                e2 = [e[i] for i in range(len(x1), len(x))]
+                
+                ax[0].plot(x1, e1, linestyle='--', linewidth=1, markersize=3, 
+                           marker=_markers_[(J)//2], color=_colors_[(J)//2])
+                ax[0].plot(x2, e2, label=f'j={J}/2', linestyle='--', linewidth=1, markersize=3, 
                            marker=_markers_[(J)//2], color=_colors_[(J)//2])
                 ax[1].plot(x, n, label=f'j={J}/2', linestyle='--', linewidth=1, markersize=3, 
                            marker=_markers_[(J)//2], color=_colors_[(J)//2])
@@ -1479,6 +1953,123 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
             plt.savefig(FOLDER2SAVE / f"Kpav_proj_K{K}_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
             
         plt.show()
+
+def _plotK_SPindependent_vapTES(folders_2_import, MAIN_FLD_TEMP, K_vals, parity=0):
+    """
+    Plot All export_tes files for each K_P_VAP block, folders labeled as the 
+    sp state in antoine format.
+    """
+    FOLDER2SAVE= Path(MAIN_FLD)#.parent
+    global GLOBAL_TAIL_INTER
+    _parity_str = '+' if parity == 0 else '-'
+    for folder_args in folders_2_import:
+        index_b20 = {}
+        b20_hfb,  b20_vap_Ksp  = [], {}
+        data_hfb, data_vap_Ksp = [], {}
+        E_hfb, Jz_hfb, E_vap_K_sp = [], [], {}
+        
+        z, n = folder_args[0]
+        _core_0 = 0
+        z_real, n_real = z + _core_0, n + _core_0
+        nucl = (f"{z_real+n_real}{elementNameByZ[z_real]}", 
+                rf"$^{{{z_real+n_real}}}${{{elementNameByZ[z_real]}}}")
+        
+        print(f"[{z}, {n}]   ******** ")
+        FLD  = folder_args[1].format(MAIN_FLD=MAIN_FLD, z=z, n=n)
+        FLD  = Path(FLD)
+        
+        FLD_KVAP = [(k, FLD / f"{k}_{parity}_VAP") for k in K_vals]
+        FLD_KVAP = dict(FLD_KVAP)
+        
+        if not FLD.exists():
+            print(f" [ERROR Imprt] Folder [{FLD}] not found, skipping!")
+            continue
+        export_fn = folder_args[2].format(z, n)
+        
+        ## Read VAP mean field file
+        # with open(export_fn, 'r') as f:
+        with open(FLD / export_fn, "r") as f:
+            for line in f.readlines()[1:]:
+                head_, line = line.split(OUTPUT_HEADER_SEPARATOR)
+                i, b20 = head_.strip().split()
+                index_b20[i] = float(b20)
+                b20_hfb.append(float(b20))
+                
+                obj_ = DataTaurus(z, n, None, empty_data=True)
+                obj_.setDataFromCSVLine(line)
+                data_hfb.append(obj_)
+                E_hfb.append(obj_.E_HFB)
+                Jz_hfb.append(obj_.Jz)
+        
+        ## Read VAP-K blocked state - along wiht the PAV folder(diagonal) if exists.
+        sh_nlj, sp_by_sh_ = {}, {}
+        for K in K_vals:
+            print(" * Importing K =", K)
+            b20_vap_Ksp[K], data_vap_Ksp[K] = {}, {}
+            # with open(export_fn.replace('TESb20_', f'TESb20_K{K}'), 'r') as f:
+            exp_fn_k = export_fn.replace('TESb20_', f'TESb20_K{K}_')
+            _fldk = FLD_KVAP[K]
+            list_sps = list(filter(lambda x: os.path.isdir(_fldk/x) and x.isdigit(), 
+                                   os.listdir(_fldk)))
+            for sp_ in list_sps:
+                sh_ = int(sp_)
+                sh_nlj[sp_] = sh_//10000, (sh_%10000)//100, (sh_%10000)%100
+                sp_by_sh_[sh_] = sp_
+                b20_vap_Ksp[K][sp_], data_vap_Ksp[K][sp_] = [], []
+                with open(FLD_KVAP[K] / f"{sp_}/{exp_fn_k}", "r") as f:
+                    for line in f.readlines()[1:]:
+                        head_, line = line.split(OUTPUT_HEADER_SEPARATOR)
+                        i, b20 = head_.strip().split()
+                        if i not in index_b20: 
+                            print(" [Warning] deformation index", i, "not from VAP.")
+                        b20_vap_Ksp[K][sp_].append(float(b20))
+                        
+                        obj_ = DataTaurus(z, n, None, empty_data=True)
+                        obj_.setDataFromCSVLine(line)
+                        data_vap_Ksp[K][sp_].append(obj_)
+        ## Figures,
+        ## Intrinsic states for all K and diagonal PAV
+        fig, ax =  plt.subplots(1, 1, figsize=(6, 4))
+        fig2, ax2 =  plt.subplots(1, 1, figsize=(6, 4))
+        _markers_, _colors_ = '.*o^v<>+d', ['red', 'blue', 'green', 'magenta', 'orange', 'olive']
+        _L = 'spdfghij'
+        for K in data_vap_Ksp:
+            i=0
+            for sh_, dat_list in data_vap_Ksp[K].items():
+                x = [obj_.b20_isoscalar for obj_ in dat_list]
+                ye = [obj_.E_HFB         for obj_ in dat_list]
+                yj = [obj_.Jz            for obj_ in dat_list]
+                sh_ = int(sh_)
+                sp_ = sp_by_sh_[sh_]
+                sp_str = K, sh_nlj[sp_][0], _L[sh_nlj[sp_][1]], sh_nlj[sp_][2]
+                # sp_str = "${}{}_{{{{{}}}/2}}$".format(*sp_str)
+                sp_str = "2K={}: {}{}_{}/2".format(*sp_str)
+                ax.scatter(x, ye, label=sp_str,
+                           marker=_markers_[i], facecolor='None',
+                           color=_colors_[K_vals.index(K)],)
+                ax2.scatter(x, yj, label=sp_str,
+                            marker=_markers_[i], facecolor='None',
+                            color=_colors_[K_vals.index(K)],)
+                i+=1
+        #ax.set_ylim( (-145, -85) )
+        ax.set_title(f"Results for all $K^{_parity_str}$ for each starting s.p. state blocked.")
+        ax.plot(b20_hfb, E_hfb, '.-k', label='false OE')
+        ax.set_xlabel(r'$\beta_{20}$')
+        ax.set_ylabel(r'$E_{HFB}$')
+        # ax.legend()
+        
+        ax2.set_title(f"$<J_z>$ for all $K^{_parity_str}$ for each starting s.p. state blocked.")
+        ax2.plot(b20_hfb, Jz_hfb, '.-k', label='false OE')
+        ax2.set_xlabel(r'$\beta_{20}$')
+        ax2.set_ylabel(r'$\langle{J_z}\rangle$')
+        ax2.legend()
+        fig.tight_layout()
+        fig.savefig(FOLDER2SAVE / f"blocking_Kvap_spIndividual_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
+        fig2.tight_layout()
+        fig2.savefig(FOLDER2SAVE / f"blocking_Kvap_spIndividual_Jz_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
+        plt.show()
+        
+                    
 
 def _plotMultiK_vertical(folders_2_import, MAIN_FLD, K_vals, 
                          Jmax2plot=None, onlyPrintJ=None):
@@ -1566,12 +2157,6 @@ def _plotMultiK_vertical(folders_2_import, MAIN_FLD, K_vals,
                 # it asumes the order of the folders for the order of increasing K
             
         ## Intrinsic states for all K and diagonal PAV
-        import matplotlib.pyplot as plt
-        plt.rcParams.update({
-            "text.usetex": True,
-            "font.family": "serif",
-            "font.serif": ["Computer Modern Roman"],
-        })
         
         fig, ax = plt.subplots(1, 2, figsize=(10, 6))
         # fig, ax = plt.subplots(1, 3, figsize=(20, 6))
@@ -1705,7 +2290,6 @@ def _plotOddOddAllCombinations(z, n, inter, main_fld):
     data_states  = {}
     set_energies = {}
     sort_sts_blk = {}
-    import matplotlib.pyplot as plt
     
     for i_def, b20 in def_map.items():
         if not i_def in defs_flds: continue
@@ -1815,21 +2399,22 @@ if __name__ == '__main__':
         MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K{K_val}_block_PAV'
         MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/K{K_val}_block_PAV'
         # MAIN_FLD = '../DATA_RESULTS/example_singleJ/K{K_val}_block_PAV'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/F_nocom'
+        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/F'
         MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg'
         # MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg1ststateSwap_multiK'
         
         nuclei = [( 7, 8 + 2*i)  for i in range(0, 1)] # 7
         # nuclei = [( 9, 8 + 2*i) for i in range(0, 1)] # 7
         # nuclei = [(11, 8 + 2*i) for i in range(0, 1)] # 7
-        nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
+        nuclei = [(12,11 + 2*i)  for i in range(0, 6)] # 6
         # nuclei = [(15,  8 + 2*i) for i in range(0, 6)]
-        nuclei = [(17,10 + 2*i) for i in range(5, 6)]
+        nuclei = [(17,10 + 2*i)  for i in range(5, 6)]
         nuclei = [( 9,16), ( 9,18), ( 9,20),]
         nuclei = [( 1,12), ]#( 0,10), ] #(12,19), (1, 12)]
         # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
-        nuclei = [(12,13),  ]
-        nuclei = [( 4, 5), ]
+        nuclei = [(12,13),  ] # (17,12),
+        # nuclei = [( 9,20),  ]
+        # nuclei = [( 4, 5), ]
         
         GLOBAL_TAIL_INTER = '_B1'
         
@@ -1838,11 +2423,12 @@ if __name__ == '__main__':
             #((2, 3), '../BU_folder_B1_MZ3_z2n3/PNAMP/', DataTaurusPAV),
             # ((8, 11), f'{MAIN_FLD}/BU_folder_B1_MZ3_z8n11/', 'export_TESb20_z{}n{}_B1_MZ3.txt'),
             
-            # ((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
+            ((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}_axial/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
+            #((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
             # ((z, n), '{MAIN_FLD}/BU_folder_SDPF_MIX_J_z{z}n{n}/', 'export_TESb20_z{}n{}_SDPF_MIX_J.txt') for z,n in nuclei
             # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JF27_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JF27.txt') for z,n in nuclei
             # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JO26_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JO26.txt') for z,n in nuclei
-            ((z, n), '{MAIN_FLD}/BU_folder_usdb_J_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_J.txt') for z,n in nuclei
+            # ((z, n), '{MAIN_FLD}/BU_folder_usdb_J_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_J.txt') for z,n in nuclei
             #  '{MAIN_FLD}/BU_folder_B1_h11o2_z{z}n{n}/', 
             #  'export_TESb20_z{}n{}_B1_h11o2.txt') for z,n in nuclei
         ]
@@ -1851,15 +2437,16 @@ if __name__ == '__main__':
         #                            plot_SCL_interpolation=False)
         # raise Exception("STOP HERE")
         
-        K_vals  = [1,3,5, ]
+        K_vals  = [1, 3, 5,]
         # _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD, K_vals,
         #                                     plot_SCL_interpolation=1,
         #                                     Jmax_2_plot=9)
         _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals,
-                                           plot_SCL_interpolation=1, parity=0,
+                                           plot_PPR_interpolation=1, parity=0,
                                            Jmax_2_plot=11)
         # _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD, K_vals, 
         #                                     parity=0, plot_PAV=True, max_2_plot=11)
+        # _plotK_SPindependent_vapTES(folders_2_import, MAIN_FLD, K_vals)
         raise Exception("STOP HERE")
         
         # K_vals  = [1, 3, 5, 7]
