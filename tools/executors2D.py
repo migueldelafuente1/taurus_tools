@@ -274,6 +274,7 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
         if lev == 0: 
             self._checkExecutorSettings()
             self._curr_deform_index = [0 for _ in self.CONSTRAINT]
+            self.printExecutionResult(None, print_head=True)
         _last_constr = lev == len(self.CONSTRAINT) - 1
         
         shutil.copy(self._temp_seed_minima[lev][0], 'initial_wf.bin')
