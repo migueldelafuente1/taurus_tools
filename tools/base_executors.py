@@ -987,13 +987,28 @@ class _Base1DTaurusExecutor(object):
         """
         Standard step information
         """
-        HEAD = "  z  n  (st) ( d)       E_HFB        Kin     Pair       b2"
+        cnstr = self.CONSTRAINT if list(self.CONSTRAINT) else [self.CONSTRAINT,]
+        cnstr_val_str = []
+        for c in cnstr:
+            c2 = c
+            if c == InputTaurus.ConstrEnum.sqrt_r2: c2 = 'r2'
+            if c.startswith('P_'):
+                c2 = c.replace('P_', 'p').replace('p1','+').replace('m1','-')
+            cnstr_val_str.append(c2)
+        cnstr_val_str = '  '.join(cnstr_val_str)
+        
+        HEAD = f"  z  n  (st)  ( d )       E_HFB      Kin     Pair   {cnstr_val_str}"
         if print_head:
             printf('\n'+HEAD+LINE_2)
             return
-        if result == None or result.broken_execution:
-            printf(" {:2} {:2}    {}  {:>4}"
-                    .format(self.z, self.n, '(F)', str(self._curr_deform_index)))
+        
+        idx_str = str(self._curr_deform_index)
+        if isinstance(self._curr_deform_index, list):
+            if not (None in self._curr_deform_index):
+                idx_str = ','.join([f'{x: >3}' for x in self._curr_deform_index])
+                idx_str = f"[{idx_str}]"
+        if result == None or result.broken_execution:            
+            printf(" {:2} {:2}    {}  {:>4}".format(self.z, self.n, '(F)', idx_str))
             return
         
         ## TODO: check if broken to skip the iter_time get
@@ -1003,11 +1018,18 @@ class _Base1DTaurusExecutor(object):
         _iter_str = "[{}/{}: {}']".format(result.iter_max, self.inputObj.iterations, 
                                           iter_time_s //60 )
         
-        txt  =" {:2} {:2}    {}  {:>4}    {:9.3f}  {:8.3f}  {:7.3f}   {:+6.3f} "
-        txt = txt.format(result.z, result.n, status_fin, 
-                         str(self._curr_deform_index),
-                         result.E_HFB, result.kin, result.pair, 
-                         result.b20_isoscalar)
+        if isinstance(self.CONSTRAINT, list):
+            cnstr = [c if c[0] in 'JP' else f"{c}_isoscalar" for c in self.CONSTRAINT]
+            cnstr_val_str   = [f'{getattr(result,c):+6.3f}' for c in cnstr]
+            cnstr_val_str = '  '.join(cnstr_val_str)
+        else:
+            cnstr = self.CONSTRAINT
+            cnstr = cnstr if cnstr[0] in 'JP' else f"{cnstr}_isoscalar"
+            cnstr_val_str = f'{getattr(result,cnstr):+6.3f}'
+        
+        txt  =" {:2} {:2}  {}  {:>4}  {:9.3f}  {:8.3f}  {:7.3f}   {} "
+        txt = txt.format(result.z, result.n, status_fin, idx_str, 
+                         result.E_HFB, result.kin, result.pair, cnstr_val_str)
         printf(txt, _iter_str)
     
     @property
