@@ -71,7 +71,6 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         :reset_seed: If there is/or not a seed minimum for the calculation and
                      we want to repeat the convergence process, turn it  <True>
         """
-        
         self.calculationParameters
         
         res = None
@@ -120,8 +119,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         if ((self.ITYPE is InputTaurus) and 
             (InputTaurus.ArgsEnum.seed in _new_input_args)):
-            self._base_seed_type = _new_input_args.get(InputTaurus.ArgsEnum.seed, 
-                                                       None)
+            scnd_seed = _new_input_args.get(InputTaurus.ArgsEnum.seed, None)
+            if (scnd_seed != 1): self._base_seed_type = scnd_seed
         
         self.printExecutionResult(None, print_head=True)
     
@@ -258,6 +257,39 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         shutil.move(DataTaurusPAV.DEFAULT_OUTPUT_FILENAME, outpth)        
     
+    def _getValidSpStatesForKP_oddEven(self):
+        """
+        return valid sp-index for the expected for the K-parities.
+            [sp-protons, sp-neutrons]
+        """
+        if self.VALID_KS_FOR_AXIAL_BLOCKING != []:
+            VALID_KS = self.VALID_KS_FOR_AXIAL_BLOCKING
+        else:
+            if sum(self.numberParity) == 1:
+                VALID_KS = [k for k in range(self._sp_2jmin, self._sp_2jmax+1, 2)]
+            else:
+                VALID_KS = [k for k in range(0, 2*self._sp_2jmax, 2)]
+        
+        podd, nodd = self.numberParity
+        
+        valid_sps = [[], []]
+        for sp_, obj in self._sp_states_obj.items():
+            
+            if sum(self.numberParity) % 2 == 0: ## Odd-odd, all are valid
+                valid_sps[0].append(sp_)
+                valid_sps[1].append(sp_)
+                continue
+            
+            if not (obj.m in VALID_KS): continue # negative values are avoided
+            if self.PARITY_TO_BLOCK != 0:
+                if ((-1)**(obj.l) != self.PARITY_TO_BLOCK): continue
+            
+            if podd: valid_sps[0].append(sp_)
+            if nodd: valid_sps[1].append(sp_)
+            
+        return valid_sps
+        
+    
     def _oddNumberParitySeedConvergence(self):
         """
         Procedure to select the sp state to block with the lowest energy:
@@ -285,15 +317,31 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         printf("  ** Blocking minimization process (random sp-st 2 block). MAX iter=", 
               double4OO*self.SEEDS_RANDOMIZATION, 
               " #-par:", self.numberParity, LINE_2)
-        for rand_step in range(double4OO * self.SEEDS_RANDOMIZATION):
+        rand_step = 0
+        # if self.numberParity != (1, 1):
+        validKsps = self._getValidSpStatesForKP_oddEven()
+        LIMIT = min(double4OO * self.SEEDS_RANDOMIZATION, 
+                    len(validKsps[0]) + len(validKsps[1]))
+        while (rand_step < LIMIT):
             bk_sp_p, bk_sp_n = 0, 0
             bk_sh_p, bk_sh_n = 0, 0
             bk_sp, bk_sh = None, None
+            
+            # if odd_p: 
+        ## TODO : Reformulate
+            #     l_ = validKsps[0].__len__()
+            #     bk_sp_p = validKsps[np.random.randint(0, l_)]
+            #     bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
+            # if odd_n:
+            
             if odd_p:
                 bk_sh_p = np.random.randint(0, len(sh_states))
                 cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_p)])
                 bk_sp_p = cdim + np.random.randint(1, sp_states[sh_states[bk_sh_p]] +1)
                 bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
+                if not bk_sp_p in validKsps[0]: 
+                    printf(f"  * Blocked state [{bk_sp}] invalid with K-P [SKIP]")
+                    continue
             if odd_n:
                 bk_sh_n = np.random.randint(0, len(sp_states))
                 cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_n)])
@@ -301,6 +349,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 bk_sp_n = cdim + np.random.randint(1, sp_states[sh_states[bk_sh_n]] +1)
                 bk_sp = (bk_sp, bk_sp_n) if bk_sp else bk_sp_n
                 bk_sh = (bk_sh, sh_states[bk_sh_n]) if bk_sh else sh_states[bk_sh_n]
+                if not (bk_sp_n-self._sp_dim) in validKsps[1]: 
+                    printf(f"  * Blocked state [{bk_sp}] invalid with K-P [SKIP]")
+                    continue
             
             if bk_sp in blocked_states:
                 printf(rand_step, f"  * Blocked state [{bk_sp}] is already calculated [SKIP]")
@@ -325,6 +376,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                     self.inputObj.qp_block = None
                 res = self._executeProgram(base_execution=True)
             printf(" ** * [OK] Result accepted. Saving result.")
+            rand_step += 1
             
             blocked_seeds_results[bk_sp] = deepcopy(res)
             blocked_energies     [bk_sp] = res.E_HFB
@@ -336,16 +388,18 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             if res.E_HFB < bk_E_min:
                 bk_min, bk_E_min = bk_sp, res.E_HFB
         
-            printf(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f}")
+            printf(rand_step, f"  * Blocked state [{bk_sp}] done, Ehfb={res.E_HFB:6.3f} Jz={res.Jz:6.3f}")
             
             ## NOTE: If convergence is iterated, inputObj seed is turned 1, refresh!
             self.inputObj.seed = self._base_seed_type
         
+        blocked_K_states = [(b, blocked_seeds_results[b].Jz) for b in blocked_seeds_results]
+        blocked_K_states = dict(blocked_K_states)
         printf("\n  ** Blocking minimization process [FINISHED], Results:")
-        printf(f"  [  sp-state]  [    shells    ]   [ E HFB ]  sp/sh_dim={sp_dim}, {len(sp_states)}")
+        printf(f"  [  sp-state]  [    shells    ]   [ E HFB ]   [ Jz ] sp/sh_dim={sp_dim},{len(sp_states)}")
         for bk_st in blocked_states:
             printf(f"  {str(bk_st):>12}  {str(blocked_sh_states[bk_st]):>16}   "
-                  f"{blocked_energies[bk_st]:>9.4f}")
+                  f"{blocked_energies[bk_st]:>9.4f}   {blocked_K_states[bk_st]: >6.3f}")
         printf("  ** importing the state(s)", bk_min, "with energy ", bk_E_min)
         printf(LINE_2)
         
@@ -353,6 +407,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         # copy the lowest energy solution and output.
         self.inputObj.qp_block = 0
         self._1stSeedMinimum = blocked_seeds_results[bk_min]
+        self._1stSeedMinimum_blocked_st = bk_min
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
         self._exportBaseResultFile(bu_results)    
     
@@ -517,14 +572,14 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         for k in range(-len(self._final_bin_list_data[0]), 0, 1):
             tail = self._final_bin_list_data[0][k]
             constr_val = getattr(self._results[0][-k-1], self.CONSTRAINT_DT)
-            constr_val = f"{constr_val:6.3f}".replace('-', '_')
+            constr_val = f"{constr_val:6.3f}"   #.replace('-', '_')
             bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
             outs_.append("res_{}.OUT\t{}".format(tail, constr_val))
         ## exportar prolate en orden
         for k in range(len(self._final_bin_list_data[1])):
             tail = self._final_bin_list_data[1][k]
             constr_val = getattr(self._results[1][k], self.CONSTRAINT_DT)
-            constr_val = f"{constr_val:6.3f}".replace('-', '_')
+            constr_val = f"{constr_val:6.3f}"   #.replace('-', '_')
             bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
             outs_.append("res_{}.OUT\t{}".format(tail, constr_val))
         
@@ -549,22 +604,33 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         ## Create a list of wf to do the VAP calculations:
         if self.DTYPE is DataTaurus:
-            os.chdir(self.DTYPE.BU_folder)
-            printf(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
-            os.mkdir('PNVAP')
-            list_dat = []
-            for i, bin_ in enumerate(bins_):
-                fn, def_ = bin_.split()
-                shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
-                fno, _ = outs_[i].split()
-                printf(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
-                shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
-                list_dat.append(def_ + '.bin')
-            with open('list.dat', 'w+') as f:
-                f.write("\n".join(list_dat))
-            shutil.move('list.dat', 'PNVAP/')
-            os.chdir('..')
+            self._globalTearDown_saveVAPresultsInList(bins_, outs_)
+            
         printf( "  [globalTearDown] Done.\n")
+    
+    def _globalTearDown_saveVAPresultsInList(self, bins_, outs_):
+        """
+        Auxiliary method to store the mean-field results for further PNPAMP-HWG
+        calculations. Requires results as DataTaurus
+        """
+        os.chdir(self.DTYPE.BU_folder)
+        printf(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
+        # create folder.
+        if os.path.exists('PNVAP'): shutil.rmtree('PNVAP')
+        os.mkdir('PNVAP')
+        
+        list_dat = []
+        for i, bin_ in enumerate(bins_):
+            fn, def_ = bin_.split()
+            shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
+            fno, _ = outs_[i].split()
+            printf(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
+            shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
+            list_dat.append(def_ + '.bin')
+        with open('list.dat', 'w+') as f:
+            f.write("\n".join(list_dat))
+        shutil.move('list.dat', 'PNVAP/')
+        os.chdir('..')
     
     def projectionExecutionTearDown(self):
         """
@@ -630,7 +696,7 @@ class ExeAxial1D_DeformQ20(_Base1DAxialExecutor, ExeTaurus1D_DeformQ20):
         
         self._sh_states = sh_states
         self._sp_states = sp_states
-        self._sp_dim    = sp_dim  
+        self._sp_dim    = sp_dim        
 
 class ExeTaurus1D_DeformB20(ExeTaurus1D_DeformQ20):
     

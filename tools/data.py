@@ -13,16 +13,17 @@ TODO: * Evaluation profile, for taurus execution details as an on fly verifier
 TODO: 
 '''
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import os
 import shutil
 
 import numpy as np
 from tools.helpers import ValenceSpacesDict_l_ge10_byM, readAntoine,\
-    getSingleSpaceDegenerations, almostEqual, LINE_2, LINE_1, printf
+    getSingleSpaceDegenerations, almostEqual, LINE_2, LINE_1, printf, \
+    liquidDropModelBindingEnergy, getQLMvalueFromBetaLM
 from copy import copy, deepcopy
-from tools.Enums import Enum
+from tools.Enums import Enum, Constants
 from tools.inputs import InputTaurus
 
 class DataObjectException(BaseException):
@@ -570,6 +571,107 @@ class OccupationNumberData(_DataObjectBase):
 #===============================================================================
 #   RESULTS FROM TAURUS 
 #===============================================================================
+
+_TMP_TAURUS_VAP_RESULT_OUTPUT = """
+      Quantity            Mean      Variance
+--------------------------------------------
+Norm                   {overlap:10.6f}
+Number of protons      {proton_numb:10.6f}   {var_p:8.6f}
+Number of neutrons     {neutron_numb:10.6f}   {var_n:8.6f}
+Parity                 {parity:10.6f}
+
+ENERGY DECOMPOSITION
+====================
+
+Part \ Iso      p-p          n-n          p-n          Total
+-------------------------------------------------------------
+Zero-body                                         {E_zero: >12.6f}
+One-body   {kin_p: >12.6f} {kin_n: >12.6f}               {kin: >12.6f}
+ ph part   {hf_pp: >12.6f} {hf_nn: >12.6f} {hf_pn: >12.6f} {hf: >12.6f}
+ pp part   {pair_pp: >12.6f} {pair_nn: >12.6f} {pair_pn: >12.6f} {pair: >12.6f}
+Two-body   {V_2B_pp: >12.6f} {V_2B_nn: >12.6f} {V_2B_pn: >12.6f} {V_2B: >12.6f}
+Full H     {E_HFB_pp: >12.6f} {E_HFB_nn: >12.6f} {E_HFB_pn: >12.6f} {E_HFB: >12.6f}
+
+MULTIPOLE DEFORMATIONS
+======================
+                                     Nucleons
+Q_lm     Protons    Neutrons   Isoscalar   Isovector
+----------------------------------------------------
+Q_10  {q10_p: >10.6f}  {q10_n: >10.6f}  {q10_isoscalar: >10.6f}  {q10_isovector: >10.6f}
+Q_11  {q11_p: >10.6f}  {q11_n: >10.6f}  {q11_isoscalar: >10.6f}  {q11_isovector: >10.6f}
+Q_20  {q20_p: >10.6f}  {q20_n: >10.6f}  {q20_isoscalar: >10.6f}  {q20_isovector: >10.6f}
+Q_21  {q21_p: >10.6f}  {q21_n: >10.6f}  {q21_isoscalar: >10.6f}  {q21_isovector: >10.6f}
+Q_22  {q22_p: >10.6f}  {q22_n: >10.6f}  {q22_isoscalar: >10.6f}  {q22_isovector: >10.6f}
+Q_30  {q30_p: >10.6f}  {q30_n: >10.6f}  {q30_isoscalar: >10.6f}  {q30_isovector: >10.6f}
+Q_31  {q31_p: >10.6f}  {q31_n: >10.6f}  {q31_isoscalar: >10.6f}  {q31_isovector: >10.6f}
+Q_32  {q32_p: >10.6f}  {q32_n: >10.6f}  {q32_isoscalar: >10.6f}  {q32_isovector: >10.6f}
+Q_33  {q33_p: >10.6f}  {q33_n: >10.6f}  {q33_isoscalar: >10.6f}  {q33_isovector: >10.6f}
+Q_40  {q40_p: >10.6f}  {q40_n: >10.6f}  {q40_isoscalar: >10.6f}  {q40_isovector: >10.6f}
+Q_41  {q41_p: >10.6f}  {q41_n: >10.6f}  {q41_isoscalar: >10.6f}  {q41_isovector: >10.6f}
+Q_42  {q42_p: >10.6f}  {q42_n: >10.6f}  {q42_isoscalar: >10.6f}  {q42_isovector: >10.6f}
+Q_43  {q43_p: >10.6f}  {q43_n: >10.6f}  {q43_isoscalar: >10.6f}  {q43_isovector: >10.6f}
+Q_44  {q44_p: >10.6f}  {q44_n: >10.6f}  {q44_isoscalar: >10.6f}  {q44_isovector: >10.6f}
+
+                                        Nucleons
+Beta_lm     Protons    Neutrons   Isoscalar   Isovector
+-------------------------------------------------------
+Beta_10  {b10_p: >10.6f}  {b10_n: >10.6f}  {b10_isoscalar: >10.6f}  {b10_isovector: >10.6f}
+Beta_11  {b11_p: >10.6f}  {b11_n: >10.6f}  {b11_isoscalar: >10.6f}  {b11_isovector: >10.6f}
+Beta_20  {b20_p: >10.6f}  {b20_n: >10.6f}  {b20_isoscalar: >10.6f}  {b20_isovector: >10.6f}
+Beta_21  {b21_p: >10.6f}  {b21_n: >10.6f}  {b21_isoscalar: >10.6f}  {b21_isovector: >10.6f}
+Beta_22  {b22_p: >10.6f}  {b22_n: >10.6f}  {b22_isoscalar: >10.6f}  {b22_isovector: >10.6f}
+Beta_30  {b30_p: >10.6f}  {b30_n: >10.6f}  {b30_isoscalar: >10.6f}  {b30_isovector: >10.6f}
+Beta_31  {b31_p: >10.6f}  {b31_n: >10.6f}  {b31_isoscalar: >10.6f}  {b31_isovector: >10.6f}
+Beta_32  {b32_p: >10.6f}  {b32_n: >10.6f}  {b32_isoscalar: >10.6f}  {b32_isovector: >10.6f}
+Beta_33  {b33_p: >10.6f}  {b33_n: >10.6f}  {b33_isoscalar: >10.6f}  {b33_isovector: >10.6f}
+Beta_40  {b40_p: >10.6f}  {b40_n: >10.6f}  {b40_isoscalar: >10.6f}  {b40_isovector: >10.6f}
+Beta_41  {b41_p: >10.6f}  {b41_n: >10.6f}  {b41_isoscalar: >10.6f}  {b41_isovector: >10.6f}
+Beta_42  {b42_p: >10.6f}  {b42_n: >10.6f}  {b42_isoscalar: >10.6f}  {b42_isovector: >10.6f}
+Beta_43  {b43_p: >10.6f}  {b43_n: >10.6f}  {b43_isoscalar: >10.6f}  {b43_isovector: >10.6f}
+Beta_44  {b44_p: >10.6f}  {b44_n: >10.6f}  {b44_isoscalar: >10.6f}  {b44_isovector: >10.6f}
+
+                                        Nucleons
+Triaxial    Protons    Neutrons   Isoscalar   Isovector
+-------------------------------------------------------
+Beta    {beta_p: >10.6f}  {beta_n: >10.6f}  {beta_isoscalar: >10.6f}  {beta_isovector: >10.6f}
+Gamma   {gamma_p: >10.6f}  {gamma_n: >10.6f}  {gamma_isoscalar: >10.6f}  {gamma_isovector: >10.6f}
+
+RADIUS
+======
+                                        Nucleons
+Quantity    Protons    Neutrons   Isoscalar   Isovector     Charge
+-------------------------------------------------------------------
+  r      {r_p: >10.6f}  {r_n: >10.6f}  {r_isoscalar: >10.6f}  {r_isovector: >10.6f}  {r_charge: >10.6f}
+  r^2    {r_p2: >10.6f}  {r_n2: >10.6f}  {r_isoscalar2: >10.6f}  {r_isovector2: >10.6f}  {r_charge2: >10.6f}
+
+Warning: no center-of-mass correction.
+
+ANGULAR MOMENTUM
+================
+
+  i        J_i         J_i^2     Var(J_i)
+-----------------------------------------
+  X   {Jx: >11.6f}  {Jx_2: >11.6f}  {Jx_var: >11.6f}
+  Y   {Jy: >11.6f}  {Jy_2: >11.6f}  {Jy_var: >11.6f}
+  Z   {Jz: >11.6f}  {Jz_2: >11.6f}  {Jz_var: >11.6f}
+Total               {jtot: >11.6f}
+
+PAIR COUPLING
+=============
+
+   MJ or MT =       -1           0          +1
+-------------------------------------------------
+T = 0 ; J = 1  {P_T00_J1m1: >11.6f}  {P_T00_J10: >11.6f}  {P_T00_J1p1: >11.6f}
+T = 1 ; J = 0  {P_T1m1_J00: >11.6f}  {P_T10_J00: >11.6f}  {P_T1p1_J00: >11.6f}
+
+    2-BODY OPERATOR (pn - pairs)
+
+   MJ or MT =       -1           0          +1
+-------------------------------------------------
+2B T= 0; J= 1  {P_T00_J1m1: >11.6f}  {P_T00_J10: >11.6f}  {P_T00_J1p1: >11.6f}
+2B T= 1; J= 0  {P_T1m1_J00: >11.6f}  {P_T10_J00: >11.6f}  {P_T1p1_J00: >11.6f}
+"""
+
 class DataTaurus(_DataObjectBase):
     
     """
@@ -647,6 +749,9 @@ class DataTaurus(_DataObjectBase):
     
     FMT_DT = '%Y/%m/%d %H_%M_%S.%f'
     
+    ## Template result to reconstruct the output object
+    _TMP_RESULT = _TMP_TAURUS_VAP_RESULT_OUTPUT
+    
     @classmethod
     def getDataVariable(cls, variable : str, beta_schm : int):
         """ 
@@ -706,7 +811,7 @@ class DataTaurus(_DataObjectBase):
         self.pair_pp = None
         self.pair_nn = None
         self.pair_pn = None
-        self.V_2B    = None
+        self.V_2B    = None  # e_hf + e_pair
         self.V_2B_pp = None
         self.V_2B_nn = None
         self.V_2B_pn = None
@@ -1195,6 +1300,66 @@ class DataTaurus(_DataObjectBase):
         
         return not False in _properies
     
+    def setUpVoidResult(self, ldm_energies=False, energy0_vals=(0., 0., 0.)):
+        """
+        Set up a void 
+        :ldm_energies : True set up kin-Ehfb from Liquid drop model, else set up from 0
+        :energy0_vals : 3-len tuple for initial energies: (Kinetic, Pair, E HFB)
+        """
+        a = self.z + self.n
+        self.broken_execution  = False
+        self.properly_finished = True
+        self.proton_numb  = float(self.z)
+        self.neutron_numb = float(self.n)
+        self.parity = 1.0
+        self.overlap = 0.54321 if self._is_vap_calculation else 1.0
+        # self.
+        self.ho_b_length = 1.005 * (a**(1/6))
+        self.var_p  = 0.0
+        self.var_n  = 0.0
+        for attr_ in InputTaurus.ConstrEnum.members():
+            if attr_.startswith('b') and len(attr_) == 3:
+                for t in ('_n', '_p', '_isoscalar', '_isovector'):
+                    setattr(self, f"{attr_}{t}", 0.0)
+                    setattr(self, f"{attr_.replace('b', 'q')}{t}", 0.0)
+                    if attr_ == 'b20':
+                        setattr(self, f'beta{t}', 0.0)
+                    elif attr_ == 'b22':
+                        setattr(self, f'gamma{t}', 0.0)
+            elif attr_.startswith('P_T'):
+                setattr(self, attr_, 0.0)
+            elif attr_ == InputTaurus.ConstrEnum.sqrt_r2:
+                for t in ('_n', '_p', '_isoscalar'):
+                    setattr(self, f"r{t}", 1.2*(a**(1/3)))
+                self.r_isovector = 0.0
+                self.r_charge    = 1.05 * self.r_p
+            elif attr_ in ("Jx", "Jy", "Jz"):
+                for t in ("", "_2", "_var"):
+                    setattr(self, f"{attr_}{t}", 0.0)
+        self.E_zero = 0.0
+        self.pair   = energy0_vals[1]
+        if ldm_energies:
+            ## estimation for the kinetic energy
+            aux  = 9 * np.pi * ((3 / np.pi)**.3333) / (40 * 1.2**2)
+            aux *= Constants.HBAR_C**2 / Constants.M_MEAN
+            self.kin    = aux * (a + 2.2222 * ((self.z-self.n)**2 / a))
+            self.E_HFB  = liquidDropModelBindingEnergy(self.z, self.n)  
+        else:
+            self.kin, self.E_HFB = 0.0, 0.0
+        
+        self.kin   += energy0_vals[0]
+        self.E_HFB += energy0_vals[2]
+        
+        self.hf     = self.E_HFB - self.pair - self.kin
+        self.V_2B   = self.hf + self.pair
+        for t, v in (('_pp',self.z/a), ('_nn',self.n/a), ('_pn', 0.0)):
+            setattr(self, f'pair{t}',  getattr(self, f'pair')  * v )
+            setattr(self, f'hf{t}',    getattr(self, f'hf')    * v )
+            setattr(self, f'E_HFB{t}', getattr(self, f'E_HFB') * v )
+            setattr(self, f'V_2B{t}',  getattr(self, f'V_2B')  * v )
+            if t != '_pn': setattr(self, f"kin{t[:2]}", self.kin   * v )
+        
+        
 class DataTaurusPAV(_DataObjectBase):
     
     """ Abstract class with common methods """
@@ -1893,6 +2058,320 @@ class OccupationsHWGData(_DataObjectBase):
                     self.relative_occ_protons [current_sigma].append(o_p / deg_)
                     self.relative_occ_neutrons[current_sigma].append(o_n / deg_)
 
+class _TestingTaurusOutputGenerator():
+    """
+    Windows purpose, testing.
+        Generate the output file from taurus from dataTaurus info.
+        * Properly finished/ uncompleted / Broken Results
+        * If inputfile InputTaurus given, create the equivalent result compatible,
+        with constraints given.
+    """
+    
+    _GOOD_RESULT_TMP   = "data_resources/testing_files/template_taurus_vap_generator.txt"
+    _BROKEN_RESULT_TMP = ""
+    
+    __line_grad_tmp = "{i: >6}      {gr:7.5E}{e: >14.6f}{z: >12.6f}{var_z: >12.6f}{n: >12.6f}{var_n: >12.6f}"
+    
+    __header_qp = "               QUASIPARTICLE STATE PROPERTIES"
+    __header_proj = "                 PROJECTED STATE PROPERTIES"
+    
+    __windows_madeUpDT : DataTaurus = None
+    __keep_axial = None
+    
+    @classmethod
+    def _update_KeepAxial(cls, keep_axial):
+        if cls.__keep_axial == None:
+            cls.__keep_axial = keep_axial
+            cls._keep_axial  = keep_axial
+    
+    def __init__(self, res_obj, case_ok=True, case_broken=False, 
+                 keep_axial=False):
+        """
+        :res_obj: template for the file generator:
+            <InputTaurus> : Fix the argumets from the constraints given, randomize others
+            <DataTaurus>  : Get the file from a DataTaurus object was created.
+        :case_ok:     True properly finished, False maximum iterations achieved
+        :case_broken: True: return a broken result (no final iteration achieved)
+        """
+        self._input : InputTaurus = None
+        self._data  : DataTaurus  = None
+        
+        self._text = ''
+        assert not(case_ok and case_broken), "cannot be both broken and ok" 
+        self._case_ok     = case_ok
+        self._case_broken = case_broken
+        
+        self._update_KeepAxial(keep_axial)
+        
+        self.K = 0
+        self.constraints = [] # for setting up the minimum energy
+        self.minimum_def = [] # for setting up the minimum energy
+        self.z = res_obj.z
+        self.n = res_obj.n
+        self.A = res_obj.z + res_obj.n
+        self._E_mins = [0, 0, 0]
+        
+        self._iter_msg  = ''
+        self._iter_block_lines = ''
+        
+        dt0 = datetime.now()
+        dt1 = dt0 + timedelta(seconds=10, milliseconds=10)
+        dt2 = dt1 + timedelta(hours=1, minutes=15, seconds=33, milliseconds=123)
+                
+        fmtdt = [_d.strftime("%Y/%m/%d %H_%M_%S.%f")[:-3] for _d in (dt0, dt1, dt2)]
+        
+        self.time_start      = fmtdt[0]
+        self.time_start_iter = fmtdt[1]
+        self.time_end_iter   = fmtdt[2]
+        self._iter_final     = 100
+        
+        self._build_from_input_obj = isinstance(res_obj, InputTaurus)
+        if   isinstance(res_obj, DataTaurus):
+            self._input = InputTaurus(res_obj.z, res_obj.n, 'hamil')
+            self._data  = res_obj
+        elif isinstance(res_obj, InputTaurus):
+            self._input = res_obj
+        else:
+            raise BaseException("Invalid argument type given, got", res_obj)
+    
+    @classmethod
+    def _update_madeUpDT(cls, data_obj : DataTaurus):
+        cls.__windows_madeUpDT = data_obj
+        
+    def setUpOutput(self, constraints = [], minimum_def = [], K=0):
+        """
+        Set up certain properties such as K or the energy as a function of 
+        constraints.
+        """
+        if self._keep_axial: self.K = K
+        if not isinstance(constraints, list): constraints = [constraints, ]
+        if not isinstance(minimum_def, list): minimum_def = [minimum_def, ]
+        
+        self.constraints = constraints
+        self.minimum_def = minimum_def
+        
+        if not all(self.minimum_def):
+            ## Cases where we build the 
+            self._energy_from_constraints()
+            
+            dat = DataTaurus(self.z, self.n, None, empty_data=True)
+            dat.setUpVoidResult(ldm_energies=True, energy0_vals=self._E_mins)
+            
+            self._update_madeUpDT(dat)
+            
+            ## fix the randomized variables for constraining.
+            for ic, cnst in enumerate(self.constraints):
+                setattr(dat, f'{cnst}_isoscalar', self.minimum_def[ic])
+        else:
+            ## Class attribute storaged (non base case) avoid fixing all the vars
+            dat = deepcopy(self.__windows_madeUpDT)
+            
+            self._energy_from_constraints()
+            ## fix the modified energies
+            dat.pair  += self._E_mins[1]
+            dat.E_HFB += self._E_mins[2]
+            dat.hf     = dat.E_HFB - dat.pair - dat.kin
+            dat.V_2B   = dat.hf + dat.pair
+            
+            A = self.A
+            for t, v in (('_pp',self.z/A), ('_nn',self.n/A), ('_pn', 0.0)):
+                setattr(dat, f'pair{t}',  getattr(dat, f'pair')  * v )
+                setattr(dat, f'hf{t}',    getattr(dat, f'hf')    * v )
+                setattr(dat, f'E_HFB{t}', getattr(dat, f'E_HFB') * v )
+                setattr(dat, f'V_2B{t}',  getattr(dat, f'V_2B')  * v )
+                if t != '_pn': setattr(self, f"kin{t[:2]}", dat.kin   * v )
+        
+        # Update label, and case-execution, update self._data object ot print
+        dat.broken_execution  = self._case_broken
+        dat.properly_finished = self._case_ok
+        dat.label_state = int(abs(dat.E_HFB) * 1.0e+12)
+        self._data = dat
+        
+        ## Iteration section now with the final Ehfb
+        self._get_iteration_block()
+        
+        if self._build_from_input_obj:
+            self._setAuxiliaryDataTaurusFromInputDT()
+            self.setTemplateArgs_fromInputTaurus()
+        else:
+            self.setTemplateArgs_fromDataTaurus()
+    
+    def _energy_from_constraints(self):
+        """ 
+        Auxiliary function to get an additional energy from the constraints as
+        a parabolic shaped in the minimum for the "base_Deformation"
+        - If not base deformation, this energy swap is randomized and append
+            it to the base energy.
+        """
+        for ic, cnstr in enumerate(self.constraints):
+            x_0 = self.minimum_def[ic]
+            if x_0 == None:
+                x_0 = np.random.random()
+                x   = 0.0 # not fixed for a base calculation
+            else: 
+                x = getattr(self._input, cnstr, None)
+                x = 0.0 if (x == None) else x  
+            
+            if cnstr.startswith('P_T'):
+                self._E_mins[1]  += (x - x_0)**2
+            
+            ## lets asume for the x_0 for being the minimum
+            self._E_mins[2]  += (x - x_0)**2
+            self.minimum_def[ic] = x_0
+    
+    def _get_iteration_block(self):
+        """
+        Get the progression of the minimization progress up to the final energy.
+        
+        NOTE: Call it after the set-energy from constraints to have fixed E-HFB
+        """
+        grad_min = self._input.grad_tol
+        i_max    = self._input.iterations
+        grad_0, e_0, e_f  = 100, 100.0, self._data.E_HFB
+        var = .0
+        z, n = self.z, self.n
+        
+        if self._case_ok or self._case_broken:
+            i_max = i_max // 2
+        if not self._case_ok:
+            grad_min = grad_min * 10
+        self._iter_final = i_max
+        
+        x = -1 * np.log10(grad_min) / (i_max-1)
+        y = -1 * np.log10(abs(e_f)*grad_min) / (i_max-1)
+        grad_vals = [grad_0     *(10**(-x*i)) for i in range(i_max)]
+        ener_vals = [(e_0)*(10**(-y*i)) + e_f for i in range(i_max)]
+        lines = []
+        for i in range(i_max):
+            kwargs = {
+                'i':i, 'z':z, 'n':n, 'var_z':var, 'var_n':var, 
+                'e':ener_vals[i], 'gr':grad_vals[i]
+            }
+            lines.append(self.__line_grad_tmp.format(**kwargs))
+            if kwargs['gr'] < self._input.grad_tol: break
+        
+        self._iter_block_lines = '\n'.join(lines)
+        
+        if self._case_broken:
+            self._iter_msg = ''
+        else:
+            if self._case_ok:
+                self._iter_msg = 'Calculation converged'
+            else:
+                self._iter_msg = 'Maximum number of iterations reached'            
+    
+    def _setAuxiliaryDataTaurusFromInputDT(self):
+        """
+        Define constrained values in the result object and randomize some of the
+        unconstrained observables.
+        """
+        dat = self._data    # defined in SetUpOutput()
+        
+        if self._keep_axial:
+            dat.Jz, dat.Jz_2, dat.Jz_var = self.K/2, self.K**2/4, 0.0
+        
+        A = self.z + self.n
+        for cnst in self._input.ConstrEnum.members():
+            val = getattr(self._input, cnst, None)
+            if val == None: 
+                ## randomize for pairs, J and r
+                if cnst.startswith('b'): 
+                    l,m = int(cnst[1]), int(cnst[2])
+                    if (m % 2) and m>0: continue
+                if self._keep_axial: continue
+                
+                v_p, v_n = np.random.random(), np.random.random()
+                val = (v_p + v_n) / 2
+            elif isinstance(val, tuple):
+                v_p, v_n = val
+            else:
+                v_p, v_n = val/2, val/2
+            
+            if cnst.startswith('b') or  cnst.startswith('r'):
+                aux = {'_p': v_p, '_n':v_n, '_isoscalar':v_p + v_n, 
+                       '_isovector':v_p - v_n}
+                for t, value in aux.items():
+                    if cnst.startswith('r') and t.startswith('_iso'): value /= 2
+                    setattr(dat, f"{cnst}{t}", value)
+                    if cnst.startswith('b'):
+                        q_cnst = f"{cnst.replace('b', 'q')}{t}"
+                        l = int(cnst[1])
+                        setattr(dat, q_cnst, getQLMvalueFromBetaLM(l,A,value))
+                if cnst.startswith('r'): dat.r_charge = v_p * 1.05
+                
+            elif cnst.startswith('P_T'): setattr(dat, cnst, val)
+            elif cnst.startswith('J'):
+                if cnst == InputTaurus.ConstrEnum.Jz: continue
+                rand = np.random.random()
+                setattr(dat, cnst, val)
+                setattr(dat, f"{cnst}_2",   (val*rand)**2)
+                setattr(dat, f"{cnst}_var", (val*rand)**2 - val**2)
+            
+            aux = 4*np.pi/(3*A*(1.2*(A**0.3333))**2)
+            for t in ('_p', '_n', '_isoscalar', '_isovector'):
+                q20, q22 = getattr(dat,f'q20{t}'), getattr(dat,f'q22{t}')
+                setattr(dat, f'beta{t}', aux*(  q20**2 + 2*(q22**2)) )
+                setattr(dat, f'gamma{t}',np.arctan2(2**.5 * q22, q20))
+        
+        for ic, cnst in enumerate(self.constraints):
+            setattr(dat, cnst, self.minimum_def[ic])
+        
+        self._data = dat
+    
+    def setTemplateArgs_fromDataTaurus(self):
+        ## self._input ! fix this from data
+        raise BaseException("Implement me!")
+    
+    def setTemplateArgs_fromInputTaurus(self):        
+        """
+        Compose the final output file for InputArgs / Gradient / Results.
+        """
+        txt_inp = self._input.getText4file()
+        txt_inp_dd = self._input.get_inputDDparamsFile(10, 15)
+        
+        text_results_1 = ''
+        other_kwargs = {
+            'jtot': self._data.Jx_2+self._data.Jy_2+self._data.Jz_2,
+            'r_p2': self._data.r_p**2, 'r_n2': self._data.r_n**2, 
+            'r_isoscalar2': self._data.r_isoscalar**2, 
+            'r_isovector2': self._data.r_isovector**2,
+            'r_charge2'   : self._data.r_charge**2,
+        }
+        if self._data._is_vap_calculation:
+            text_results_1 = "%"*60 + '\n' +self.__header_proj+'\n'+"%"*60 +'\n\n'
+            text_results_1 += _TMP_TAURUS_VAP_RESULT_OUTPUT.format(**self._data.__dict__,
+                                                                   **other_kwargs) +'\n'
+        text_results_2 = "%"*60 + '\n' +self.__header_qp+'\n'+"%"*60 +'\n\n'
+        text_results_2 += f"Label of the state: {self._data.label_state}\n"
+        text_results_2 += _TMP_TAURUS_VAP_RESULT_OUTPUT.format(**self._data.__dict__,
+                                                               **other_kwargs)
+        
+        kwargs = {
+            'z': self.z, 'n': self.n, 'a' : self.A, 'seed': self._input.seed, 
+            'Jz': self._data.Jz,   'parity': self._data.parity, 
+            'input_text': txt_inp, 'input_dd_term': txt_inp_dd,
+            'time_start': self.time_start,
+            'time_start_iter': self.time_start_iter,
+            'time_end_iter':   self.time_end_iter,
+            'txt_gradient' :   self._iter_block_lines,
+            'msg_enditer_status': self._iter_msg, 'iter_final': self._iter_final,
+            'data_proj_hfb':   text_results_1, 'data_qp_hfb': text_results_2 +'\n',
+        }
+        
+        with open(self._GOOD_RESULT_TMP, 'r') as f:
+            tmp = f.read()
+            self._text = tmp.format(**kwargs)
+            if self._case_broken:
+                lines = self._text.split('\n')[:-250]
+                # enough to cut into the gradient descent
+                self._text  = '\n'.join(lines)
+                self._text += "\n\n XXX \n Some fatality occurr!\n"
+    
+    def getOutputFile(self):
+        if self._text == '':
+            raise Exception("Define something in the setUpOutput method.!")
+        return self._text
+
 #===============================================================================
 #   OTHER OUTPUT FILES
 #===============================================================================
@@ -2417,6 +2896,7 @@ class BaseResultsContainer1D(_DataObjectBase):
         
         with open(output_file, 'w+') as f:
             f.write(txt_)
+
 
 
 if __name__ == '__main__':

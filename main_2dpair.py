@@ -21,14 +21,16 @@ if __name__ == '__main__':
         (12,12): (4, 0, 1.75), (12,14): (4, 0, 1.75),
     }
     interactions = {
-        (2, 1) : 'B1_MZ3',
+        # (10,11): (4, 0, None), 
+        # (10,10): (4, 0, None),
+        # (2, 1) : 'B1_MZ3',
     }
     
     nucleus = sorted(list(interactions.keys()))    
     
     PAIR_CONSTRS = {
-        InputTaurus.ConstrEnum.P_T00_J10   : (-0.3, 0.5, 5), 
-        InputTaurus.ConstrEnum.P_T1m1_J00  : (-0.5,  0.5, 5),
+        InputTaurus.ConstrEnum.P_T00_J10   : (-0.05, 0.8, 10), 
+        InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.05, 0.8, 10),
     }
     
     constr_onrun = {
@@ -38,7 +40,82 @@ if __name__ == '__main__':
     run_pair_surfaces_2d(
         nucleus, interactions, PAIR_CONSTRS,
         gogny_interaction=GognyEnum.B1, ROmega=(0,0), convergences=5,
-        seed_base=0, 
+        seed_base=3, valid_Ks_to_block=[1,],
+        fomenko_points=(7, 7),
         **constr_onrun
     )
     printf("I finished!")
+    
+    #===========================================================================
+    # ## Testing in Windows to plot auxiliary 2D plot from folder
+    #===========================================================================
+    if os.getcwd().startswith('C:'):
+        FLD = 'BU_folder_B1_MZ3_z2n1'
+        EXPORT_FN = 'export_TES2_PT00J10_PT1m1J00_z2n1_B1_MZ3.txt'
+        
+        from tools.data import DataTaurus
+        from tools.helpers import OUTPUT_HEADER_SEPARATOR
+        with open(f"{FLD}/{EXPORT_FN}", 'r') as f:
+            lines = f.readlines()
+            _, var1, var2 = lines[0].split(', ')
+            data, deforms = {}, {}
+            sets12 = [set(), set()]
+            for line in lines[1:]:
+                key_, csv_ = line.split(OUTPUT_HEADER_SEPARATOR)
+                obj = DataTaurus(2, 1, None, True)
+                obj.setDataFromCSVLine(csv_)
+                
+                key_, defs_ = key_.split(': ')
+                key_  = [ int(k)  for k in key_.split(', ')]
+                key_  = tuple(key_) 
+                defs_ = [float(x) for x in defs_.split(',')]
+                
+                for i in (0,1): sets12[i].add(key_[i])
+                
+                data[key_] = obj.E_HFB
+                deforms[key_] = defs_
+        
+        import numpy as np
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D
+        
+        # Create grid and compute Z valu
+        x0 = sorted(list(set([d[0] for d in deforms.values()])))
+        y0 = sorted(list(set([d[1] for d in deforms.values()])))
+        x = np.array(x0)
+        y = np.array(y0)
+        X, Y = np.meshgrid(x, y)
+        
+        k0,k1 = [],[]
+        for k, v in deforms.items():
+            k0.append(k[0])
+            k1.append(k[1])
+        k0_lims = min(k0), max(k0)
+        k1_lims = min(k1), max(k1)
+        
+        
+        # Define a function for the surface (for example, a Gaussian)
+        Z = 0.0*X + 0.0*Y
+        for key_, defs_ in data.items():
+            i = key_[0] - k0_lims[0]
+            j = key_[1] - k1_lims[0]
+            Z[i, j] = data[key_]
+            
+        
+        # Plotting the surface
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        surf = ax.plot_surface(X, Y, Z, cmap='viridis', edgecolor='none')
+        
+        # Add a color bar for reference
+        fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
+        
+        # Labels and title
+        ax.set_xlabel("X axis")
+        ax.set_ylabel("Y axis")
+        ax.set_zlabel("Z axis")
+        ax.set_title("2D Surface Plot")
+        
+        # Display the plot
+        plt.show()        
+                

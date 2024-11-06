@@ -545,7 +545,7 @@ eval/export Valence.Space   = {export_vs}
             params[self.InpDDEnum.r_dim] = r_dim
         if omega_dim and isinstance(omega_dim, int):
             params[self.InpDDEnum.omega_dim] = omega_dim
-                    
+        
         if (params[self.InpDDEnum.eval_export_h] == 1):
             printf("[WARNING] eval_calculations will use explicit evaluation of "
                   "the matrix elements and the time required will grow exponentially.")

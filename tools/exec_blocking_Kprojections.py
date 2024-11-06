@@ -2002,6 +2002,7 @@ class ExeTaurus1D_B20_Ksurface_Base(ExeTaurus1D_B20_OEblocking_Ksurfaces_Base):
         # copy the lowest energy solution and output.
         self.inputObj.qp_block = 0
         self._1stSeedMinimum = blocked_seeds_results[bk_min]
+        self._1stSeedMinimum_blocked_st = bk_min
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
         self._exportBaseResultFile(bu_results)   
     

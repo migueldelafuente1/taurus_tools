@@ -60,7 +60,7 @@ if __name__ == '__main__':
                          gogny_interaction=GognyEnum.B1,
                          ROmega=(0,0), convergences=4,
                          #ROmega=(14,16), convergences=3,
-                         seed_base=0, 
+                         seed_base=3, 
                          p_min=-0.05, p_max=2.0, N_max=41,
                          **constr_onrun
                          )

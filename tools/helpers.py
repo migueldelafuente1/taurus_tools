@@ -303,6 +303,26 @@ def shellSHO_Notation(n, l, j=0, mj=0):
     
     return '{}{}{}'.format(str(n), 'spdfghijklm'[l], jmj)
 
+def liquidDropModelBindingEnergy(z, n):
+    """ 
+    Prediction from LDM with pairing in MeV.
+    """
+    a    = z + n
+    terms = [
+         15.67  *  a,
+        -17.23  * (a**(2/3)),
+         -0.714 *  z*(z-1) / (a**(1/3)),
+        -93.15  * (n - z)**2 / a,
+         11.20  * (a%2 + 1) * (-1)**((z * n) % 2) / np.sqrt(a)
+    ]
+    return sum(terms)
+
+def getQLMvalueFromBetaLM(l, A, b_value):
+    """
+    Multipole values from relation in Taurus Article:
+    """
+    c_l = 4 * np.pi / (3 * A * (1.2*(A**0.33333))**l)
+    return b_value / c_l
 
 
 def importAndCompile_taurus(use_dens_taurus=True, pav = False, mix = False, 

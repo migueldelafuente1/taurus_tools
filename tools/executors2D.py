@@ -535,7 +535,7 @@ class ExeTaurus2D_MultiConstrained(_Base2DTaurusExecutor, ExeTaurus1D_DeformB20)
             constr_val = ''
             for j in range(len(self.CONSTRAINT_DT)):
                 ctr_j = getattr(self._results[indx_], self.CONSTRAINT_DT[j])
-                constr_val += f" {ctr_j:6.3f}".replace('-', '_')
+                constr_val += f" {ctr_j:6.3f}"    #.replace('-', '_')
             bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
             outs_.append("res_{}.OUT\t{}" .format(tail, constr_val))
         
@@ -560,21 +560,34 @@ class ExeTaurus2D_MultiConstrained(_Base2DTaurusExecutor, ExeTaurus1D_DeformB20)
         
         ## Create a list of wf to do the VAP calculations:
         if self.DTYPE is DataTaurus:
-            os.chdir(self.DTYPE.BU_folder)
-            printf(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
-            os.mkdir('PNVAP')
-            list_dat = []
-            for i, bin_ in enumerate(bins_):
-                _aux = bin_.split()
-                fn, def_ = _aux[0], "_".join(_aux[1:])
-                shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
-                fno = outs_[i].split()[0]
-                printf(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
-                shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
-                list_dat.append(def_ + '.bin')
-            with open('list.dat', 'w+') as f:
-                f.write("\n".join(list_dat))
-            shutil.move('list.dat', 'PNVAP/')
-            os.chdir('..')
+            self._globalTearDown_saveVAPresultsInList(bins_, outs_)
+        
         printf( "  [globalTearDown] Done.\n")
     
+    def _globalTearDown_saveVAPresultsInList(self, bins_, outs_):
+        """
+        Auxiliary method to store the mean-field results for further PNPAMP-HWG
+        calculations. Requires results as DataTaurus
+        """
+        os.chdir(self.DTYPE.BU_folder)
+        printf(f"\n  [globalTearDown] Saving the results in {os.getcwd()}/PNVAP", )
+        # create folder.
+        if os.path.exists('PNVAP'): shutil.rmtree('PNVAP')
+        os.mkdir('PNVAP')
+        
+        list_dat = []
+        for i, bin_ in enumerate(bins_):
+            _aux = bin_.split()
+            fn, def_ = _aux[0], "_".join(_aux[1:])
+            shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
+            fno = outs_[i].split()[0]
+            printf(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
+            shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
+            list_dat.append(def_ + '.bin')
+        with open('list.dat', 'w+') as f:
+            f.write("\n".join(list_dat))
+        shutil.move('list.dat', 'PNVAP/')
+        os.chdir('..')
+
+
+

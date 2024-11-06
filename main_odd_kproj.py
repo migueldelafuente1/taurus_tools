@@ -14,7 +14,7 @@ from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf
 
 if not (InputTaurus.PROGRAM in os.listdir()): 
-    importAndCompile_taurus(use_dens_taurus=True, force_compilation=False)
+    importAndCompile_taurus(use_dens_taurus=False, force_compilation=False)
 
 if __name__ == '__main__':
     
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         _5 = 'exe_example_OO_convergences'  # evaluates all possible sp-blocks-vap mins
     
     ## SELECT HERE ****
-    _case = __CASES._3
+    _case = __CASES._2
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -118,7 +118,7 @@ if __name__ == '__main__':
             valid_Ks = [1, 3, 5, 7], # 
             # valid_Ks = [0, 2, 4],
             seed_base=3, ROmega=(0,0),
-            q_min=-0.7, q_max=0.7, N_max=39, convergences=0,   ## 0.6, 25
+            q_min=-0.7, q_max=0.7, N_max=3, convergences=0,   ## 0.6, 25
             parity_2_block=1,
             fomenko_points=(7, 7),
             preconverge_blocking_sts=False, # 10,

@@ -12,9 +12,11 @@ from copy import deepcopy, copy
 from random import random
 
 from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
-from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX
+from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX, \
+    _TestingTaurusOutputGenerator
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
-    OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS, readAntoine, printf
+    OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS, readAntoine, printf,\
+    QN_1body_jj
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 
@@ -56,6 +58,8 @@ class _Base1DTaurusExecutor(object):
     IGNORE_SEED_BLOCKING  = False # Set True to do false odd-even nuclear surfaces
     RUN_PROJECTION        = False # Set True to project PAV the MF - results
     
+    VALID_KS_FOR_AXIAL_BLOCKING = [] # Consider valid values for blockings
+    PARITY_TO_BLOCK             = 0  # 1, -1 or 0 to consider both
     # @classmethod
     # def __new__(cls, *args, **kwargs):
     #     """
@@ -77,6 +81,7 @@ class _Base1DTaurusExecutor(object):
         self._DDparams : dict = None
         self.inputObj_PAV    : InputTaurusPAV = None
         self._1stSeedMinimum : self.DTYPE  = None
+        self._1stSeedMinimum_blocked_st    = None
         self._current_result : self.DTYPE  = None
         self._curr_PAV_result : DataTaurusPAV = None
         
@@ -143,6 +148,16 @@ class _Base1DTaurusExecutor(object):
     @property
     def numberParity(self):
         return (self.z % 2, self.n % 2)
+    
+    @classmethod
+    def updateTotalKForOddNuclei(cls, validKs=[]):
+        """
+        This update and variable only apply for odd-even odd-odd calculations
+        with axial symetry for the seed wavefunction.
+        """
+        if not isinstance(validKs, (list, tuple)): validKs = [validKs, ]
+        assert all([isinstance(x, int) for x in validKs]), "ValidKs must be integers"
+        cls.VALID_KS_FOR_AXIAL_BLOCKING = validKs
     
     def _checkExecutorSettings(self):
         """
@@ -275,6 +290,17 @@ class _Base1DTaurusExecutor(object):
         sp_n = dict(map(lambda x: (int(x), readAntoine(x, l_ge_10)[0]), sh_states))
         self._sp_n_max = max(sp_n.values())
         self._sp_n_min = min(sp_n.values())
+        
+        self._sp_states_obj = dict()
+        for sp_ in range(1, self._sp_dim +1):
+            i = 0
+            for sh_, deg in self._sp_states.items():
+                n, l, j = readAntoine(sh_, l_ge_10=True)
+                
+                for mj in range(j, -j -1, -2):
+                    i += 1
+                    if i == sp_:
+                        self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
     
     def setUpExecution(self, *args, **kwargs):
         """
@@ -303,6 +329,7 @@ class _Base1DTaurusExecutor(object):
         """ 
         Dummy method to test the scripts1d - PAV in Windows
         """
+        
         FLD_TEST_ = 'data_resources/testing_files/'
         file2copy = FLD_TEST_+'TEMP_res_PAV_z2n1_odd.txt'
         # file2copy = FLD_TEST_+'TEMP_res_PAV_z8n9_1result.txt'
@@ -700,12 +727,33 @@ class _Base1DTaurusExecutor(object):
                 self.include_header_in_results_file=True
                 self.exportResults()
     
-    def _auxWindows_executeProgram(self, output_fn):
+    def _auxWindows_executeProgram(self, output_fn, base_execution=False):
         """ 
         Dummy method to test the scripts1d in Windows
         """
-        # program = """ """
-        # exec(program)
+        ## MODE 1: Create the results with an auxiliary program
+        if self.inputObj: 
+            keep_axial = True
+            if base_execution: keep_axial = self._base_seed_type in (2, 3, 9)
+            
+            dat = _TestingTaurusOutputGenerator(self.inputObj,
+                                                case_ok=True, case_broken=False,
+                                                keep_axial=keep_axial)
+            K = 0 
+            if 1 in self.numberParity:
+                cdim = self._sp_dim*self.numberParity[1]
+                if self._1stSeedMinimum_blocked_st:
+                    sp_ = self._1stSeedMinimum_blocked_st - cdim
+                else:
+                    sp_ = self.inputObj.qp_block - cdim
+                K   = self._sp_states_obj[sp_].m
+            dat.setUpOutput(constraints = self.CONSTRAINT, 
+                            minimum_def = deepcopy(self._deform_base), K = K)
+            with open(output_fn, 'w+') as f:
+                f.write(dat.getOutputFile())
+            return
+        
+        ## MODE 2: Export the result form a file in data_resources/testing_files
         FLD_TEST_ = 'data_resources/testing_files/'
         
         if hasattr(self, '_blocking_section') and self._blocking_section:
@@ -883,7 +931,7 @@ class _Base1DTaurusExecutor(object):
             _out_fn = self._output_filename
             
             if os.getcwd().startswith('C:'): ## Testing purpose 
-                self._auxWindows_executeProgram(_out_fn)
+                self._auxWindows_executeProgram(_out_fn, base_execution)
             else:
                 order_ = f'./{self.inputObj.PROGRAM} < {_inp_fn} > {_out_fn}'
                 if self.TRACK_TIME_AND_RAM: 

@@ -18,7 +18,8 @@ from tools.Enums   import GognyEnum
 def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
-                         convergences=0,
+                         convergences=0, valid_Ks_to_block=[],
+                         fomenko_points=(1, 1),
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
@@ -32,7 +33,12 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         :ROmega tuple of the integration grids
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :constr_onrun other constraints to set up the calculation.
+        :
     """
+    if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
+        and gogny_interaction != GognyEnum.B1):
+        raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
+    
     assert all(map(lambda x: x.startswith('P_T'), pair_constrs)), f"invalid pair constraint {pair_constrs}"
     
     ## Note: modification to exclude the 3d components of the isoscalar channel
@@ -73,6 +79,9 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
+            
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -84,6 +93,8 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -92,6 +103,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         }
         
         ExeTaurus2D_MultiConstrained.setExecutorConstraints(pair_constrs)
+        ExeTaurus2D_MultiConstrained.updateTotalKForOddNuclei(valid_Ks_to_block)
         ExeTaurus2D_MultiConstrained.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
         
         ## First unconstrained minimum
