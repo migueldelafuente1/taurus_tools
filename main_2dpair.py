@@ -26,9 +26,9 @@ if __name__ == '__main__':
         # (2, 2) : interaction_,
         # (10,11): (4, 0, None), 
         # (12,12): (4, 0, None),
-        # (12,13): (4, 0, None), 
+        (12,13): (4, 0, None), 
         # (10,10): (4, 0, None),
-        (1, 1) : 'B1_MZ3',
+        # (1, 1) : 'B1_MZ3',
     }
     
     nucleus = sorted(list(interactions.keys()))    
