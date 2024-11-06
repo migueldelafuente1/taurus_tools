@@ -639,8 +639,9 @@ eval/export Valence.Space   = {export_vs}
                     self.ConstrEnum.b21, self.ConstrEnum.b22,self.ConstrEnum.b44,
                     self.ConstrEnum.b31, self.ConstrEnum.b32, self.ConstrEnum.b33,
                     self.ConstrEnum.b41, self.ConstrEnum.b42, self.ConstrEnum.b43,
-                    self.ConstrEnum.P_T00_J10,  self.ConstrEnum.P_T00_J1m1,
-                    self.ConstrEnum.P_T00_J1p1, self.ConstrEnum.P_T10_J00):
+                    # self.ConstrEnum.P_T00_J10,  self.ConstrEnum.P_T00_J1m1,
+                    # self.ConstrEnum.P_T00_J1p1, self.ConstrEnum.P_T10_J00
+                    ):
             setattr(self, atr, 0.0)
         
         self.setParameters(**params)
