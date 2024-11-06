@@ -335,7 +335,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
                 if not bk_sp_p in validKsps[0]: 
                     printf(f"  * Blocked state [{bk_sp}] invalid with K,P [SKIP]",
-                           self._sp_states_obj[bk_sp])
+                           self._sp_states_obj[bk_sp_p])
                     continue
             if odd_n:
                 bk_sh_n = np.random.randint(0, len(sp_states))
@@ -345,8 +345,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 bk_sp = (bk_sp, bk_sp_n) if bk_sp else bk_sp_n
                 bk_sh = (bk_sh, sh_states[bk_sh_n]) if bk_sh else sh_states[bk_sh_n]
                 if not (bk_sp_n-self._sp_dim) in validKsps[1]: 
-                    printf(f"  * Blocked state [{bk_sp}] invalid with K,P [SKIP]",
-                           self._sp_states_obj[bk_sp])
+                    printf(f"  * Blocked state [{bk_sp_n}] invalid with K,P [SKIP]",
+                           self._sp_states_obj[bk_sp_n-self._sp_dim])
                     continue
             
             ## Check if total K is preserved for ODD-ODD
