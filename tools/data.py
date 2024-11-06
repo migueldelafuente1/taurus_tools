@@ -2109,7 +2109,7 @@ class _TestingTaurusOutputGenerator():
         self.z = res_obj.z
         self.n = res_obj.n
         self.A = res_obj.z + res_obj.n
-        self._E_mins = [0, 0, 0]
+        self._E_kpt_var = [0, 0, 0]  ## Energies variable for Kinetic/Pair/Tot
         
         self._iter_msg  = ''
         self._iter_block_lines = ''
@@ -2155,21 +2155,23 @@ class _TestingTaurusOutputGenerator():
             self._energy_from_constraints()
             
             dat = DataTaurus(self.z, self.n, None, empty_data=True)
-            dat.setUpVoidResult(ldm_energies=True, energy0_vals=self._E_mins)
+            dat.setUpVoidResult(ldm_energies=True, energy0_vals=self._E_kpt_var)
             
             self._update_madeUpDT(dat)
             
             ## fix the randomized variables for constraining.
             for ic, cnst in enumerate(self.constraints):
-                setattr(dat, f'{cnst}_isoscalar', self.minimum_def[ic])
+                if self.constraints == []: break
+                cns_str = f'{cnst}_isoscalar' if not(cnst[0] in 'PJ') else cnst
+                setattr(dat, cns_str, self.minimum_def[ic])
         else:
             ## Class attribute storaged (non base case) avoid fixing all the vars
             dat = deepcopy(self.__windows_madeUpDT)
             
             self._energy_from_constraints()
             ## fix the modified energies
-            dat.pair  += self._E_mins[1]
-            dat.E_HFB += self._E_mins[2]
+            dat.pair  += self._E_kpt_var[1]
+            dat.E_HFB += self._E_kpt_var[2]
             dat.hf     = dat.E_HFB - dat.pair - dat.kin
             dat.V_2B   = dat.hf + dat.pair
             
@@ -2180,6 +2182,11 @@ class _TestingTaurusOutputGenerator():
                 setattr(dat, f'E_HFB{t}', getattr(dat, f'E_HFB') * v )
                 setattr(dat, f'V_2B{t}',  getattr(dat, f'V_2B')  * v )
                 if t != '_pn': setattr(self, f"kin{t[:2]}", dat.kin   * v )
+            
+            for ic, cnst in enumerate(self.constraints):
+                if self.constraints == []: break
+                cns_str = f'{cnst}_isoscalar' if not(cnst[0] in 'PJ') else cnst
+                setattr(dat, cns_str, getattr(self._input, cnst))
         
         # Update label, and case-execution, update self._data object ot print
         dat.broken_execution  = self._case_broken
@@ -2213,10 +2220,10 @@ class _TestingTaurusOutputGenerator():
                 x = 0.0 if (x == None) else x  
             
             if cnstr.startswith('P_T'):
-                self._E_mins[1]  += (x - x_0)**2
+                self._E_kpt_var[1]  += (x - x_0)**2
             
             ## lets asume for the x_0 for being the minimum
-            self._E_mins[2]  += (x - x_0)**2
+            self._E_kpt_var[2]  += (x - x_0)**2
             self.minimum_def[ic] = x_0
     
     def _get_iteration_block(self):
@@ -2313,8 +2320,14 @@ class _TestingTaurusOutputGenerator():
                 setattr(dat, f'beta{t}', aux*(  q20**2 + 2*(q22**2)) )
                 setattr(dat, f'gamma{t}',np.arctan2(2**.5 * q22, q20))
         
+        ## Fix the variable-constrained values (no randomized)
         for ic, cnst in enumerate(self.constraints):
-            setattr(dat, cnst, self.minimum_def[ic])
+            cnst2 = cnst if cnst[0] in 'PJ' else f"{cnst}_isoscalar"
+            cnst_vals = getattr(self._input, cnst, None)
+            if cnst_vals == None: ## Unconstrained, base calculation 
+                setattr(dat, cnst2, self.minimum_def[ic])
+            else:
+                setattr(dat, cnst2, cnst_vals)
         
         self._data = dat
     
@@ -2326,11 +2339,11 @@ class _TestingTaurusOutputGenerator():
         """
         Compose the final output file for InputArgs / Gradient / Results.
         """
-        txt_inp = self._input.getText4file()
+        txt_inp    = self._input.getText4file()
         txt_inp_dd = self._input.get_inputDDparamsFile(10, 15)
         
         text_results_1 = ''
-        other_kwargs = {
+        other_kwargs   = {
             'jtot': self._data.Jx_2+self._data.Jy_2+self._data.Jz_2,
             'r_p2': self._data.r_p**2, 'r_n2': self._data.r_n**2, 
             'r_isoscalar2': self._data.r_isoscalar**2, 
@@ -2338,14 +2351,13 @@ class _TestingTaurusOutputGenerator():
             'r_charge2'   : self._data.r_charge**2,
         }
         if self._data._is_vap_calculation:
-            text_results_1 = "%"*60 + '\n' +self.__header_proj+'\n'+"%"*60 +'\n\n'
+            text_results_1  = "%"*60 + '\n' +self.__header_proj+'\n'+"%"*60 +'\n\n'
             text_results_1 += _TMP_TAURUS_VAP_RESULT_OUTPUT.format(**self._data.__dict__,
                                                                    **other_kwargs) +'\n'
-        text_results_2 = "%"*60 + '\n' +self.__header_qp+'\n'+"%"*60 +'\n\n'
+        text_results_2  = "%"*60 + '\n' +self.__header_qp+'\n'+"%"*60 +'\n\n'
         text_results_2 += f"Label of the state: {self._data.label_state}\n"
         text_results_2 += _TMP_TAURUS_VAP_RESULT_OUTPUT.format(**self._data.__dict__,
                                                                **other_kwargs)
-        
         kwargs = {
             'z': self.z, 'n': self.n, 'a' : self.A, 'seed': self._input.seed, 
             'Jz': self._data.Jz,   'parity': self._data.parity, 

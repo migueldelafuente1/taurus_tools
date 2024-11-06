@@ -19,7 +19,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
                          convergences=0, valid_Ks_to_block=[],
-                         fomenko_points=(1, 1),
+                         fomenko_points=(1, 1), axial_calc=False,
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
@@ -33,7 +33,8 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         :ROmega tuple of the integration grids
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :constr_onrun other constraints to set up the calculation.
-        :
+        :fomenko_points: (<int>, <int>)
+        :axial_calc:      <bool>
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -77,9 +78,9 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                InputTaurus.InpDDEnum.r_dim     : ROmega[0],
                InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
+        
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
-            
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
@@ -88,6 +89,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
+            'axial_calc': axial_calc, 'core_calc': not axial_calc,
             **constr_onrun
         }
         
@@ -99,6 +101,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
+            'axial_calc' : axial_calc, 'core_calc': not axial_calc,
             **constr_onrun
         }
         
@@ -109,7 +112,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         ## First unconstrained minimum
         try:
             exe_ = ExeTaurus2D_MultiConstrained(z, n, interaction)
-            exe_.setInputCalculationArguments(axial_calc=True, **input_args_start)
+            exe_.setInputCalculationArguments(**input_args_start)
             exe_.defineDeformationRange(pair_constrs)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
@@ -120,7 +123,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             printf("[2D_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
             continue
                         
-        exe_.setInputCalculationArguments(axial_calc=True, **input_args_onrun)
+        exe_.setInputCalculationArguments(**input_args_onrun)
         exe_.force_converg = True
         exe_.run()
         exe_.globalTearDown()

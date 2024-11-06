@@ -327,20 +327,14 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             bk_sh_p, bk_sh_n = 0, 0
             bk_sp, bk_sh = None, None
             
-            # if odd_p: 
-        ## TODO : Reformulate
-            #     l_ = validKsps[0].__len__()
-            #     bk_sp_p = validKsps[np.random.randint(0, l_)]
-            #     bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
-            # if odd_n:
-            
             if odd_p:
                 bk_sh_p = np.random.randint(0, len(sh_states))
                 cdim = sum([sp_states[sh_states[k]] for k in range(bk_sh_p)])
                 bk_sp_p = cdim + np.random.randint(1, sp_states[sh_states[bk_sh_p]] +1)
                 bk_sp, bk_sh = bk_sp_p, sh_states[bk_sh_p]
                 if not bk_sp_p in validKsps[0]: 
-                    printf(f"  * Blocked state [{bk_sp}] invalid with K-P [SKIP]")
+                    printf(f"  * Blocked state [{bk_sp}] invalid with K,P [SKIP]",
+                           self._sp_states_obj[bk_sp])
                     continue
             if odd_n:
                 bk_sh_n = np.random.randint(0, len(sp_states))
@@ -350,7 +344,18 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 bk_sp = (bk_sp, bk_sp_n) if bk_sp else bk_sp_n
                 bk_sh = (bk_sh, sh_states[bk_sh_n]) if bk_sh else sh_states[bk_sh_n]
                 if not (bk_sp_n-self._sp_dim) in validKsps[1]: 
-                    printf(f"  * Blocked state [{bk_sp}] invalid with K-P [SKIP]")
+                    printf(f"  * Blocked state [{bk_sp}] invalid with K,P [SKIP]",
+                           self._sp_states_obj[bk_sp])
+                    continue
+            
+            ## Check if total K is preserved for ODD-ODD
+            if (self.numberParity == (1,1)):
+                bk_sp2 = (bk_sp[0], bk_sp[1] - self._sp_dim)
+                K = sum(self._sp_states_obj[s].m for s in bk_sp2)
+                P = (-1)**sum(self._sp_states_obj[s].l for s in bk_sp2)
+                if (not (K in self.VALID_KS_FOR_AXIAL_BLOCKING) or 
+                    (self.PARITY_TO_BLOCK != 0 and P != self.PARITY_TO_BLOCK)):
+                    printf(f"  * Blocked states[{bk_sp}] invalid with TOTAL K,P={K},{P} [SKIP]")
                     continue
             
             if bk_sp in blocked_states:
@@ -409,7 +414,25 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self._1stSeedMinimum = blocked_seeds_results[bk_min]
         self._1stSeedMinimum_blocked_st = bk_min
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
-        self._exportBaseResultFile(bu_results)    
+        self._exportBaseResultFile(bu_results)
+        
+        ## clear the base_wf
+        self._clearBaseWFAfterSeedConvergence()
+    
+    def _clearBaseWFAfterSeedConvergence(self):
+        """
+        Clear all the randomized odd initial solutions, except the main selected.
+        """
+        list_bwf = filter(lambda x: x.endswith(self._base_wf_filename), os.listdir())
+        if self.numberParity != (1,1):
+            list_bwf = filter(lambda x: x.split('_')[0].isdigit(), list_bwf)
+        else:
+            list_bwf = filter(lambda x: x.split('_')[0].startswith('('), list_bwf)
+        for f in list_bwf:
+            if f == self._base_wf_filename: continue # just to be safe
+            printf(f"  xx RM: {f}")
+            os.remove(f)
+        printf("   Done cleaning base seeds.")
     
     def _evenNumberParitySeedConvergence(self):
         """
@@ -477,6 +500,8 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         shutil.move(f"{bk_min}_{self._base_wf_filename}", self._base_wf_filename)
         
         self._exportBaseResultFile(bu_results)
+        ## clear the base_wf
+        self._clearBaseWFAfterSeedConvergence()
     
     def _exportBaseResultFile(self, bu_results):
         """ sExport in a results file the wf indexed by blocked states."""

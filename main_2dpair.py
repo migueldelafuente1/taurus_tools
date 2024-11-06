@@ -20,17 +20,23 @@ if __name__ == '__main__':
         (10,10): (4, 0, 1.80), (10,12): (4, 0, 1.75),
         (12,12): (4, 0, 1.75), (12,14): (4, 0, 1.75),
     }
+    
+    interaction_ = 'usdb'
     interactions = {
+        # (2, 2) : interction_,
         # (10,11): (4, 0, None), 
         # (10,10): (4, 0, None),
-        # (2, 1) : 'B1_MZ3',
+        # (10,11): (4, 0, None), 
+        # (10,10): (4, 0, None),
+        # (1, 1) : 'B1_MZ3',
     }
     
     nucleus = sorted(list(interactions.keys()))    
     
     PAIR_CONSTRS = {
-        InputTaurus.ConstrEnum.P_T00_J10   : (-0.05, 0.8, 10), 
-        InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.05, 0.8, 10),
+        InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.01, 0.8, 10),
+        # InputTaurus.ConstrEnum.P_T1m1_J00  : (-0.05, 0.8, 10),
+        InputTaurus.ConstrEnum.P_T00_J10   : (-0.01, 0.8, 10), 
     }
     
     constr_onrun = {
@@ -40,8 +46,8 @@ if __name__ == '__main__':
     run_pair_surfaces_2d(
         nucleus, interactions, PAIR_CONSTRS,
         gogny_interaction=GognyEnum.B1, ROmega=(0,0), convergences=5,
-        seed_base=3, valid_Ks_to_block=[1,],
-        fomenko_points=(7, 7),
+        seed_base=3, valid_Ks_to_block=[1,3,5],
+        fomenko_points=(7, 7), axial_calc=True,
         **constr_onrun
     )
     printf("I finished!")
@@ -51,7 +57,7 @@ if __name__ == '__main__':
     #===========================================================================
     if os.getcwd().startswith('C:'):
         FLD = 'BU_folder_B1_MZ3_z2n1'
-        EXPORT_FN = 'export_TES2_PT00J10_PT1m1J00_z2n1_B1_MZ3.txt'
+        EXPORT_FN = 'export_TES2_PT00J10_PT1p1J00_z2n1_B1_MZ3.txt'
         
         from tools.data import DataTaurus
         from tools.helpers import OUTPUT_HEADER_SEPARATOR

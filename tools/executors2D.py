@@ -291,6 +291,8 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
                 indx_ = tuple(self._curr_deform_index)
                 
                 if not _last_constr:
+                    if lev == 0:
+                        _ = 0
                     self.run(lev=lev + 1)
                     res : self.DTYPE = self._current_result
                 else:
@@ -310,7 +312,7 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
                     aux_min_fn = "base_wf_{}.bin".format("_".join([str(x) for x in indx_]))
                     shutil.copy('final_wf.bin', aux_min_fn)
                     self._temp_seed_minima[lev] = [aux_min_fn, res, indx_, 
-                                                    self._getCurrentDeformation()]
+                                                   self._getCurrentDeformation()]
             
             if self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING:
                 self._run_backwardsSweeping(oblate_part=False, level=lev)
@@ -333,7 +335,11 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
             if ((self.ITERATIVE_METHOD == self.IterativeEnum.EVEN_STEP_SWEEPING)
                 and (lev)):
                 self._run_backwardsSweeping(oblate_part=True, level=lev)
-            
+        
+        # clear all the base_wf:
+        if (lev == 0):
+            for f in filter(lambda x: x.startswith('base_wf_'), os.listdir()): 
+                os.remove(f)
         ## copy the last solution form the prolate minimum at the level
         # res0_Args = self._temp_seed_minima[lev]
         # shutil.copy(res0_Args[0], 'initial_wf.bin') ## 
@@ -430,7 +436,7 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
                                        **dict(self._deformations_map[i][1])} )
                 dict_defs_2 = {}
                 for indx_ in self._all_def_keys_sorted:
-                    vals = [dict_defs[i][k] for i, k in enumerate(indx_)]
+                    vals = [round(dict_defs[i][k], 6) for i, k in enumerate(indx_)]
                     dict_defs_2[indx_] = tuple(vals)
                     
                 self._all_def_values_by_key  = dict_defs_2

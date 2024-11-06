@@ -170,7 +170,10 @@ def getValueCombinationsSorted(data_lists, lev=0):
         sort_2 = []
         for i in aux:
             for j_vals in getValueCombinationsSorted(data_lists[1:], lev + 1):
-                sort_2.append( (i, *j_vals) )
+                if isinstance(j_vals, list): # exception lev = 0 for > 2lists
+                    for js in j_vals: sort_2.append( (i, *js))
+                else:
+                    sort_2.append( (i, *j_vals) )
         if lev > 0: return [sort_2, ]
         return sort_2
     else:

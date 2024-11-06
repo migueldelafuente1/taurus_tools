@@ -731,6 +731,8 @@ class _Base1DTaurusExecutor(object):
         """ 
         Dummy method to test the scripts1d in Windows
         """
+        FLD_TEST_ = 'data_resources/testing_files/'
+        
         ## MODE 1: Create the results with an auxiliary program
         if self.inputObj: 
             keep_axial = True
@@ -741,39 +743,45 @@ class _Base1DTaurusExecutor(object):
                                                 keep_axial=keep_axial)
             K = 0 
             if 1 in self.numberParity:
-                cdim = self._sp_dim*self.numberParity[1]
-                if self._1stSeedMinimum_blocked_st:
-                    sp_ = self._1stSeedMinimum_blocked_st - cdim
-                else:
-                    sp_ = self.inputObj.qp_block - cdim
-                K   = self._sp_states_obj[sp_].m
+                if 0 in self.numberParity:
+                    cdim = self._sp_dim*self.numberParity[1]
+                    if self._1stSeedMinimum_blocked_st:
+                        sp_ = self._1stSeedMinimum_blocked_st - cdim
+                    else:
+                        sp_ = self.inputObj.qp_block - cdim
+                    K   = self._sp_states_obj[sp_].m
+                else: ## Odd-Odd case
+                    if self._1stSeedMinimum_blocked_st:
+                        sp_ = (self._1stSeedMinimum_blocked_st[0], 
+                               self._1stSeedMinimum_blocked_st[1] - self._sp_dim)
+                    else:
+                        sp_ = (self.inputObj.qp_block[0], 
+                               self.inputObj.qp_block[1] - self._sp_dim)
+                    K = sum([self._sp_states_obj[s].m for s in sp_])
             dat.setUpOutput(constraints = self.CONSTRAINT, 
                             minimum_def = deepcopy(self._deform_base), K = K)
-            with open(output_fn, 'w+') as f:
-                f.write(dat.getOutputFile())
-            return
-        
-        ## MODE 2: Export the result form a file in data_resources/testing_files
-        FLD_TEST_ = 'data_resources/testing_files/'
-        
-        if hasattr(self, '_blocking_section') and self._blocking_section:
-            file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
-            # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
-        # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
-        # file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
+            # with open(output_fn, 'w+') as f:
+            txt = dat.getOutputFile()
         else:
-            pass
-        file2copy = FLD_TEST_+'TEMP_res_z1n12_taurus_vap.txt'
-        
-        txt = ''
-        with open(file2copy, 'r') as f:
-            txt = f.read()
-            txt = txt.format(INPUT_2_FORMAT=self.inputObj)
-        
+            ## MODE 2: Export the result form a file in data_resources/testing_files            
+            if hasattr(self, '_blocking_section') and self._blocking_section:
+                file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_max_iter.txt'
+                # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase_broken.txt'
+            # file2copy = FLD_TEST_+'TEMP_res_z12n12_0-dbase.txt'
+            # file2copy = FLD_TEST_+'TEMP_res_z2n1_0-dbase3odd.txt'
+            else:
+                pass
+            file2copy = FLD_TEST_+'TEMP_res_z1n12_taurus_vap.txt'
+            
+            txt = ''
+            with open(file2copy, 'r') as f:
+                txt = f.read()
+                txt = txt.format(INPUT_2_FORMAT=self.inputObj)
+            
         with open(output_fn, 'w+') as f:
             f.write(txt)
         
-        hash_ = hash(random()) # random text to identify wf
+        hash_ = (self._curr_deform_index, hash(random())) # random text to identify wf
         ## wf intermediate
         with open('final_wf.bin', 'w+') as f:
             f.write(str(hash_))
