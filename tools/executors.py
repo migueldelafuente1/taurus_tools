@@ -269,6 +269,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 VALID_KS = [k for k in range(self._sp_2jmin, self._sp_2jmax+1, 2)]
             else:
                 VALID_KS = [k for k in range(0, 2*self._sp_2jmax, 2)]
+            self.VALID_KS_FOR_AXIAL_BLOCKING = VALID_KS
         
         podd, nodd = self.numberParity
         
@@ -321,7 +322,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         # if self.numberParity != (1, 1):
         validKsps = self._getValidSpStatesForKP_oddEven()
         LIMIT = min(double4OO * self.SEEDS_RANDOMIZATION, 
-                    len(validKsps[0]) + len(validKsps[1]))
+                    len(validKsps[0]) + len(validKsps[1]), )
         while (rand_step < LIMIT):
             bk_sp_p, bk_sp_n = 0, 0
             bk_sh_p, bk_sh_n = 0, 0
