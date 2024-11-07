@@ -178,6 +178,12 @@ class _Base1DTaurusExecutor(object):
         if self._base_seed_type == None:
             printf("[WARNING Executor] Seed was not defined, it will be copied (s=1).")
         
+    class SymmetryOptionsEnum(Enum):
+        CORE_CALC    = 'core_calc'        # calls InputTaurus.setUpValenceSpaceCalculation
+        NO_CORE_CALC = 'no_core_calc'     # calls InputTaurus.setUpNoCoreCalculation
+        AXIAL_CALC   = 'axial_calc'       # calls InputTaurus.setUpNoCore_axial_Calculation
+        SPHERICAL_CALC = 'spherical_calc' #     ***    same and other J2=0 options
+    
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False,
                                      spherical_calc=False,  no_core_calc=False,
                                      **input_kwargs):
@@ -221,7 +227,7 @@ class _Base1DTaurusExecutor(object):
         if core_calc:
             self.inputObj.setUpValenceSpaceCalculation()
         elif no_core_calc:
-            self.inputObj.setUpNoCore_axial_Calculation()
+            self.inputObj.setUpNoCoreCalculation()
             self.axialSymetryRequired = False
         elif axial_calc or spherical_calc:
             self.inputObj.setUpNoCore_axial_Calculation()
@@ -252,7 +258,7 @@ class _Base1DTaurusExecutor(object):
         # attribute _DDparams is transfered to the input.
     
     def _getCurrentDeformation(self):
-        """ Auxiliary method to obtain the current deformation value"""
+        """ Auxiliary method to obtain the current deformation value """
         indx_ = self._curr_deform_index
         part = 0 if indx_ < 0 else 1
         return dict(self._deformations_map[part])[indx_]

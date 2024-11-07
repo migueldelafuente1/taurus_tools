@@ -2387,94 +2387,93 @@ if __name__ == '__main__':
     #===========================================================================
     # # PLOT FROM FOLDERS
     #===========================================================================
-    if True:
-        SUBFLD_ = '../BU_folder_B1_MZ3_z2n1/PNAMP/'
+    SUBFLD_ = '../BU_folder_B1_MZ3_z2n1/PNAMP/'
+    
+    K_val  = 11
+    
+    list_dat_file = f'list_k{K_val}_pav.dat'
+    
+    MAIN_FLD = '..'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K_blocking_noPAV'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K{K_val}_block_PAV'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/K{K_val}_block_PAV'
+    # MAIN_FLD = '../DATA_RESULTS/example_singleJ/K{K_val}_block_PAV'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/F'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg'
+    # MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg1ststateSwap_multiK'
+    
+    nuclei = [( 7, 8 + 2*i)  for i in range(0, 1)] # 7
+    # nuclei = [( 9, 8 + 2*i) for i in range(0, 1)] # 7
+    # nuclei = [(11, 8 + 2*i) for i in range(0, 1)] # 7
+    nuclei = [(12,11 + 2*i)  for i in range(0, 6)] # 6
+    # nuclei = [(15,  8 + 2*i) for i in range(0, 6)]
+    nuclei = [(17,10 + 2*i)  for i in range(5, 6)]
+    nuclei = [( 9,16), ( 9,18), ( 9,20),]
+    nuclei = [( 1,12), ]#( 0,10), ] #(12,19), (1, 12)]
+    # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
+    nuclei = [(12,13),  ] # (17,12),
+    # nuclei = [( 9,20),  ]
+    # nuclei = [( 4, 5), ]
+    
+    GLOBAL_TAIL_INTER = '_B1'
+    
+    folders_2_import = [
+        # ((2, 1), '../BU_folder_B1_MZ3_z2n1/PNAMP/', DataTaurusPAV),
+        #((2, 3), '../BU_folder_B1_MZ3_z2n3/PNAMP/', DataTaurusPAV),
+        # ((8, 11), f'{MAIN_FLD}/BU_folder_B1_MZ3_z8n11/', 'export_TESb20_z{}n{}_B1_MZ3.txt'),
         
-        K_val  = 11
-        
-        list_dat_file = f'list_k{K_val}_pav.dat'
-        
-        MAIN_FLD = '..'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K_blocking_noPAV'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K{K_val}_block_PAV'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/K{K_val}_block_PAV'
-        # MAIN_FLD = '../DATA_RESULTS/example_singleJ/K{K_val}_block_PAV'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/F'
-        MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg'
-        # MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg1ststateSwap_multiK'
-        
-        nuclei = [( 7, 8 + 2*i)  for i in range(0, 1)] # 7
-        # nuclei = [( 9, 8 + 2*i) for i in range(0, 1)] # 7
-        # nuclei = [(11, 8 + 2*i) for i in range(0, 1)] # 7
-        nuclei = [(12,11 + 2*i)  for i in range(0, 6)] # 6
-        # nuclei = [(15,  8 + 2*i) for i in range(0, 6)]
-        nuclei = [(17,10 + 2*i)  for i in range(5, 6)]
-        nuclei = [( 9,16), ( 9,18), ( 9,20),]
-        nuclei = [( 1,12), ]#( 0,10), ] #(12,19), (1, 12)]
-        # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
-        nuclei = [(12,13),  ] # (17,12),
-        # nuclei = [( 9,20),  ]
-        # nuclei = [( 4, 5), ]
-        
-        GLOBAL_TAIL_INTER = '_B1'
-        
-        folders_2_import = [
-            # ((2, 1), '../BU_folder_B1_MZ3_z2n1/PNAMP/', DataTaurusPAV),
-            #((2, 3), '../BU_folder_B1_MZ3_z2n3/PNAMP/', DataTaurusPAV),
-            # ((8, 11), f'{MAIN_FLD}/BU_folder_B1_MZ3_z8n11/', 'export_TESb20_z{}n{}_B1_MZ3.txt'),
-            
-            ((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}_axial/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
-            #((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
-            # ((z, n), '{MAIN_FLD}/BU_folder_SDPF_MIX_J_z{z}n{n}/', 'export_TESb20_z{}n{}_SDPF_MIX_J.txt') for z,n in nuclei
-            # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JF27_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JF27.txt') for z,n in nuclei
-            # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JO26_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JO26.txt') for z,n in nuclei
-            # ((z, n), '{MAIN_FLD}/BU_folder_usdb_J_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_J.txt') for z,n in nuclei
-            #  '{MAIN_FLD}/BU_folder_B1_h11o2_z{z}n{n}/', 
-            #  'export_TESb20_z{}n{}_B1_h11o2.txt') for z,n in nuclei
-        ]
-        # K_val = 3
-        # _plotPAVresultsFromFolders(folders_2_import, MAIN_FLD, K_val, parity=0,
-        #                            plot_SCL_interpolation=False)
-        # raise Exception("STOP HERE")
-        
-        K_vals  = [1, 3, 5,]
-        # _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD, K_vals,
-        #                                     plot_SCL_interpolation=1,
-        #                                     Jmax_2_plot=9)
-        _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals,
-                                           plot_PPR_interpolation=1, parity=0,
-                                           Jmax_2_plot=11)
-        # _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD, K_vals, 
-        #                                     parity=0, plot_PAV=True, max_2_plot=11)
-        # _plotK_SPindependent_vapTES(folders_2_import, MAIN_FLD, K_vals)
-        raise Exception("STOP HERE")
-        
-        # K_vals  = [1, 3, 5, 7]
-        # for j in range(3, 12, 2):
-        #     _plotMultiK_vertical(folders_2_import, MAIN_FLD, K_vals, 
-        #                          Jmax2plot=9, onlyPrintJ=j)
-        # _plotMultiK_vertical(folders_2_import, MAIN_FLD, K_vals, Jmax2plot=7)
-        # raise Exception("STOP HERE")
-        
-        K_MAX = 11
-        MZMAX = 4
-        nuclei = [
-            #(0, 3), (2, 3)
-            # (8, 9), (8, 11), (8, 13), 
-            #(9, 8), (9, 10), (9, 12), (9, 14),
-            # (10, 9), (10, 11), (10, 13), (10, 15),
-            # (11, 8), (11, 10), (11, 12), (11, 14),# 
-            (12, 19), #(12, 13), (12, 15), #(12, 17), # (12, 9),
-            # (13, 8), (13, 10), (13, 12), (13, 14), (13, 16), (13, 18),
-            # (14, 9), (14, 11), (14, 13), (14, 15), (14, 17), (14, 19),
-        ]
-        folders2import = dict([
-            ((z, n), f'BU_folder_B1_MZ{MZMAX}_z{z}n{n}/')
-            for z, n in nuclei])
-        
-        _plotscript1_OEK_withNoProjection(nuclei, K_MAX, MZMAX, 
-                                          folders2import=folders2import, 
-                                          main_folder='../DATA_RESULTS/SD_Kblocking_multiK/Mg_31/')
+        ((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}_axial/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
+        #((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
+        # ((z, n), '{MAIN_FLD}/BU_folder_SDPF_MIX_J_z{z}n{n}/', 'export_TESb20_z{}n{}_SDPF_MIX_J.txt') for z,n in nuclei
+        # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JF27_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JF27.txt') for z,n in nuclei
+        # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JO26_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JO26.txt') for z,n in nuclei
+        # ((z, n), '{MAIN_FLD}/BU_folder_usdb_J_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_J.txt') for z,n in nuclei
+        #  '{MAIN_FLD}/BU_folder_B1_h11o2_z{z}n{n}/', 
+        #  'export_TESb20_z{}n{}_B1_h11o2.txt') for z,n in nuclei
+    ]
+    # K_val = 3
+    # _plotPAVresultsFromFolders(folders_2_import, MAIN_FLD, K_val, parity=0,
+    #                            plot_SCL_interpolation=False)
+    # raise Exception("STOP HERE")
+    
+    K_vals  = [1, 3, 5,]
+    # _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD, K_vals,
+    #                                     plot_SCL_interpolation=1,
+    #                                     Jmax_2_plot=9)
+    _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals,
+                                       plot_PPR_interpolation=1, parity=0,
+                                       Jmax_2_plot=11)
+    # _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD, K_vals, 
+    #                                     parity=0, plot_PAV=True, max_2_plot=11)
+    # _plotK_SPindependent_vapTES(folders_2_import, MAIN_FLD, K_vals)
+    raise Exception("STOP HERE")
+    
+    # K_vals  = [1, 3, 5, 7]
+    # for j in range(3, 12, 2):
+    #     _plotMultiK_vertical(folders_2_import, MAIN_FLD, K_vals, 
+    #                          Jmax2plot=9, onlyPrintJ=j)
+    # _plotMultiK_vertical(folders_2_import, MAIN_FLD, K_vals, Jmax2plot=7)
+    # raise Exception("STOP HERE")
+    
+    K_MAX = 11
+    MZMAX = 4
+    nuclei = [
+        #(0, 3), (2, 3)
+        # (8, 9), (8, 11), (8, 13), 
+        #(9, 8), (9, 10), (9, 12), (9, 14),
+        # (10, 9), (10, 11), (10, 13), (10, 15),
+        # (11, 8), (11, 10), (11, 12), (11, 14),# 
+        (12, 19), #(12, 13), (12, 15), #(12, 17), # (12, 9),
+        # (13, 8), (13, 10), (13, 12), (13, 14), (13, 16), (13, 18),
+        # (14, 9), (14, 11), (14, 13), (14, 15), (14, 17), (14, 19),
+    ]
+    folders2import = dict([
+        ((z, n), f'BU_folder_B1_MZ{MZMAX}_z{z}n{n}/')
+        for z, n in nuclei])
+    
+    _plotscript1_OEK_withNoProjection(nuclei, K_MAX, MZMAX, 
+                                      folders2import=folders2import, 
+                                      main_folder='../DATA_RESULTS/SD_Kblocking_multiK/Mg_31/')
     
     raise Exception("STOP HERE")
     #===========================================================================

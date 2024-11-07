@@ -10,6 +10,7 @@ from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
 from tools.Enums import GognyEnum
 from scripts2d.pair_scripts2d import run_pair_surfaces_2d
+from tools.base_executors import _Base1DTaurusExecutor
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
@@ -26,16 +27,16 @@ if __name__ == '__main__':
         # (2, 2) : interaction_,
         # (10,11): (4, 0, None), 
         # (12,12): (4, 0, None),
-        (12,13): (4, 0, None), 
+        # (12,13): (4, 0, None), 
         # (10,10): (4, 0, None),
-        # (1, 1) : 'B1_MZ3',
+        (2, 1) : 'B1_MZ3',
     }
     
     nucleus = sorted(list(interactions.keys()))    
     
     PAIR_CONSTRS = {
-        # InputTaurus.ConstrEnum.P_T10_J00   : (-0.01, 0.8, 10),
-        # InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.01, 0.8, 10),
+        InputTaurus.ConstrEnum.P_T10_J00   : (-0.01, 0.8, 10),
+        InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.01, 0.8, 10),
         # InputTaurus.ConstrEnum.P_T1m1_J00  : (-0.05, 0.8, 10),
         # InputTaurus.ConstrEnum.P_T00_J10   : (-0.01, 0.8, 10),
         # InputTaurus.ConstrEnum.P_T00_J1p1  : (-0.01, 0.8, 10),
@@ -54,8 +55,9 @@ if __name__ == '__main__':
     run_pair_surfaces_2d(
         nucleus, interactions, PAIR_CONSTRS,
         gogny_interaction=GognyEnum.B1, ROmega=(0,0), convergences=5,
-        seed_base=3, valid_Ks_to_block=[],
-        fomenko_points=(7, 7), axial_calc=True,
+        seed_base=4, valid_Ks_to_block=[],
+        fomenko_points=(7, 7), 
+        sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
         **constr_onrun
     )
     printf("I finished!")
