@@ -13,6 +13,7 @@ from tools.inputs import InputTaurus
 from tools.data import   DataTaurus
 from tools.helpers import printf, zipBUresults, getValueCombinationsSorted
 from tools.executors import ExeTaurus1D_DeformB20
+from tools.Enums import OutputFileTypes
 
 class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
     
@@ -62,12 +63,12 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
         Launch before the program to set the constraint dimension
         (unset to prompt an exception to avoid default constraint set up)
         """
-        constr_list_2 = []
         if len(constr_list) == 0: raise ExecutionException("Constraint list argument is empty")
         printf("  [executor2D] Clearing previous constraints.")
         cls.CONSTRAINT    = []
         cls.CONSTRAINT_DT = []
         
+        constr_list_2 = []
         for constr in constr_list:
             assert constr in cls._CONSTRAINT_INP_DAT[0].ConstrEnum.members(), \
                 f"Constraint must come from type {cls._CONSTRAINT_INP_DAT[0]}"
@@ -76,10 +77,11 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
             cls.CONSTRAINT_DT.append(constr)
             constr_list_2    .append(constr.replace('_', ''))
         n = len(constr_list)
-        constr_str = '_'.join(constr_list_2)
+        constr_str = '-'.join(constr_list_2)
         
         cls.EXPORT_LIST_RESULTS = f'export_TES{n}_{constr_str}'
         DataTaurus.BU_folder    = f'export_TES{n}_{constr_str}'
+        _=0
     
     def _setInstanceExecutorConstraints(self):
         """ required at instancing. """
@@ -514,7 +516,25 @@ class ExeTaurus2D_MultiConstrained(_Base2DTaurusExecutor, ExeTaurus1D_DeformB20)
     # CONSTRAINT_DT : list = []  # DataTaurus (key) Variable to compute
     
     def setUp(self, *args, **kwargs):
-        ExeTaurus1D_DeformB20.setUp(self, *args, **kwargs)
+        """
+        :reset_folders = True, give it as key-word argument.
+        
+        Need to be overwitted to include the option of joining strings as arguments.
+            NOTE: It do the same as ExeTaurus1D_DeformB20.setUp(self, *args, **kwargs)
+        """
+        reset_folder = kwargs.get('reset_folder', True)
+        self._DDparams = self.inputObj._DD_PARAMS
+        
+        args_str = '-'.join(args)
+        args_str = '_'+args_str if args_str != '' else ''
+        
+        self.DTYPE.BU_folder = f'BU_folder{args_str}_{self.interaction}_z{self.z}n{self.n}'
+        if reset_folder:
+            self.DTYPE.setUpFolderBackUp()
+        
+        for ext_ in OutputFileTypes.members():
+            if os.path.exists(self.interaction+ext_):
+                shutil.copy(self.interaction+ext_,  self.DTYPE.BU_folder)
     
     def setUpExecution(self, *args, **kwargs):
         """ Only requires the appending of _binlistdata for each cstr-deformation """

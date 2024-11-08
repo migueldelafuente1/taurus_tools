@@ -186,7 +186,7 @@ class _Base1DTaurusExecutor(object):
     
     def setInputCalculationArguments(self, core_calc=False, axial_calc=False,
                                      spherical_calc=False,  no_core_calc=False,
-                                     # sym_calc_setup=None,
+                                     sym_calc_setup=None,   ## just in case
                                      **input_kwargs):
         """
         Set arguments or constraints to be STATIC in the calculation, 

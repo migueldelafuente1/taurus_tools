@@ -46,7 +46,6 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             * dumping filename
             * save the hamiltonian files in BU folder for recovery
         """
-        
         self._DDparams = self.inputObj._DD_PARAMS
         self.DTYPE.BU_folder = f'BU_folder_{self.interaction}_z{self.z}n{self.n}'
         if reset_folder:
@@ -55,8 +54,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         for ext_ in OutputFileTypes.members():
             if os.path.exists(self.interaction+ext_):
                 shutil.copy(self.interaction+ext_,  self.DTYPE.BU_folder)
-        _=0
-    
+    #
     def _define_BaseConstraintDeformationAsZero(self):
         """ Set the deformations to zero for 1 constraint """
         self._deform_base = 0.0

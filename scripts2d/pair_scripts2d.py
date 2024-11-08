@@ -80,7 +80,6 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                InputTaurus.InpDDEnum.r_dim     : ROmega[0],
                InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
         
-        
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
@@ -109,12 +108,13 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         ExeTaurus2D_MultiConstrained.updateTotalKForOddNuclei(valid_Ks_to_block)
         ExeTaurus2D_MultiConstrained.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
         
+        _constr_keys  = [x.replace('_','') for x in pair_constrs]
         ## First unconstrained minimum
         try:
             exe_ = ExeTaurus2D_MultiConstrained(z, n, interaction)
             exe_.setInputCalculationArguments(**input_args_start)
             exe_.defineDeformationRange(pair_constrs)
-            exe_.setUp()
+            exe_.setUp(*_constr_keys)
             exe_.setUpExecution(**input_args_onrun)
             exe_.globalTearDown(zip_bufolder=True, base_calc=True)
         except ExecutionException as e:
