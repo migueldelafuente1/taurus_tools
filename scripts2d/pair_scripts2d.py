@@ -19,7 +19,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
                          convergences=0, valid_Ks_to_block=[],
-                         fomenko_points=(1, 1), axial_calc=False,
+                         fomenko_points=(1, 1), sym_calc_setup=None,
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
@@ -49,6 +49,8 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
     if not InputTaurus.ConstrEnum.P_T00_J1p1 in pair_constrs:
         _3d_PT0JM[InputTaurus.ConstrEnum.P_T00_J1p1] = 0.0
     constr_onrun = {**constr_onrun, **_3d_PT0JM}
+    
+    if sym_calc_setup: constr_onrun[sym_calc_setup] = True
     
     ## Normal execution.
     ExeTaurus2D_MultiConstrained.ITERATIVE_METHOD = \
@@ -89,7 +91,6 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
-            'axial_calc': axial_calc, 'core_calc': not axial_calc,
             **constr_onrun
         }
         
@@ -101,7 +102,6 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
-            'axial_calc' : axial_calc, 'core_calc': not axial_calc,
             **constr_onrun
         }
         

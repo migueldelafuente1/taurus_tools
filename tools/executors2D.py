@@ -63,6 +63,11 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
         (unset to prompt an exception to avoid default constraint set up)
         """
         constr_list_2 = []
+        if len(constr_list) == 0: raise ExecutionException("Constraint list argument is empty")
+        printf("  [executor2D] Clearing previous constraints.")
+        cls.CONSTRAINT    = []
+        cls.CONSTRAINT_DT = []
+        
         for constr in constr_list:
             assert constr in cls._CONSTRAINT_INP_DAT[0].ConstrEnum.members(), \
                 f"Constraint must come from type {cls._CONSTRAINT_INP_DAT[0]}"
