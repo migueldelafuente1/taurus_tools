@@ -100,6 +100,7 @@ class _Base1DTaurusExecutor(object):
         self._iter    = 0
         self._N_steps = 0
         self._preconvergence_steps = 0
+        self._exit_preconvergence = False
         self._base_wf_filename = None
         self._base_seed_type = None
         
@@ -545,7 +546,8 @@ class _Base1DTaurusExecutor(object):
             for k, val in reversed(self._deformations_map[0]): # oblate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                res  : self.DTYPE = self._executeProgram() # reexecuting
+                # res  : self.DTYPE = self._executeProgram() # reexecuting
+                res : self.DTYPE = self._runUntilConvergence()
                 
                 indx_ = -k-1
                 res0 : self.DTYPE = self._results[0][indx_]
@@ -560,7 +562,9 @@ class _Base1DTaurusExecutor(object):
             for k, val in reversed(self._deformations_map[1][start_from_:]): # prolate
                 self._curr_deform_index = k
                 self.inputObj.setConstraints(**{self.CONSTRAINT: val})
-                res  : self.DTYPE = self._executeProgram()
+                # res  : self.DTYPE = self._executeProgram() # reexecuting
+                res : self.DTYPE = self._runUntilConvergence()
+                
                 # indx_ = k - 1
                 res0 : self.DTYPE = self._results[1][k]
                 if self._backPropagationAcceptanceCriteria(res, res0):
@@ -742,14 +746,15 @@ class _Base1DTaurusExecutor(object):
         
         ## MODE 1: Create the results with an auxiliary program
         if self.inputObj: 
-            keep_axial = True
+            keep_axial = self.axialSymetryRequired # True #
             if base_execution: keep_axial = self._base_seed_type in (2, 3, 9)
-            
+            case_ok = bool(np.random.randint(0,2))
+            print("                                            case_ok=",case_ok)
             dat = _TestingTaurusOutputGenerator(self.inputObj,
-                                                case_ok=True, case_broken=False,
+                                                case_ok=case_ok, case_broken=False,
                                                 keep_axial=keep_axial)
             K = 0 
-            if 1 in self.numberParity:
+            if (1 in self.numberParity) and (self.inputObj.qp_block != None):
                 if 0 in self.numberParity:
                     cdim = self._sp_dim*self.numberParity[1]
                     if self._1stSeedMinimum_blocked_st:
@@ -788,6 +793,7 @@ class _Base1DTaurusExecutor(object):
         with open(output_fn, 'w+') as f:
             f.write(txt)
         
+        ## MODE-EXPORT_ complementary files: binaries, time track and *.dat files
         hash_ = (self._curr_deform_index, hash(random())) # random text to identify wf
         ## wf intermediate
         with open('final_wf.bin', 'w+') as f:

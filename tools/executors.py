@@ -373,7 +373,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             self._1stSeedMinimum = None
             
             res = None
+            self._exit_preconvergence = False
             while not self._preconvergenceAccepted(res):
+                if self._exit_preconvergence: break
                 if res != None:
                     ## otherwise the state is "re- blocked"
                     printf(" ** * [Not Converged] Repeating loop.")
@@ -460,7 +462,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             self._1stSeedMinimum = None
             
             res = None
+            self._exit_preconvergence = False 
             while not self._preconvergenceAccepted(res):
+                if self._exit_preconvergence: break
                 if res != None:
                     ## otherwise the state is "re- blocked"
                     printf(" ** * [Not Converged] Repeating loop.")
@@ -530,6 +534,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             Modification: it there is a _1sSeedMinima and _preconvergence_steps=0
             skip (to run another constraint from a previous minimum)
         """
+        self._exit_preconvergence = False
         
         if self._preconvergence_steps == 0 and self._1stSeedMinimum != None:
             self.inputObj.seed = 1
@@ -545,8 +550,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         if self._preconvergence_steps >= MAX_REPETITIONS:
             ## iteration for preconvergence stops
-            raise ExecutionException(f" !! {str_rep} Could not converge to the "
-                                     "initial wf., execution process stops.")
+            printf(f" !! {str_rep} Could not converge to the "
+                    "initial wf., execution process stops.")
+            self._exit_preconvergence = True
+            return False
         
         if result == None or result.broken_execution:
             printf(f" ** {str_rep} Seed convergence procedure:")

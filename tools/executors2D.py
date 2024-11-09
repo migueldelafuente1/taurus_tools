@@ -65,11 +65,12 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
         """
         if len(constr_list) == 0: raise ExecutionException("Constraint list argument is empty")
         printf("  [executor2D] Clearing previous constraints.")
+        printf("  [executor2D] Setting Up variables (sorted as):", sorted(constr_list))
         cls.CONSTRAINT    = []
         cls.CONSTRAINT_DT = []
         
         constr_list_2 = []
-        for constr in constr_list:
+        for constr in sorted(constr_list):
             assert constr in cls._CONSTRAINT_INP_DAT[0].ConstrEnum.members(), \
                 f"Constraint must come from type {cls._CONSTRAINT_INP_DAT[0]}"
             
