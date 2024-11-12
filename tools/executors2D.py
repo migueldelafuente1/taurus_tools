@@ -545,7 +545,7 @@ class ExeTaurus2D_MultiConstrained(_Base2DTaurusExecutor, ExeTaurus1D_DeformB20)
     
     def _define_BaseConstraintDeformationAsZero(self):
         """ Set the deformations to zero for all constraints"""
-        for i, constr in enumerate(self.CONSTRAINT):
+        for i, constr in enumerate( self.CONSTRAINT):
             self._deform_base[i] = 0.0
             setattr(self.inputObj, constr, 0.0)
     

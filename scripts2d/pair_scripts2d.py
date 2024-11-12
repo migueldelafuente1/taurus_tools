@@ -64,6 +64,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
     
     ExeTaurus2D_MultiConstrained.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus2D_MultiConstrained.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus2D_MultiConstrained.DO_BASE_CALCULATION   = (convergences > 0) and (seed_base != 1)
     
     for z, n in nucleus:
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",

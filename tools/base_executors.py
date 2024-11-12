@@ -258,6 +258,8 @@ class _Base1DTaurusExecutor(object):
         self._base_seed_type = self.inputObj.seed
         # NOTE:  by assign the _DD (class) dictionary in input, changes in the
         # attribute _DDparams is transfered to the input.
+        
+        # self.DO_BASE_CALCULATION = self.SEEDS_RANDOMIZATION > 0 and self.inputObj.seed == 1
     
     def _getCurrentDeformation(self):
         """ Auxiliary method to obtain the current deformation value """
@@ -761,7 +763,10 @@ class _Base1DTaurusExecutor(object):
                         sp_ = self._1stSeedMinimum_blocked_st - cdim
                     else:
                         sp_ = self.inputObj.qp_block - cdim
-                    K   = self._sp_states_obj[sp_].m
+                    if sp_ in (0, -self._sp_dim): sp_ = 1 # case for seed_base=1
+                    st_sp = self._sp_states_obj.get(sp_)
+                    K = st_sp.m if (st_sp != None) else 1
+                    
                 else: ## Odd-Odd case
                     if self._1stSeedMinimum_blocked_st:
                         sp_ = (self._1stSeedMinimum_blocked_st[0], 
@@ -769,7 +774,11 @@ class _Base1DTaurusExecutor(object):
                     else:
                         sp_ = (self.inputObj.qp_block[0], 
                                self.inputObj.qp_block[1] - self._sp_dim)
-                    K = sum([self._sp_states_obj[s].m for s in sp_])
+                     # case for seed_base=1
+                    st_sp = [self._sp_states_obj.get(i) for i in sp_]
+                    st_sp = [st_.m if st_ else 1        for st_ in st_sp]
+                    K = sum(st_sp) 
+                    # K = sum([self._sp_states_obj[s].m for s in sp_])
             dat.setUpOutput(constraints = self.CONSTRAINT, 
                             minimum_def = deepcopy(self._deform_base), K = K)
             # with open(output_fn, 'w+') as f:

@@ -60,6 +60,31 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self._deform_base = 0.0
         setattr(self.inputObj, self.CONSTRAINT, 0.0)
     
+    def _define_BaseContraintFromSeedFunction(self):
+        """
+        Take the result form a preconverged solution seed=1. (initial_wf.bin)
+        """
+        self.inputObj.iterations = 0
+        if os.getcwd().startswith('C:'):
+            ## Testing in Windows, block to the first K 
+            if self.numberParity == (1, 1):
+                self.inputObj.qp_block = (1, self._sp_dim+1)
+            elif 1 in self.numberParity:
+                self.inputObj.qp_block = self._sp_dim*self.numberParity[1] + 1
+        
+        res : DataTaurus = self._executeProgram(base_execution=True)
+        if not res.broken_execution: 
+            res.properly_finished = True
+        else:
+            printf("Initial seed is broken,")
+            raise ExecutionException(" Initial seed is broken,")
+        # 4 testing in Windows
+        self.inputObj.qp_block = (1, self._sp_dim) if os.getcwd().startswith('C:') else 0
+        self._1stSeedMinimum   = res
+        self._1stSeedMinimum_blocked_st = deepcopy(self.inputObj.qp_block)
+        
+        self._exportBaseResultFile({0: res, })
+    
     def setUpExecution(self, reset_seed=False,  *args, **kwargs):
         """
         base solution pre-convergence.
@@ -74,6 +99,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         res = None
         self._preconvergence_steps = 0
         self.printExecutionResult(None, print_head=True)
+            
+        if (not self.DO_BASE_CALCULATION) and self.inputObj.seed == 1:
+            self._define_BaseContraintFromSeedFunction()
         
         _DO_ODD = 1 in self.numberParity and (not self.IGNORE_SEED_BLOCKING)
         if self._1stSeedMinimum == None or reset_seed:                
@@ -507,8 +535,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self._clearBaseWFAfterSeedConvergence()
     
     def _exportBaseResultFile(self, bu_results):
-        """ sExport in a results file the wf indexed by blocked states."""
-        
+        """
+        Export in a results file the wf indexed by blocked states.
+            :bu_results <dict> = {index : DataTaurus-objet result, ...}
+        """
         count = 0
         res : DataTaurus = None
         write_lines = []
