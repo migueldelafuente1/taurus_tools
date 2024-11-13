@@ -323,7 +323,8 @@ class EvolTaurus(_DataObjectBase):
                 self._read_HO_prop(line)
             else:
                 break
-            
+        
+        if data_evol in ('', None): return
         
         if hT2 in data_evol: ## get the line as the first 80 chars of the bock
             line = data_evol.split(hT2)[1][:80].split('\n')[0]
@@ -1009,6 +1010,8 @@ class DataTaurus(_DataObjectBase):
         """
         with open(self._filename, 'r') as f:
             data = f.read()
+            
+            has_evol_data = self.__message_startiter in data
             if self.__message_converged in data: 
                 self.properly_finished = True
             elif not self.__message_enditer in data:
@@ -1018,11 +1021,21 @@ class DataTaurus(_DataObjectBase):
             
             f.seek(0) # rewind the file reading
             
-            data_inp, data_evol  = f.read().split(self.__message_startiter)
-            if self._is_vap_calculation:
-                data_evol, data = data_evol.split(self.__message_endvap)
+            if has_evol_data:
+                data_inp, data_evol  = f.read().split(self.__message_startiter)
+                if self._is_vap_calculation:
+                    data_evol, data = data_evol.split(self.__message_endvap)
+                else:
+                    data_evol, data = data_evol.split(self.__message_enditer)
             else:
-                data_evol, data = data_evol.split(self.__message_enditer)
+                ## NOTE: Modification if __message_converged do not appear but
+                ## results do (iter=0 modification of taurus_vap), data evol is 
+                ## ignored. The spliting will occur between the results header.
+                if self._is_vap_calculation:
+                    data_inp, data = f.read().split(self.__message_endvap)
+                else:
+                    data_inp, data = f.read().split(self.__message_enditer)
+                data_evol = None
             data      = data.split('\n')
                     
         _energies = (self.HeaderEnum.Zero_body,  self.HeaderEnum.One_body,

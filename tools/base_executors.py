@@ -1493,6 +1493,7 @@ class SetUpStoredWFAndHamiltonian(object):
             odd nuclei are also accesed with K=0.
             K=0 will be 1-valid solution.
         """
+        printf(" [ ]    SetUpStoredWFAndHamiltonian")
         zn  = (z, n)
         fld = cls.folders_byZN[zn]
         
@@ -1510,6 +1511,7 @@ class SetUpStoredWFAndHamiltonian(object):
         
         shutil.copy(cls.wfseeds_byZN_K[zn][K], 'initial_wf.bin')
         shutil.copy(cls.wfseeds_byZN_K[zn][K], 'base_initial_wf.bin')
-                
+            
+        printf(" [DONE] SetUpStoredWFAndHamiltonian")
         return interaction
     

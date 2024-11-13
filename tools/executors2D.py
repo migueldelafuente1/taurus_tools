@@ -11,7 +11,8 @@ from .executors import _Base1DTaurusExecutor
 from tools.base_executors import ExecutionException
 from tools.inputs import InputTaurus
 from tools.data import   DataTaurus
-from tools.helpers import printf, zipBUresults, getValueCombinationsSorted
+from tools.helpers import printf, zipBUresults, getValueCombinationsSorted,\
+    LINE_2, LINE_1, prettyPrintDictionary
 from tools.executors import ExeTaurus1D_DeformB20
 from tools.Enums import OutputFileTypes
 
@@ -510,6 +511,31 @@ class _Base2DTaurusExecutor(_Base1DTaurusExecutor):
     #
     # def _namingFilesToSaveInTheBUfolder(self):
     #     """ Valid by overwriting the _nameCurrentDeformationStringIndex
+    
+    @property
+    def calculationParameters(self):
+        """
+            Print properties of the calculation to know while running, 
+            such as the input object, folders, set up properties, attributes ...
+        """
+        if not self.PRINT_CALCULATION_PARAMETERS:
+            return
+        printf(LINE_2)
+        printf(f" ** Executor N-D [{self.__class__.__name__}] Parameters:")
+        printf(LINE_1)
+        priv_attr = ('_1stSeedMinimum', '_DDparams', '_deform_base', 
+                     '_N_steps', '_iter', '_output_filename')
+        priv_attr2 = {}
+        for k in priv_attr:
+            priv_attr2[k] = getattr(self, k, None)
+        priv_attr = {'PRIVATE_ATTR:': priv_attr2}
+        pub_attr = {}
+        for k, x in self.__dict__.items():
+            if (k.startswith('_') or isinstance(x, type)):continue 
+            pub_attr[k] = x
+        prettyPrintDictionary(pub_attr)
+        prettyPrintDictionary(priv_attr)
+        printf(LINE_1)
     
 class ExeTaurus2D_MultiConstrained(_Base2DTaurusExecutor, ExeTaurus1D_DeformB20):
     

@@ -64,7 +64,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         Take the result form a preconverged solution seed=1. (initial_wf.bin)
         """
-        self.inputObj.iterations = 0
+        self.inputObj.iterations = 1
         if os.getcwd().startswith('C:'):
             ## Testing in Windows, block to the first K 
             if self.numberParity == (1, 1):
@@ -105,6 +105,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         self.printExecutionResult(None, print_head=True)
             
         if (not self.DO_BASE_CALCULATION) and self.inputObj.seed == 1:
+            printf("  ** 1st seed minima_ IMPORTED from [base_initial_wf.bin]")
             self._define_BaseContraintFromSeedFunction()
         
         _DO_ODD = 1 in self.numberParity and (not self.IGNORE_SEED_BLOCKING)
@@ -560,7 +561,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         with open('BASE-'+self.EXPORT_LIST_RESULTS, 'w+') as f:
             f.writelines('\n'.join(write_lines))
         printf(f" [DONE] Exported [{len(write_lines)}] convergence results in "
-              f"[BASE-{self.EXPORT_LIST_RESULTS}]")
+               f"[BASE-{self.EXPORT_LIST_RESULTS}]")
         
     def _preconvergenceAccepted(self, result: DataTaurus):
         """
