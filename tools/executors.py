@@ -79,7 +79,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             printf("Initial seed is broken,")
             raise ExecutionException(" Initial seed is broken,")
         # 4 testing in Windows
-        self.inputObj.qp_block = (1, self._sp_dim) if os.getcwd().startswith('C:') else 0
+        qp_def = 0
+        if os.getcwd().startswith('C:') and (1 in self.numberParity):
+            qp_def = (1, self._sp_dim)
+            if 0 in self.numberParity: qp_def = qp_def[self.numberParity.index(1)]
+        self.inputObj.qp_block = qp_def
         self._1stSeedMinimum   = res
         self._1stSeedMinimum_blocked_st = deepcopy(self.inputObj.qp_block)
         

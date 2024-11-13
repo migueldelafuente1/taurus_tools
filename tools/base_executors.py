@@ -10,13 +10,14 @@ import shutil
 import numpy as np
 from copy import deepcopy, copy
 from random import random
+from pathlib import Path
 
 from tools.inputs import InputTaurus, InputAxial, InputTaurusPAV, InputTaurusMIX
 from tools.data import DataTaurus, DataAxial, DataTaurusPAV, DataTaurusMIX, \
     _TestingTaurusOutputGenerator
 from tools.helpers import LINE_2, LINE_1, prettyPrintDictionary, \
     OUTPUT_HEADER_SEPARATOR, LEBEDEV_GRID_POINTS, readAntoine, printf,\
-    QN_1body_jj
+    QN_1body_jj, almostEqual
 from tools.Enums import Enum, OutputFileTypes
 from scripts1d.script_helpers import parseTimeVerboseCommandOutputFile
 
@@ -774,7 +775,7 @@ class _Base1DTaurusExecutor(object):
                     else:
                         sp_ = (self.inputObj.qp_block[0], 
                                self.inputObj.qp_block[1] - self._sp_dim)
-                     # case for seed_base=1
+                    # case for seed_base=1
                     st_sp = [self._sp_states_obj.get(i) for i in sp_]
                     st_sp = [st_.m if st_ else 1        for st_ in st_sp]
                     K = sum(st_sp) 
@@ -1380,4 +1381,135 @@ class _BaseParallelTaurusExecutor(_Base1DTaurusExecutor):
 # exe = _BaseParallelTaurusExecutor(2, 1, "B1_MZ1")
 # exe.setMaximumNumberOfNodes(3)
 
+#===============================================================================
+#
+# #  AUXILLIARY MANAGER TO COPY WF-HAMILONIANS FROM FOLDERS as BASE_SEED
+#
+#===============================================================================
 
+class SetUpStoredWFAndHamiltonian(object):
+    
+    FLD_IMPORT_SEEDS = ''
+    BU_FOLDER_HEADER = 'BU_folder_'
+    
+    folders_byZN   = {}
+    interactions_byZN = {}
+    wfseeds_byZN_K = {}
+    results_byZN_K = {}
+    
+    @classmethod
+    def setUpMainFolder(cls, MAIN_FLD):
+        """
+        Define an initial wave function / hamiltonian (preferible the BU_folders)
+        for the importing of the base seed function, including K fixed values.
+        """
+        if os.path.exists(MAIN_FLD):
+            cls.FLD_IMPORT_SEEDS = Path(MAIN_FLD)
+            
+            cls.folders_byZN = {}
+            cls.interactions_byZN = {}
+            cls.wfseeds_byZN_K = {}
+            cls.results_byZN_K = {}
+            
+            cls.importFiles()
+        else:
+            raise Exception(f'[ERROR] Importing Folder do not exist, {MAIN_FLD}')
+        
+    @classmethod
+    def importFiles(cls):
+        
+        PATH_INIT = os.getcwd()
+        os.chdir(cls.FLD_IMPORT_SEEDS)
+        
+        list_flds = filter(lambda x: x.startswith(cls.BU_FOLDER_HEADER), 
+                           os.listdir())
+        for fld in list_flds:
+            args = fld.replace(cls.BU_FOLDER_HEADER, '').split('_')
+            zn = args[-1].replace('z','').replace('n',' ').split()
+            z, n = [int(x) for x in zn]
+            
+            constr      = args[0]
+            interaction = '_'.join(args[1:-1])
+            
+            f_out = filter(lambda x: x.startswith('res'),      os.listdir(fld))
+            f_out = filter(lambda x: x.endswith('-dbase.OUT'), f_out)
+            f_out = filter(lambda x: not 'unconv' in x, f_out)
+            # f_bin = map(lambda x: x.replace('res', 'seed').replace('.OUT', '.bin'), f_out)
+            
+            cls.folders_byZN     [(z, n)] = cls.FLD_IMPORT_SEEDS / fld
+            cls.interactions_byZN[(z, n)] = interaction
+            cls.wfseeds_byZN_K[(z, n)] = {}
+            cls.results_byZN_K[(z, n)] = {}
+            
+            k_res = {}
+            for fo in f_out:
+                res = DataTaurus(z, n, Path(fld) / fo)
+                k   = int(2*res.Jz)
+                if not almostEqual(2*res.Jz, round(2*res.Jz, 4), tolerance=1.0e-3):
+                    k = 0
+                
+                if not k in k_res:
+                    k_res[k] = fo, res
+                else:
+                    if k_res[k][1].E_HFB > res.E_HFB:
+                        k_res[k] = fo, res
+            
+            for k, vals in k_res.items():
+                wf = vals[0].replace('res', 'seed').replace('.OUT', '.bin')
+                cls.wfseeds_byZN_K[(z,n)][k] = cls.FLD_IMPORT_SEEDS / Path(fld) / wf
+                cls.results_byZN_K[(z,n)][k] = vals[1]
+        
+        printf(f" [DONE] Importing results from {cls.FLD_IMPORT_SEEDS}")
+        for zn, k_vals in cls.results_byZN_K.items():
+            i = 0
+            fld = cls.folders_byZN[zn]
+            ks  = sorted(k_vals.keys(), reverse=True)
+            for k in ks:
+                res : DataTaurus = cls.results_byZN_K[zn][k]
+                cls._printResultStored(res, *zn, ks, fld, print_header=(i==0))
+                i += 1
+            printf("")
+        os.chdir(PATH_INIT)
+    
+    @staticmethod
+    def _printResultStored(res: DataTaurus, z, n, K, fld, print_header=True):
+        zn = (z, n)
+        args = ('E_HFB', 'pair_pp', 'pair_nn', 'beta_isoscalar', 'gamma_isoscalar', 'Jz')
+        vals = [getattr(res, arg, 0) for arg in args]
+        
+        str_header = ''
+        if print_header:
+            printf(f"\n Copying the {zn} wavefunction from: {fld}\n   details [k={K}]:")
+            str_header = ' '+"  ".join([f"{x[:min(9,len(x))]: >9}" for x in args])+'\n'
+        printf(str_header,"  ".join([f"{x: >9.4f}" for x in vals]))
+    
+    @classmethod
+    def copyWFAndHamil(cls, z, n, K=0):
+        """
+        Get the solution for K copied for calculation, print the result and 
+        return the interaction name (get copied also in the main folder).
+        
+        NOTE: Non odd-even solutions must be access for K=0, also, non-axial
+            odd nuclei are also accesed with K=0.
+            K=0 will be 1-valid solution.
+        """
+        zn  = (z, n)
+        fld = cls.folders_byZN[zn]
+        
+        if not K in cls.wfseeds_byZN_K[zn]:
+            printf(f"[Folder - K not found] K={K} :: {fld}.")
+            return None
+        
+        interaction = cls.interactions_byZN[zn]
+        for tail_ in OutputFileTypes.members():
+            if os.path.exists(fld / f"{interaction}{tail_}"):
+                shutil.copy(fld / f"{interaction}{tail_}", '.')
+        
+        res : DataTaurus = cls.results_byZN_K[zn][K]
+        cls._printResultStored(res, z, n, K, fld)
+        
+        shutil.copy(cls.wfseeds_byZN_K[zn][K], 'initial_wf.bin')
+        shutil.copy(cls.wfseeds_byZN_K[zn][K], 'base_initial_wf.bin')
+                
+        return interaction
+    

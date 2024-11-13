@@ -6,7 +6,9 @@ Created on Oct 25, 2024
 import os
 from datetime import datetime
 import shutil
+from pathlib import Path
 
+from tools.base_executors import SetUpStoredWFAndHamiltonian
 from tools.executors   import ExecutionException
 from tools.executors2D import ExeTaurus2D_MultiConstrained
 from tools.inputs      import InputTaurus
@@ -14,6 +16,7 @@ from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data    import DataTaurus
 from tools.helpers import LINE_2, prettyPrintDictionary, printf
 from tools.Enums   import GognyEnum
+
 
 def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
@@ -34,6 +37,11 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :constr_onrun other constraints to set up the calculation.
         :fomenko_points: (<int>, <int>)
+        :valid_Ks_to_block: [list, int] Usage:
+            1. for seed_base != 1: is used to stablish the valid Ks for axial 
+                                    odd-nuclei calculations
+            2. for seed_base == 1: imports the K from some folder, non axial 
+                                    odd calculations requires to put [0,]
         :axial_calc:      <bool>
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
@@ -70,8 +78,13 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
               datetime.now().time(), "\n")
         
-        interaction = getInteractionFile4D1S(interactions, z, n, 
-                                             gogny_interaction=gogny_interaction)
+        if seed_base == 1: 
+            kwargs = {'K': valid_Ks_to_block[0] if 1 in (z%2, n%2) else 0, }
+            interaction = SetUpStoredWFAndHamiltonian.copyWFAndHamil(z,n,**kwargs)
+        else:
+            interaction = getInteractionFile4D1S(interactions, z, n, 
+                                                 gogny_interaction=gogny_interaction)
+        
         if interaction == None or not os.path.exists(interaction+'.sho'):
             printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
@@ -99,7 +112,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.iterations: 2500,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
             **constr_onrun
