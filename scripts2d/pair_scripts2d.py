@@ -79,7 +79,8 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
               datetime.now().time(), "\n")
         
         if seed_base == 1: 
-            kwargs = {'K': valid_Ks_to_block[0] if 1 in (z%2, n%2) else 0, }
+            default_K = valid_Ks_to_block[0] if valid_Ks_to_block else 0
+            kwargs = {'K': default_K if 1 in (z%2, n%2) else 0, }
             interaction = SetUpStoredWFAndHamiltonian.copyWFAndHamil(z,n,**kwargs)
         else:
             interaction = getInteractionFile4D1S(interactions, z, n, 
