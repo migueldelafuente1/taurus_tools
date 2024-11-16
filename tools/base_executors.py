@@ -1507,7 +1507,10 @@ class SetUpStoredWFAndHamiltonian(object):
                 printf(f"[Folder - K not found] K={K} :: {fld}.")
                 printf(f"   No folders found in zn={zn}: {list(cls.wfseeds_byZN_K[zn])}")
                 return None
-                
+            
+            ## TODO: Possible error, if seeds are non-axial but very pure K
+            ## It could have been stored as K=2n+1 but expected index K=0
+            ## Or maybe it will just get the K optimal in terms of energy.
             if (not K in cls.wfseeds_byZN_K[zn]):
                 E_k = [(x.E_HFB, k) for k,x in cls.results_byZN_K[zn].items()]
                 E   = [x[0] for x in E_k]
