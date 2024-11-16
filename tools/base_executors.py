@@ -1497,9 +1497,21 @@ class SetUpStoredWFAndHamiltonian(object):
         zn  = (z, n)
         fld = cls.folders_byZN[zn]
         
-        if not K in cls.wfseeds_byZN_K[zn]:
-            printf(f"[Folder - K not found] K={K} :: {fld}.")
-            return None
+        if (K != 0) and (not K in cls.wfseeds_byZN_K[zn]):
+            if not K in cls.wfseeds_byZN_K[zn]:
+                printf(f"[Folder - K not found] K={K} :: {fld}.")
+                return None
+        else:
+            ## K=0 and seed have K!=0 (K=0 as non-axial case), get the lowest K result
+            if len(cls.wfseeds_byZN_K[zn]) == 0:
+                printf(f"[Folder - K not found] K={K} :: {fld}.")
+                printf(f"   No folders found in zn={zn}: {list(cls.wfseeds_byZN_K[zn])}")
+                return None
+                
+            if (not K in cls.wfseeds_byZN_K[zn]):
+                E_k = [(x.E_HFB, k) for k,x in cls.results_byZN_K[zn].items()]
+                E   = [x[0] for x in E_k]
+                K   = E_k[E.index(min(E))][1]
         
         interaction = cls.interactions_byZN[zn]
         for tail_ in OutputFileTypes.members():
