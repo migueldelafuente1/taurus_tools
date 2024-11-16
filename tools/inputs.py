@@ -192,6 +192,7 @@ Omega_Order                 = {omega_dim}
 export_density (1, 0)       = {eval_export_h}
 eval QuasiParticle Vs       = 0
 eval/export Valence.Space   = {export_vs}
+additional options-modes    = {more_options}
 * Integration parameters:      ------------"""
     ## eval/export Valence.Space   = 0 203 205 10001
 
@@ -205,6 +206,7 @@ eval/export Valence.Space   = {export_vs}
         r_dim = 'r_dim'
         omega_dim = 'omega_dim'
         export_vs = 'export_vs'
+        more_options = 'more_options'
     
     ## default parameters
     _DEFAULT_DD_PARAMS = { 
@@ -217,6 +219,7 @@ eval/export Valence.Space   = {export_vs}
         InpDDEnum.r_dim       : 10,
         InpDDEnum.omega_dim   : 10,
         InpDDEnum.export_vs   : 0,
+        InpDDEnum.more_options: {},
         }
     ## this is the parameters used to print the input_DD_PARAMS file
     _DD_PARAMS = {
@@ -229,6 +232,7 @@ eval/export Valence.Space   = {export_vs}
         InpDDEnum.r_dim       : 10,
         InpDDEnum.omega_dim   : 10,
         InpDDEnum.export_vs   : 0,
+        InpDDEnum.more_options: {},
     }
     
     def __init__(self, z, n, interaction, input_filename=None, **params):
@@ -493,6 +497,7 @@ eval/export Valence.Space   = {export_vs}
             :export_vs: get the arguments for exporting the valence space
                 0: do nothing; >0 export all the states; 
                 (101, 103, 205, 10001) for specific valence space exporting.
+            :more_options: <dict> : {code: float value, ...}
         '''
         ## reset the DD parameters
         for k, v in cls._DEFAULT_DD_PARAMS.items():
@@ -532,7 +537,11 @@ eval/export Valence.Space   = {export_vs}
                     raise InputException(
                         "The export of valence space should be 0, integer "
                         "or list-tuple of the states to export")
-            
+            if arg == cls.InpDDEnum.more_options:
+                ## TODO: methods and codes from dens_taurus_manual.
+                assert isinstance(val, dict), "Value Must Be a dictionary with integer code-values"
+                assert all(filter(lambda x: type(x)==int, val.keys())), "Codes must be integers."
+                
             cls._DD_PARAMS[arg] = val
             
     def get_inputDDparamsFile(self, r_dim=None, omega_dim=None):
@@ -549,6 +558,15 @@ eval/export Valence.Space   = {export_vs}
         if (params[self.InpDDEnum.eval_export_h] == 1):
             printf("[WARNING] eval_calculations will use explicit evaluation of "
                   "the matrix elements and the time required will grow exponentially.")
+        
+        if (params[self.InpDDEnum.more_options]):
+            _tmp = "     + Additional argument  = {: >2} {:8.6e}"
+            
+            dict_vals = params[self.InpDDEnum.more_options]
+            aux_str = [_tmp.format(k, v) for k, v in dict_vals.items()]
+            aux_str.insert(0, str(len(dict_vals)))
+            params[self.InpDDEnum.more_options] = '\n'.join(aux_str)
+        else: params[self.InpDDEnum.more_options] = '0'
         
         txt_ = self._TEMPLATE_INPUT_DD.format(**params)
         txt_ = txt_.replace('e+', 'd+')

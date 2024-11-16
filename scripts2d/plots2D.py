@@ -17,28 +17,34 @@ from copy import deepcopy
 if MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib.ticker import MaxNLocator
+    
     # Enable LaTeX in Matplotlib
-    # plt.rcParams.update({
-    #     "text.usetex": False,
-    #     "font.family": "serif",
-    #     "font.serif": ["Computer Modern Roman"],
-    # })
+    plt.rcParams.update({
+        "text.usetex": True,
+        "font.family": "serif",
+        "font.serif": ["Computer Modern Roman"],
+    })
 
 INTER = ''
 GLOBAL_TAIL_INTER = ''
 
 def getVariableInLatex(var):
     _P_vars = {
-        InputTaurus.ConstrEnum.P_T00_J10:  '$\delta^{T=0\ M_T= 0}_{J=1\ M=0}$',
-        InputTaurus.ConstrEnum.P_T00_J1m1: '$\delta^{T=0\ M_T=-1}_{J=1\ M=0}$',
-        InputTaurus.ConstrEnum.P_T00_J1p1: '$\delta^{T=0\ M_T=+1}_{J=1\ M=0}$',
+        InputTaurus.ConstrEnum.P_T00_J10:  '$\delta^{T=0}_{J=1\ M=0}$',
+        InputTaurus.ConstrEnum.P_T00_J1m1: '$\delta^{T=0}_{J=1\ M=-1}$',
+        InputTaurus.ConstrEnum.P_T00_J1p1: '$\delta^{T=0}_{J=1\ M=+1}$',
         InputTaurus.ConstrEnum.P_T10_J00:  '$\delta^{T=1\ M_T=0}_{J=0}$',
         InputTaurus.ConstrEnum.P_T1m1_J00: '$\delta^{pp}_{J=0}$',
         InputTaurus.ConstrEnum.P_T1p1_J00: '$\delta^{nn}_{J=0}$',
     }
     aux = var.split('_')
-    if   var.startswith('b') or var.startswith('q') or var.startswith('gamma'):
+    if   var.startswith('b') or var.startswith('q'):
+        if aux[0] == 'beta': aux[0] = ''
         aux[0] = f"$\\beta_{{{aux[0][1:]}}}" if var.startswith('b') else f"$Q_{{{aux[0][:1]}}}"
+        return aux[0] + f"^{{({aux[1]})}}$"
+    elif  var.startswith('gamma'):
+        aux[0] = f"$\\gamma" 
         return aux[0] + f"^{{({aux[1]})}}$"
     elif var.startswith('P_'):
         return _P_vars[var]
@@ -286,73 +292,102 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
         nrows = 0
         for cnst_pn, dicts in data.items():
             if any(map(lambda x: len(x) > 0, dicts.values())): nrows += 1
-        # Plotting the surface
-        figs_and_axes = {}
-        for var_plot in observables2plot:
-            figs_and_axes[var_plot] = plt.subplots(nrows, 2)
         
-        for i, cnst_pn in enumerate(data.keys()):
-            j = -1
-            for contr_T1, vals in data[cnst_pn].items():
-                j += 1
-                if len(vals) == 0: 
-                    print(" SKIP. No data for constraints:", cnst_pn, contr_T1)
-                    continue
-                # Create grid and compute Z valu
-                x0 = sorted(list(set([d[0] for d in deforms[cnst_pn][contr_T1].values()])))
-                y0 = sorted(list(set([d[1] for d in deforms[cnst_pn][contr_T1].values()])))
-                x = np.array(x0)
-                y = np.array(y0)
-                X, Y = np.meshgrid(x, y)
+        for indivCs in (1, 0):
+            if indivCs == 0 and len(data) != 2: break
+            # Plotting the surface
+            figs_and_axes  = {}
+            for var_plot in observables2plot:
+                if indivCs: figs_and_axes[var_plot] = plt.subplots(nrows, 2)
+                else:       figs_and_axes[var_plot] = plt.subplots(1,2, figsize=(8,4))
+            
+            pn_list_data = list(data.keys())
                 
-                k0,k1 = [],[]
-                for k, v in deforms[cnst_pn][contr_T1].items():
-                    k0.append(k[0])
-                    k1.append(k[1])
-                k0_lims = min(k0), max(k0)
-                k1_lims = min(k1), max(k1)
+            for i, cnst_pn in enumerate(pn_list_data):
+                if not indivCs and i == 1: break
+                j = -1
+                for contr_T1, vals in data[cnst_pn].items():
+                    j += 1
+                    if len(vals) == 0: 
+                        print(" SKIP. No data for constraints:", cnst_pn, contr_T1)
+                        continue
+                    # Create grid and compute Z valu
+                    x0 = sorted(list(set([d[0] for d in deforms[cnst_pn][contr_T1].values()])))
+                    y0 = sorted(list(set([d[1] for d in deforms[cnst_pn][contr_T1].values()])))
+                    x = np.array(x0)
+                    y = np.array(y0)
+                    X, Y = np.meshgrid(x, y)
                     
-                for var_plot in observables2plot:
-                    # Define a function for the surface (for example, a Gaussian)
-                    Z = np.zeros(X.shape) # = 0.0*X + 0.0*Y
-                    for key_, defs_ in data[cnst_pn][contr_T1][var_plot].items():
-                        ii = key_[0] - k0_lims[0]
-                        jj = key_[1] - k1_lims[0]
-                        ## remember, Z indexing is [y,x]
-                        Z[jj, ii] = data[cnst_pn][contr_T1][var_plot][key_]
-                    
-                    fig, axx = figs_and_axes[var_plot]
-                    # print(f"{i}, {j}", cnst_pn, contr_T1, " :", var_plot)
-                    ax = axx[i, j] if nrows > 1 else axx[j]
-                    filled_contours = ax.contourf(X, Y, Z, levels=20, cmap='viridis')  # Fills contours
-                    
-                    # Overlay contour lines with custom line widths and styles
-                    contours = ax.contour(
-                        X, Y, Z, levels=20, colors='black',
-                        linewidths=0.7,       # Set line thickness
-                        linestyles='dashed'   # Set line style
-                    )
-                    ax.clabel(contours, inline=True, fontsize=6)  # Label the contour lines
-                    # Add a color bar for reference
-                    fig.colorbar(filled_contours, ax=ax)#, label="Z Value")
-                    
-                    fig.suptitle (f"{getVariableInLatex(var_plot)}  Calculation {INTER}. {nucl[1]}")
-        
-        for var_plot in observables2plot:
-            # Labels and title
-            fig, ax = figs_and_axes[var_plot]
-            if nrows > 1:
-                for j in range(nrows):
-                    ax[j,0].set_ylabel(getVariableInLatex(constraints_pn[j] ))
-                i = nrows - 1
-                ax[i,0].set_xlabel(getVariableInLatex(constraints_t1[0]))
-                ax[i,1].set_xlabel(getVariableInLatex(constraints_t1[1]))
-            else:
-                ax[0].set_ylabel(getVariableInLatex(constraints_pn[j] ))
-                ax[0].set_xlabel(getVariableInLatex(constraints_t1[0]))
-                ax[1].set_xlabel(getVariableInLatex(constraints_t1[1]))
-            fig.tight_layout()
-            fig.savefig("{}/{}_contoursPT1T0_{}.pdf".format(FOLDER2SAVE, var_plot, nucl[0]))                            
+                    k0,k1 = [],[]
+                    for k, v in deforms[cnst_pn][contr_T1].items():
+                        k0.append(k[0])
+                        k1.append(k[1])
+                    k0_lims = min(k0), max(k0)
+                    k1_lims = min(k1), max(k1)
+                        
+                    for var_plot in observables2plot:
+                        # Define a function for the surface (for example, a Gaussian)
+                        Z = np.zeros(X.shape) # = 0.0*X + 0.0*Y
+                        for key_, defs_ in data[cnst_pn][contr_T1][var_plot].items():
+                            ii = key_[0] - k0_lims[0]
+                            jj = key_[1] - k1_lims[0]
+                            ## remember, Z indexing is [y,x]
+                            val = data[cnst_pn][contr_T1][var_plot][key_]
+                            if indivCs:
+                                Z[jj, ii] = val
+                            else:
+                                cnst_pn2  = pn_list_data[1] 
+                                Z[jj, ii] = val - data[cnst_pn2][contr_T1][var_plot][key_]
+                        
+                        fig, axx = figs_and_axes[var_plot]
+                        # print(f"{i}, {j}", cnst_pn, contr_T1, " :", var_plot)
+                        ax = axx[i, j] if (nrows > 1 and indivCs) else axx[j]
+                        filled_contours = ax.contourf(X, Y, Z, levels=20, cmap='plasma')  # Fills contours
+                        
+                        # Overlay contour lines with custom line widths and styles
+                        contours = ax.contour(
+                            X, Y, Z, levels=20, colors='black',
+                            linewidths=0.7,       # Set line thickness
+                            linestyles='dashed'   # Set line style
+                        )
+                        ax.clabel(contours, inline=True, fontsize=6)  # Label the contour lines
+                        # Add a color bar for reference
+                        fig.colorbar(filled_contours, ax=ax)#, label="Z Value")
+                        ax.xaxis.set_major_locator(MaxNLocator(5))  # Set maximum 5 ticks on x-axis
+                        ax.yaxis.set_major_locator(MaxNLocator(5))  # Set maximum 4 ticks on y-axis
+                        ax.set_xlim(0, max(x))
+                        ax.set_ylim(0, max(y))
+                        
+                        kw = {'fontsize': 15}
+                        if indivCs: ax.set_aspect('equal', adjustable='box')
+                        if indivCs: 
+                            fig.suptitle (f"{getVariableInLatex(var_plot)}  Calculation {INTER}. {nucl[1]}", **kw)
+                        else:
+                            args = [getVariableInLatex(x) for x in 
+                                    (var_plot, cnst_pn, var_plot, cnst_pn2)]
+                            fig.suptitle ("{}({}) - {}({})  ".format(*args) + 
+                                          f"\nCalculation {INTER}. {nucl[1]}", **kw)
+            kw = {'fontsize': 13}
+            for var_plot in observables2plot:
+                # Labels and title
+                fig, ax = figs_and_axes[var_plot]
+                if nrows > 1 and indivCs:
+                    for j in range(nrows):
+                        ax[j,0].set_ylabel(getVariableInLatex(constraints_pn[j] ),**kw)
+                    i = nrows - 1
+                    ax[i,0].set_xlabel(getVariableInLatex(constraints_t1[0]),**kw)
+                    ax[i,1].set_xlabel(getVariableInLatex(constraints_t1[1]),**kw)
+                else:
+                    # ax[0].set_ylabel(getVariableInLatex(constraints_pn[j-1] ))
+                    ax[0].set_ylabel('$\delta^{pn}_{J(M=0)}$', **kw)
+                    ax[0].set_xlabel(getVariableInLatex(constraints_t1[0]),**kw)
+                    ax[1].set_xlabel(getVariableInLatex(constraints_t1[1]),**kw)
+                fig.tight_layout()
+                
+                if indivCs: 
+                    fig.savefig("{}/{}_contoursPT1T0_{}.pdf".format(FOLDER2SAVE, var_plot, nucl[0]))
+                else:
+                    fig.savefig("{}/{}_diff_contoursPT1T0_{}.pdf".format(FOLDER2SAVE, var_plot, nucl[0]))
         plt.show()
     
 
@@ -378,7 +413,11 @@ if __name__ == '__main__':
     MAIN_FLD = '../DATA_RESULTS/SD_Odd_pnPairing/{pair_cnstr}'
     
     # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
-    nuclei = [(12,13),  ] # (17,12),
+    nuclei = [
+        (12,13), (12,12),
+        (10,10), #(10,11),
+        # (12,12)      
+    ] 
     
     
     INTER = 'B1_MZ4'
@@ -386,26 +425,29 @@ if __name__ == '__main__':
     export_templ = 'export_TES2_{}_z{}n{}_{}.txt'
     
     constraints_ = [
-        # InputTaurus.ConstrEnum.P_T10_J00,
-        
-        InputTaurus.ConstrEnum.P_T1p1_J00,
-        # InputTaurus.ConstrEnum.P_T1m1_J00,
-        
-        InputTaurus.ConstrEnum.P_T00_J10,
+        # InputTaurus.ConstrEnum.P_T00_J10,
+        InputTaurus.ConstrEnum.P_T00_J1m1,
         # InputTaurus.ConstrEnum.P_T00_J1p1,
-        # InputTaurus.ConstrEnum.P_T00_J1m1,
+        # InputTaurus.ConstrEnum.P_T10_J00,
+        # InputTaurus.ConstrEnum.P_T1m1_J00,
+        #InputTaurus.ConstrEnum.P_T1p1_J00,
+        
     ]
     observables2plot = [
         'pair', 
+        'pair_pn',
         'E_HFB',
-        # 'b20_isoscalar',
-        InputTaurus.ConstrEnum.P_T00_J10,
-        InputTaurus.ConstrEnum.P_T10_J00,
-        InputTaurus.ConstrEnum.P_T1p1_J00,
-        InputTaurus.ConstrEnum.P_T1m1_J00,
+        # 'beta_isoscalar',
+        # 'gamma_isoscalar',
+        'Jz',
+        # InputTaurus.ConstrEnum.P_T00_J10,
+        # InputTaurus.ConstrEnum.P_T10_J00,
+        # InputTaurus.ConstrEnum.P_T00_J1m1,
+        # InputTaurus.ConstrEnum.P_T1p1_J00,
+        # InputTaurus.ConstrEnum.P_T1m1_J00,
     ]
     
-    MAIN_FLD = f'../DATA_RESULTS/SD_Odd_pnPairing/HFB/{constraints_[0]}'
+    MAIN_FLD = f'../DATA_RESULTS/SD_Odd_pnPairing/HFBS0/{constraints_[0]}'
     folders_2_import = [
         ((z, n), '{MAIN_FLD}/BU_folder_{constrs}_{INTER}_z{z}n{n}/', export_templ) for z,n in nuclei
     ]
@@ -420,7 +462,7 @@ if __name__ == '__main__':
         # InputTaurus.ConstrEnum.P_T00_J1p1,
         InputTaurus.ConstrEnum.P_T10_J00,
     ]
-    MAIN_FLD = '../DATA_RESULTS/SD_Odd_pnPairing/HFB/{pair_cnstr}'
+    MAIN_FLD = '../DATA_RESULTS/SD_Odd_pnPairing/HFBS0/{pair_cnstr}'
     plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD, 
                                                constraints_pn, observables2plot)
     
