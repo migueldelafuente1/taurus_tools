@@ -600,7 +600,18 @@ class TBME_HamiltonianManager(object):
         tree.write(self.xml_input_filename)
         
         self.runTBMERunnerSuite()
-                
+    
+    
+    def _getDefaultTimeOut(self):
+        """
+        Return default program time for Shells under 7 shells, 
+        ** Note: MZ=10 required in a test over 4.25 days.
+        """
+        t_deflt = 86400 # 1 day timeout
+        if self.MZmax > 6 or self._sp_states_dim > 170:
+            return (3.25*t_deflt/16)*((self.MZmax - 6)**2) + t_deflt
+        return t_deflt
+    
     def runTBMERunnerSuite(self, specific_xml_file=None):
         """ 
         Run the TBME suite (TBMESpeedRunner) from an input.xml file, 
@@ -642,18 +653,7 @@ class TBME_HamiltonianManager(object):
                 printf(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
         except BaseException as e:
             printf(f"Error while computing 2BME: *******\n{e}\n*** EOException *******")
-        os.chdir('..') # return to the main folder
-        
-    def _getDefaultTimeOut(self):
-        """
-        Return default program time for Shells under 7 shells, 
-        ** Note: MZ=10 required in a test over 3 days.
-        """
-        t_deflt = 86400 # 1 day timeout
-        if self.MZmax > 6 or self._sp_states_dim > 170:
-            return (2*t_deflt/9)*((self.MZmax - 6)**2) + t_deflt
-            
-        return t_deflt 
+        os.chdir('..') # return to the main folder 
         
 if __name__ == "__main__":
     
