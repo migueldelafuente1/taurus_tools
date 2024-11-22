@@ -10,7 +10,7 @@ from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.helpers import printf
 
 
-def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
+def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True, do_BB=True,
                            gogny_interaction = GognyEnum.D1S):
     """
     This function import a certain hamil file for the calculations to run:
@@ -69,6 +69,7 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True,
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
             exe_.do_coulomb = do_Coulomb
             exe_.do_LS      = do_LS
+            exe_.do_BB      = do_BB
             
             exe_.setAndRun_Gogny_xml(gogny_interaction)
             interaction = exe_.hamil_filename

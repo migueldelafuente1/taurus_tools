@@ -18,7 +18,7 @@ from time import time
 
 from tools.helpers import GITHUB_2BME_HTTP, ValenceSpacesDict_l_ge10_byM,\
     PATH_COUL_IN_2BMESUITE, PATH_LSSR_IN_2BMESUITE, PATH_COM2_IN_2BMESUITE,\
-    TBME_SUITE, TBME_RESULT_FOLDER, printf
+    TBME_SUITE, TBME_RESULT_FOLDER, printf, readAntoine
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters, Constants,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes, Enum,\
@@ -255,6 +255,8 @@ class TBME_HamiltonianManager(object):
     
     '''
     
+    USE_FROM_TAURUS_TOOLS = True  ## Ensure the template placement for other cwd on run!
+        
     def __init__(self, b_length, MZmax, MZmin=0, set_com2=True):
         '''
         Constructor
@@ -284,6 +286,7 @@ class TBME_HamiltonianManager(object):
         self.xml_input_filename = None
         
         self.sp_states_list = []
+        self._sp_states_dim = 0
         self._set_valenceSpace()
     
     
@@ -308,6 +311,7 @@ class TBME_HamiltonianManager(object):
             
             for qn in sp_states:
                 self.sp_states_list.append(qn)
+                self._sp_states_dim += 2*readAntoine(qn, l_ge_10=True)[2] + 1
     
     def _set_valenceSpace_Subelement(self, elem):
         """ 
@@ -537,6 +541,7 @@ class TBME_HamiltonianManager(object):
         self._path_xml = 'data_resources/input_D1S.xml'
         if os.getcwd().endswith(TBME_SUITE):
             self._path_xml = '../'+self._path_xml
+            
         printf(os.getcwd())
         tree = et.parse(self._path_xml)
         root = tree.getroot()
@@ -601,7 +606,8 @@ class TBME_HamiltonianManager(object):
         Run the TBME suite (TBMESpeedRunner) from an input.xml file, 
             !!(NOTE) to be use from /taurus_tools CWD.
         """
-        assert os.getcwd().endswith("taurus_tools"), f"Invalid CWD: {os.getcwd()}"
+        if self.USE_FROM_TAURUS_TOOLS:
+            assert os.getcwd().endswith("taurus_tools"), f"Invalid CWD: {os.getcwd()}"
         if specific_xml_file:
             printf(" [WARNING] modifying the xml_input source:",
                   f"[{self.xml_input_filename}] to: [{specific_xml_file}]")
@@ -610,33 +616,44 @@ class TBME_HamiltonianManager(object):
         shutil.copy(self.xml_input_filename, TBME_SUITE)
         os.chdir(TBME_SUITE)
         
-        c_time = time()
-        printf(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
-        if os.getcwd().startswith('C:'):
-            py3 = 'C:/ProgramData/anaconda3/python.exe'
-            e_ = subprocess.call(f'{py3} main.py {self.xml_input_filename} > temp.txt',
-                                 timeout=86400, # 1 day timeout
-                                 shell=True)
-        else: # linux 
-            e_ = subprocess.call(f'python3 main.py {self.xml_input_filename} > temp.txt',
-                                 timeout=86400, # 1 day timeout
-                                 shell=True)
-        printf(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]: ",
-              time() - c_time," (s)")
-        
-        ## copy the hamiltonian file to the main folder
-        hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
-        test_count_ = 0
-        for fl_ext in OutputFileTypes.members():
-            if self.hamil_filename+fl_ext in os.listdir(TBME_RESULT_FOLDER):
-                shutil.copy(hamil_path + fl_ext,     '..')
-                test_count_ += 1
-        if test_count_ == 0: 
-            printf(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
-        
+        try:
+            c_time = time()
+            printf(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
+            if os.getcwd().startswith('C:'):
+                py3 = 'C:/ProgramData/anaconda3/python.exe'
+                e_ = subprocess.call(f'{py3} main.py {self.xml_input_filename} > temp.txt',
+                                     timeout= self._getDefaultTimeOut(),
+                                     shell=True)
+            else: # linux 
+                e_ = subprocess.call(f'python3 main.py {self.xml_input_filename} > temp.txt',
+                                     timeout= self._getDefaultTimeOut(),
+                                     shell=True)
+            printf(f"    ** [DONE] Run [{TBME_SUITE}] for [{self.xml_input_filename}]: ",
+                  time() - c_time," (s)")
+            
+            ## copy the hamiltonian file to the main folder
+            hamil_path = TBME_RESULT_FOLDER + self.hamil_filename
+            test_count_ = 0
+            for fl_ext in OutputFileTypes.members():
+                if self.hamil_filename+fl_ext in os.listdir(TBME_RESULT_FOLDER):
+                    shutil.copy(hamil_path + fl_ext,     '..')
+                    test_count_ += 1
+            if test_count_ == 0: 
+                printf(f"    ** [WARNING] Could not find the hamil files for [{hamil_path}]")
+        except BaseException as e:
+            printf(f"Error while computing 2BME: *******\n{e}\n*** EOException *******")
         os.chdir('..') # return to the main folder
         
-        
+    def _getDefaultTimeOut(self):
+        """
+        Return default program time for Shells under 7 shells, 
+        ** Note: MZ=10 required in a test over 3 days.
+        """
+        t_deflt = 86400 # 1 day timeout
+        if self.MZmax > 6 or self._sp_states_dim > 170:
+            return (2*t_deflt/9)*((self.MZmax - 6)**2) + t_deflt
+            
+        return t_deflt 
         
 if __name__ == "__main__":
     
