@@ -300,7 +300,7 @@ done"""
         """
         self.hamil = interaction
         if only_diagonal_PAV: 
-            self.jobs_length = number_of_wf
+            self.jobs_length = str(number_of_wf)
         else:
             self.jobs_length = str(number_of_wf * (number_of_wf + 1) // 2)
         

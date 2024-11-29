@@ -22,12 +22,24 @@ if __name__ == '__main__':
     }
     
     interaction_ = 'usdb'
+    N = 5
     interactions = {
         # (2, 2) : interaction_,
-        (10,11): (4, 0, None), 
-        (12,12): (4, 0, None),
-        (12,13): (4, 0, None), 
-        (10,10): (4, 0, None),
+        #( 8, 8): (N, 0, None),
+        #(14,14): (N, 0, None),
+        #(10,10): (N, 0, None),
+        #(10,11): (N, 0, None),
+        #(10,12): (N, 0, None),
+        #(10,14): (N, 0, None),
+        #(10,16): (N, 0, None),
+        #(12,12): (N, 0, None),
+        #(12,13): (N, 0, None),
+        #(12,15): (N, 0, None),
+        (14,15): (N, 0, None),
+        (16,16): (N, 0, None),
+        (16,17): (N, 0, None),
+        (18,18): (N, 0, None),
+        (18,19): (N, 0, None),
     }
     if os.getcwd().startswith('C:'):
         interactions = { (10, 11) : 'B1_MZ4', (12, 12) : 'B1_MZ4', }
@@ -36,12 +48,12 @@ if __name__ == '__main__':
     
     ## !! DO NOT CHANGE THE ORDER OF THESE CONSTRAINTS.
     PAIR_CONSTRS = {
-        # InputTaurus.ConstrEnum.P_T00_J10   : (-0.01, 0.8, 10),
+        InputTaurus.ConstrEnum.P_T00_J10   : (-0.01, 0.8, 10),
         # InputTaurus.ConstrEnum.P_T00_J1m1  : (-0.01, 0.8, 10),
         # InputTaurus.ConstrEnum.P_T00_J1p1  : (-0.01, 0.8, 10),
-        # InputTaurus.ConstrEnum.P_T10_J00   : (-0.01, 0.8, 10),
+        # InputTaurus.ConstrEnum.P_T10_J00   : (-0.8, 0.8, 10),
         # InputTaurus.ConstrEnum.P_T1m1_J00  : (-0.05, 0.8, 10),
-        # InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.01, 0.8, 10),        
+        InputTaurus.ConstrEnum.P_T1p1_J00  : (-0.01, 0.8, 10),        
     }
     constr_onrun = {
         # InputTaurus.ConstrEnum.P_T00_J10   : 0.0,
@@ -52,12 +64,13 @@ if __name__ == '__main__':
         # InputTaurus.ConstrEnum.P_T1p1_J00  : 0.0,
     }
     
-    SetUpStoredWFAndHamiltonian.setUpMainFolder('SEEDS_HFB_ZNK')
+    SetUpStoredWFAndHamiltonian.setUpMainFolder('SEEDS_HFBS0_ZNK')
     
     run_pair_surfaces_2d(
         nucleus, interactions, PAIR_CONSTRS,
-        gogny_interaction=GognyEnum.B1, ROmega=(0,0), convergences=0,
-        seed_base=1, valid_Ks_to_block=[1, 3, 5,],
+        gogny_interaction=GognyEnum.B1, ROmega=(0,0), 
+        convergences=0, seed_base=1, ## put to 0, 1 to start from seeds
+        valid_Ks_to_block=[],
         fomenko_points=(1, 1), 
         sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
         **constr_onrun
