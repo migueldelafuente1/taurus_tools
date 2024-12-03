@@ -102,7 +102,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000 if not vap_ else 7000,
-            InputTaurus.ArgsEnum.grad_type: 2 if 1 in (z%2, n%2) else 1,
+            InputTaurus.ArgsEnum.grad_type: 2,
             InputTaurus.ArgsEnum.grad_tol : 0.002,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
@@ -115,7 +115,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 2500 if not vap_ else 7000,
-            InputTaurus.ArgsEnum.grad_type: 2 if 1 in (z%2, n%2) else 1,
+            InputTaurus.ArgsEnum.grad_type: 2,
             InputTaurus.ArgsEnum.grad_tol : 0.002,
             **constr_onrun
         }
