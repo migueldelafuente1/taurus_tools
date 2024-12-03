@@ -44,6 +44,7 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
                                     odd calculations requires to put [0,]
         :axial_calc:      <bool>
     """
+    vap_ = sum(fomenko_points) > 2
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
@@ -100,9 +101,9 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
-            InputTaurus.ArgsEnum.iterations: 1000,
-            InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.001,
+            InputTaurus.ArgsEnum.iterations: 1000 if not vap_ else 7000,
+            InputTaurus.ArgsEnum.grad_type: 2 if 1 in (z%2, n%2) else 1,
+            InputTaurus.ArgsEnum.grad_tol : 0.002,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
             **constr_onrun
@@ -113,9 +114,9 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 2500,
-            InputTaurus.ArgsEnum.grad_type: 1,
-            InputTaurus.ArgsEnum.grad_tol : 0.005,
+            InputTaurus.ArgsEnum.iterations: 2500 if not vap_ else 7000,
+            InputTaurus.ArgsEnum.grad_type: 2 if 1 in (z%2, n%2) else 1,
+            InputTaurus.ArgsEnum.grad_tol : 0.002,
             **constr_onrun
         }
         
