@@ -751,7 +751,7 @@ class _Base1DTaurusExecutor(object):
         if self.inputObj: 
             keep_axial = self.axialSymetryRequired # True #
             if base_execution: keep_axial = self._base_seed_type in (2, 3, 9)
-            case_ok = bool(np.random.randint(0,2))
+            case_ok = True # bool(np.random.randint(0,2))
             print("                                            case_ok=",case_ok)
             dat = _TestingTaurusOutputGenerator(self.inputObj,
                                                 case_ok=case_ok, case_broken=False,

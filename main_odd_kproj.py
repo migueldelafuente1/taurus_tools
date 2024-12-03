@@ -21,7 +21,7 @@ if __name__ == '__main__':
     
     if os.getcwd().startswith('C:'):   ## TESTING
         interactions_B1 = {(2, 1): (3, 0, None), (2, 3): (2, 0, None),}
-        interactions_B1 = {(1, 0): 'B1_MZ3', }
+        interactions_B1 = {(15, 14): 'B1_MZ4', }
         # interactions_B1 = {( 1, 12): 'SDPF_MIX_J', }
     else:
         

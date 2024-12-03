@@ -502,8 +502,17 @@ def run_b20_FalseOdd_exampleAllSpForKIndependly(nucleus, interactions, gogny_int
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
         }
-        input_args_projection = {}
-        
+        input_args_projection = {**vap_args, 
+            InputTaurusPAV.ArgsEnum.red_hamil : 1,
+            InputTaurusPAV.ArgsEnum.alpha : 13,
+            InputTaurusPAV.ArgsEnum.beta  : 20,
+            InputTaurusPAV.ArgsEnum.gamma : 13,
+            InputTaurusPAV.ArgsEnum.empty_states : 0,
+            InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0,
+            InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,
+            # PN-PAV and J bound arguments set by the program, P-PAV = no
+        }
+                
         __ExeB20BlockingClass.EXPORT_LIST_RESULTS = \
             f"export_TESb20_z{z}n{n}_{interaction}.txt"
         try:

@@ -91,6 +91,7 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
         """
         
         valid_states_KP = set()
+        setup_sp_obj = self._sp_states_obj.__len__() == 0
         for sp_ in range(1, self._sp_dim +1):
             i = 0
             for sh_, deg in self._sp_states.items():
@@ -99,11 +100,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 if (-1)**l == self.PARITY_TO_BLOCK:
                     valid_states_KP.add(j) ## add the jz max = K
                 
-                for mj in range(j, -j -1, -2):
-                    i += 1
-                    if i == sp_:
-                        assert not sp_ in self._sp_states_obj, "Already found"
-                        self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
+                if setup_sp_obj:
+                    for mj in range(j, -j -1, -2):
+                        i += 1
+                        if i == sp_:
+                            assert not sp_ in self._sp_states_obj, "Already found"
+                            self._sp_states_obj[sp_] = QN_1body_jj(n, l, j, mj)
         
         ## organization only sorted: in the range of valid j
         # self._valid_Ks = [k for k in range(-self._sp_2jmax, self._sp_2jmax+1, 2)]
@@ -734,7 +736,11 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             if not dont_select:
                 dst = '/BU_states_d{}K{}'.format(self._curr_deform_index,
                                                  self._current_K)
-                shutil.copytree(self._container.BU_folder, self.DTYPE.BU_folder+dst)
+                if not os.path.exists(self._container.BU_folder):
+                    shutil.copytree(self._container.BU_folder, self.DTYPE.BU_folder+dst)
+                else:
+                    for f in os.listdir(self._container.BU_folder):
+                        shutil.copy(self._container.BU_folder+f'/{f}', self.DTYPE.BU_folder+dst)
         else:
             printf(" [No Result] found, PAV and coping ignored.")
             
