@@ -51,15 +51,15 @@ if __name__ == '__main__':
         #         printf()
         interactions_B1 = {}
         inter_ = (4, 0, None)
-        inter_ = 'usdb_JF27' # 'SDPF_MIX_J' 
+        # inter_ = 'usdb_JF27' # 'SDPF_MIX_J' 
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([(( 9, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((11, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([((12,11+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((13,10+ 2*i), inter_) for i in range(0, 6)])
         #interactions_B1 = dict([((15, 8+ 2*i), inter_) for i in range(0, 6)])
-        #interactions_B1 = {(11,11): inter_ }
-        interactions_B1 = {( 1, 12): 'usdb_JF29', ( 1, 10): 'usdb_JF27', }
+        interactions_B1 = {(15,14): inter_ }
+        # interactions_B1 = {( 1, 12): 'usdb_JF29', ( 1, 10): 'usdb_JF27', }
     
     class __CASES:
         _0 = 'exe_surf_allK_base_noPAV' # doesnt do all-sp per K (all K)
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         _5 = 'exe_example_OO_convergences'  # evaluates all possible sp-blocks-vap mins
     
     ## SELECT HERE ****
-    _case = __CASES._2
+    _case = __CASES._3
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -100,14 +100,14 @@ if __name__ == '__main__':
         ## KMIXING execution
         args = (nucleus, interactions_B1, GognyEnum.B1)
         kwargs = dict(
-            valid_Ks = [1, 3, 5,], # 
+            valid_Ks = [1, 3, 5, 7, 9], # 
             # valid_Ks = [0, 2, 4],
             seed_base=3, ROmega=(0,0),
-            q_min=-0.3, q_max=0.3, N_max=13, convergences=0,   ## 0.6, 25
+            q_min=-0.7, q_max=0.8, N_max=13, convergences=6,   ## 0.6, 25
             parity_2_block=1,
-            fomenko_points=(11, 11),
+            fomenko_points=(9, 9),
             preconverge_blocking_sts=False, # 10,
-            find_Kfor_all_sps = 3, #True
+            find_Kfor_all_sps = True,
         )
         run_b20_FalseOdd_Kmixing(*args, **kwargs)
         #=======================================================================
@@ -115,12 +115,12 @@ if __name__ == '__main__':
         ## TEST execute for all sp in K independently and store results
         args = (nucleus, interactions_B1, GognyEnum.B1)
         kwargs = dict(
-            valid_Ks = [1, 3, 5, 7], # 
+            valid_Ks = [1, 3, 5, 7, 9], # 
             # valid_Ks = [0, 2, 4],
             seed_base=3, ROmega=(0,0),
-            q_min=-0.7, q_max=0.7, N_max=3, convergences=0,   ## 0.6, 25
+            q_min=-0.7, q_max=0.8, N_max=43, convergences=5,   ## 0.6, 25
             parity_2_block=1,
-            fomenko_points=(7, 7),
+            fomenko_points=(9, 9),
             preconverge_blocking_sts=False, # 10,
             find_Kfor_all_sps = True
         )
