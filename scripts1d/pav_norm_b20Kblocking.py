@@ -274,7 +274,8 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                         if os.getcwd().startswith('C') : os.chdir('..')
                     except BaseException as e:
                         printf("      [Error] PAV-HFB not obtained ")
-                        shutil.move(out_fn, f"broken-{out_fn}²")
+                        shutil.move(out_fn, f"broken-{out_fn}")
+                        out_fn = f"broken-{out_fn}"
                         if os.getcwd().startswith('C') : os.chdir('..')
                 
                     ## save PAV files
