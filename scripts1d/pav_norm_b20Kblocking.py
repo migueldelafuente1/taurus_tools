@@ -348,9 +348,18 @@ def _auxWindows_executeProgram_PAV(output_fn):
         with open(output_fn, 'w+') as f:
             f.write(txt)
 
-if __name__ == '__main__':
+def run_b20_calculatePAVnormForKindependently(nuclei, valid_Ks=[]):
+    """
+    Over results evaluated for many blocked states (independently from a False OE)
+    calculate the norm between the contiguos deformations - qp.
     
-    os.chdir('../') # this script is not in the main folder
+    # Notes:
+        1. sorting order from oblate to prolate (1st oblate excluded)
+        2. In case of tuplet, the reference state for the next step is the one with 
+        larger norm in the tuplet.
+    """
+    
+    #os.chdir('../') # this script is not in the main folder
     
     importAndCompile_taurus(use_dens_taurus=False, pav=True,
                             force_compilation=not os.path.exists('taurus_pav.exe'))
@@ -370,10 +379,15 @@ if __name__ == '__main__':
         InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,
         # PN-PAV and J bound arguments set by the program, P-PAV = no
     }
+    if os.getcwd().startswith('C'):
+        MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/Mg/' 
+    else: 
+        MAIN_FLD = ''
     
-    
-    MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/Mg/'
-    EvaluatePAVNormOver1dByKforAllQuasiparticles.setUpPAVparameters(**input_args_projection)
-    EvaluatePAVNormOver1dByKforAllQuasiparticles(12,13,'B1_MZ4', [1,3,5], MAIN_FLD)
+    for zn, inter in nuclei.items():
+        EvaluatePAVNormOver1dByKforAllQuasiparticles.setUpPAVparameters(**input_args_projection)
+        EvaluatePAVNormOver1dByKforAllQuasiparticles(*zn, inter, valid_Ks, MAIN_FLD)
+        
+        printf(" Finished the PAV norm evaluation z,n=", zn,"!")
     
     
