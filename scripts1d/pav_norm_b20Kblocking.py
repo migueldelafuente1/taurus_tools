@@ -219,7 +219,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         for tail_ in OutputFileTypes.members():
             if not os.path.exists(fld_ / f'{self.inter}{tail_}'): continue
             shutil.copy(fld_ / f'{self.inter}{tail_}', exe_fld)
-        shutil.copy('taurus_pav.exe', exe_fld)
+        if exe_fld != Path(): shutil.copy('taurus_pav.exe', exe_fld)
         
         INP_FN = 'aux_pav.INP'
         
@@ -239,11 +239,13 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
             
             self.norms[K] = dict()
             self.pav_results[K] = dict()
+            printf(f"  Running K={K}")
             for k_b20, b20 in self.b20_K_sorted[K][1:]:
                 # copy contiguous wf.
                 self.norms[K][k_b20] = []
                 self.pav_results[K][k_b20] = []
                 _create_BU_fld = len(self.surfaces[K][k_b20]) > 1
+                printf(f"    <{b20_ref} | {b20:5.3f}> : ")
                 if _create_BU_fld: 
                     bu_sts = self._createBUstatesForMultiMinima(K, k_b20)
                 
@@ -267,9 +269,11 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                         self.norms[K][k_b20].append(norm_i)
                         self.pav_results[K][k_b20].append(deepcopy(obj))
                         
+                        printf(f"      = {norm_i:5.3f} [OK]")
+                        
                         if os.getcwd().startswith('C') : os.chdir('..')
                     except BaseException as e:
-                        printf("[Error] calculation ")
+                        printf("      [Error] PAV-HFB not obtained ")
                         shutil.move(out_fn, f"broken-{out_fn}²")
                         if os.getcwd().startswith('C') : os.chdir('..')
                 

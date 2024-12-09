@@ -73,7 +73,7 @@ if __name__ == '__main__':
         _6 = 'pav_norm_eval_from_allBlockKsurf' # Once evaluated case 'exe_example_allblockKsurf'
     
     ## SELECT HERE ****
-    _case = __CASES._3
+    _case = __CASES._6
      
     nucleus = sorted(list(interactions_B1.keys()))
     
