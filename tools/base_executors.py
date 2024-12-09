@@ -751,8 +751,9 @@ class _Base1DTaurusExecutor(object):
         if self.inputObj: 
             keep_axial = self.axialSymetryRequired # True #
             if base_execution: keep_axial = self._base_seed_type in (2, 3, 9)
-            case_ok = True # bool(np.random.randint(0,2))
-            print("                                            case_ok=",case_ok)
+            case_ok = True # bool(np.random.randint(0,2)) #
+            case_rand=True
+            print(" "*45, " :: case_ok=",case_ok, " random E-hfb=", case_rand)
             dat = _TestingTaurusOutputGenerator(self.inputObj,
                                                 case_ok=case_ok, case_broken=False,
                                                 keep_axial=keep_axial)
@@ -781,7 +782,8 @@ class _Base1DTaurusExecutor(object):
                     K = sum(st_sp) 
                     # K = sum([self._sp_states_obj[s].m for s in sp_])
             dat.setUpOutput(constraints = self.CONSTRAINT, 
-                            minimum_def = deepcopy(self._deform_base), K = K)
+                            minimum_def = deepcopy(self._deform_base), K = K, 
+                            randomize   = case_rand)
             # with open(output_fn, 'w+') as f:
             txt = dat.getOutputFile()
         else:

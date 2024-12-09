@@ -2151,7 +2151,7 @@ class _TestingTaurusOutputGenerator():
     def _update_madeUpDT(cls, data_obj : DataTaurus):
         cls.__windows_madeUpDT = data_obj
         
-    def setUpOutput(self, constraints = [], minimum_def = [], K=0):
+    def setUpOutput(self, constraints = [], minimum_def = [], K=0, randomize=False):
         """
         Set up certain properties such as K or the energy as a function of 
         constraints.
@@ -2162,6 +2162,7 @@ class _TestingTaurusOutputGenerator():
         
         self.constraints = constraints
         self.minimum_def = minimum_def
+        self.randomizeEhfb = randomize
         
         if not all(self.minimum_def):
             ## Cases where we build the 
@@ -2235,8 +2236,10 @@ class _TestingTaurusOutputGenerator():
             if cnstr.startswith('P_T'):
                 self._E_kpt_var[1]  += (x - x_0)**2
             
+            rand_ener = np.random.random()*0.5 if self.randomizeEhfb else 0
+            
             ## lets asume for the x_0 for being the minimum
-            self._E_kpt_var[2]  += (x - x_0)**2
+            self._E_kpt_var[2]  += (x - x_0)**2 + rand_ener
             self.minimum_def[ic] = x_0
     
     def _get_iteration_block(self):

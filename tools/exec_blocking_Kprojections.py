@@ -737,10 +737,9 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 dst = '/BU_states_d{}K{}'.format(self._curr_deform_index,
                                                  self._current_K)
                 if not os.path.exists(self._container.BU_folder):
-                    shutil.copytree(self._container.BU_folder, self.DTYPE.BU_folder+dst)
-                else:
-                    for f in os.listdir(self._container.BU_folder):
-                        shutil.copy(self._container.BU_folder+f'/{f}', self.DTYPE.BU_folder+dst)
+                    printf("  [PROBLEM] BU-container folder not present!!, got",
+                           f"[{self._container.BU_folder}] . SKIPPING")
+                shutil.copytree(self._container.BU_folder, self.DTYPE.BU_folder+dst)
         else:
             printf(" [No Result] found, PAV and coping ignored.")
             

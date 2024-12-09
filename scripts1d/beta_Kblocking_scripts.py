@@ -149,6 +149,7 @@ def run_b20_FalseOE_Kprojections_Gogny(nucleus, interactions, gogny_interaction,
         }        
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurusPAV.ArgsEnum.com: 1,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
@@ -259,6 +260,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
             IArgsEnum.seed: 1,
+            IArgsEnum.com:  1,
             IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
             IArgsEnum.eta_grad : 0.015,
@@ -272,6 +274,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
+            InputTaurusPAV.ArgsEnum.com: 1,
             InputTaurusPAV.ArgsEnum.alpha : 13,
             InputTaurusPAV.ArgsEnum.beta  : 20,
             InputTaurusPAV.ArgsEnum.gamma : 13,
@@ -382,6 +385,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
         }
         input_args_onrun = {**vap_args, 
             IArgsEnum.red_hamil: 1,
+            IArgsEnum.com:  1,
             IArgsEnum.seed: 1,
             IArgsEnum.iterations: 1500,
             IArgsEnum.grad_type: 1,
@@ -395,6 +399,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
+            InputTaurusPAV.ArgsEnum.com: 1,
             InputTaurusPAV.ArgsEnum.alpha : 13,
             InputTaurusPAV.ArgsEnum.beta  : 20,
             InputTaurusPAV.ArgsEnum.gamma : 13,
@@ -503,6 +508,7 @@ def run_b20_FalseOdd_exampleAllSpForKIndependly(nucleus, interactions, gogny_int
             IArgsEnum.seed: 1,
         }
         input_args_projection = {**vap_args, 
+            InputTaurusPAV.ArgsEnum.com: 1,
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
             InputTaurusPAV.ArgsEnum.alpha : 13,
             InputTaurusPAV.ArgsEnum.beta  : 20,
@@ -612,7 +618,8 @@ def run_b20_testOO_Kmixing4AllCombinations(
         #InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
         'axial_calc' : axial_calc,
     }
-    input_args_onrun = {**vap_args, 
+    input_args_onrun = {**vap_args,
+        IArgsEnum.com : 1, 
         IArgsEnum.red_hamil: 1,
         IArgsEnum.seed: 1,
         IArgsEnum.iterations: 1500,
