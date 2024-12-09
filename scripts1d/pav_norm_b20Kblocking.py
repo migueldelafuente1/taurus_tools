@@ -240,21 +240,25 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
             self.norms[K] = dict()
             self.pav_results[K] = dict()
             printf(f"  Running K={K}")
+            printf("       >> new-ref state:", self.surfaces[K][k_b20_ref][0])
             for k_b20, b20 in self.b20_K_sorted[K][1:]:
                 # copy contiguous wf.
                 self.norms[K][k_b20] = []
                 self.pav_results[K][k_b20] = []
                 _create_BU_fld = len(self.surfaces[K][k_b20]) > 1
-                printf(f"    <{b20_ref} | {b20:5.3f}> : ")
+                
                 if _create_BU_fld: 
                     bu_sts = self._createBUstatesForMultiMinima(K, k_b20)
                 
+                _lenqp = len(self.surf_b20_qp[K][k_b20])
                 for i, kb20i_pth in enumerate(self.surfaces[K][k_b20]):
                     shutil.copy(kb20i_pth, exe_fld / 'right_wf.bin')
                     
+                    printf(f"    <{b20_ref} | {b20:5.3f}> : ", kb20i_pth)
+                    
                     os.chdir(exe_fld)
-                    args = K, i, b20_ref, k_b20.replace("_","-")
-                    out_fn = 'overlap_K{}_{}_{}_{}'.format(*args)
+                    args = K, self.surf_b20_qp[K][k_b20][i], b20_ref, k_b20.replace("_","-")
+                    out_fn = 'overlap_K{}_qp{}_{}_{}'.format(*args)
                     with open(INP_FN, 'w+') as f: f.write(self.input_pav.getText4file())
                     try:
                         # run PAV
@@ -269,15 +273,17 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                         self.norms[K][k_b20].append(norm_i)
                         self.pav_results[K][k_b20].append(deepcopy(obj))
                         
-                        printf(f"      = {norm_i:5.3f} [OK]")
+                        printf(f"      = {norm_i:5.3f} [OK] i:",i,_lenqp)
                         
-                        if os.getcwd().startswith('C') : os.chdir('..')
                     except BaseException as e:
-                        printf("      [Error] PAV-HFB not obtained ")
+                        printf("      [Error] PAV-HFB not obtained i:", i, _lenqp)
+                        self.norms[K][k_b20].append(0.0)
+                        self.pav_results[K][k_b20].append(None)
+                        
                         shutil.move(out_fn, f"broken-{out_fn}")
                         out_fn = f"broken-{out_fn}"
-                        if os.getcwd().startswith('C') : os.chdir('..')
-                
+                        
+                    if os.getcwd().startswith('C') : os.chdir('..')
                     ## save PAV files
                     if _create_BU_fld:
                         shutil.copy(exe_fld/out_fn, bu_sts)
@@ -289,6 +295,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 i = self.norms[K][k_b20].index(Nmin)
                 
                 b20_ref = b20
+                if _lenqp > 1: printf("       >> new-ref state:", self.surfaces[K][k_b20][i])
                 shutil.copy(self.surfaces[K][k_b20][i], exe_fld / 'left_wf.bin')    
     
     def _createBUstatesForMultiMinima(self, K, k_b20):

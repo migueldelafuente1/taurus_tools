@@ -176,8 +176,8 @@ if __name__ == '__main__':
         run_b20_testOO_Kmixing4AllCombinations(*args, **kwargs)
         #=======================================================================
     elif _case == __CASES._6:
-        nucleus = {(15,14): 'B1_MZ4'}
-        valid_Ks=[1,3,5]
+        nucleus = {(15,14): 'B1_MZ4',} # (12,13):'B1_MZ4', }#
+        valid_Ks=[1,3,5,7,9]
         run_b20_calculatePAVnormForKindependently(nucleus, valid_Ks)
         
     printf("END OF SUITE.")
