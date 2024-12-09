@@ -431,7 +431,7 @@ class _Base1DTaurusExecutor(object):
                 deform_oblate.append(q)
             else:
                 deform_oblate.append(p_min)
-        q = q
+        q = q0
         while (q < p_max):
             q = q + dq
             if  (q < p_max):
@@ -752,7 +752,7 @@ class _Base1DTaurusExecutor(object):
             keep_axial = self.axialSymetryRequired # True #
             if base_execution: keep_axial = self._base_seed_type in (2, 3, 9)
             case_ok = True # bool(np.random.randint(0,2)) #
-            case_rand=True
+            case_rand=all([bool(np.random.randint(0,2)) for _ in range(3)])
             print(" "*45, " :: case_ok=",case_ok, " random E-hfb=", case_rand)
             dat = _TestingTaurusOutputGenerator(self.inputObj,
                                                 case_ok=case_ok, case_broken=False,
