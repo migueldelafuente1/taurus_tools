@@ -387,7 +387,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             IArgsEnum.red_hamil: 1,
             IArgsEnum.com:  1,
             IArgsEnum.seed: 1,
-            IArgsEnum.iterations: 1500,
+            IArgsEnum.iterations: 2500,
             IArgsEnum.grad_type: 1,
             IArgsEnum.eta_grad : 0.015,
             IArgsEnum.mu_grad  : 0.02, # 0.5
