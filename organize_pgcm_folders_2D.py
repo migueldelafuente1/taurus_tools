@@ -74,7 +74,6 @@ def sort_by_deformation_naming_nDim(def_list_0):
     for x, args in defs_2d:
         indx_ = [keys_[i].index(args[i]) for i in range(dim_)]
         indx_ = [k * prod(def_dimens[i+1:]) for i, k in enumerate(indx_)]
-        print(args, indx_, sum(indx_))
         indx_ = sum(indx_)
         sorted_list.append( (indx_, x) )
         
@@ -217,7 +216,7 @@ def oe_PAV_diagonal_2dimPNpairing_vap(K_list, PAIR_CONSTRS, MAIN_FLD,
             if not (z,n) in path_migration: path_migration[(z,n)] = []
             if not (z,n) in nuclei_by_K_found: nuclei_by_K_found[(z,n)] = {}
             fld_kvap = fld_bu / BU_KVAP 
-            if not fld_kvap.exists(): print(f" [Error] K,P ={K},{PPP} folder not present Z,N:{z},{n}")
+            if not fld_kvap.exists(): print(f" [Error] K,P ={K},{PPP} folder not present Z,N: {z},{n}")
             nuclei_by_K_found[(z,n)][(K, PPP)] = fld_kvap.exists()
             
             def_list = filter(lambda x: x.endswith('.bin'), os.listdir(fld_kvap))
@@ -354,6 +353,7 @@ if __name__ == '__main__':
     kwargs  = {'parity':par_, 'PNP_fomenko':7, 'Jmin_max':(1,11), 'RUN_SBATCH':True}
     MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/Mg/'
     MAIN_FLD = 'DATA_RESULTS/SD_Odd_pnPairing/HFB_S0MZ5/P_T00_J10/' # testing WIN
+    
     MAIN_FLD = 'results/HFB_S0MZ5/P_T00_J10/'
     MAIN_FLD = 'results/HFB_S0MZ5/P_T10_J00/'
     

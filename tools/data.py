@@ -2236,8 +2236,9 @@ class _TestingTaurusOutputGenerator():
             if cnstr.startswith('P_T'):
                 self._E_kpt_var[1]  += (x - x_0)**2
             
-            rand_ener = np.random.random()*0.5 if self.randomizeEhfb else 0
-            
+            rand_ener = np.random.random()* 2 if self.randomizeEhfb else 0
+            if self.randomizeEhfb: 
+                _ = 0
             ## lets asume for the x_0 for being the minimum
             self._E_kpt_var[2]  += (x - x_0)**2 + rand_ener
             self.minimum_def[ic] = x_0

@@ -340,12 +340,13 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
             for b20_k, b20 in self.b20_K_sorted[K][1:]:
                 indx = self.deform_index_by_K[K][b20_k[:-4]]
                 
-                line = f'{indx}: {b20:5.3} ##'
+                line = f'{indx}: {b20:5.3}{OUTPUT_HEADER_SEPARATOR}'
                 vals = []
                 for i in range(len(self.energies[K][b20_k])):
+                    qp    = self.surf_b20_qp[K][b20_k][i]
                     ener  = self.energies[K][b20_k][i]
                     norm  = self.norms   [K][b20_k][i]
-                    vals.append(f'{ener:8.4f} : {norm:5.3f}')
+                    vals.append(f'{qp} : {ener:8.4f} : {norm:5.3f}')
                 vals = ','.join(vals)
                 lines.append(line + vals)
             
@@ -421,7 +422,7 @@ class EvaluatePAVNormOver1dByKforStandardCalculation(EvaluatePAVNormOver1dByKfor
                 if not k_b20 in self.surf_b20[K]:
                     self.surf_b20[K][k_b20] = self.b20_K_sorted[K][1]
                     self.surfaces[K][k_b20] = [fld_k / f"{bin_k_b20}", ]
-                    self.surf_b20_qp[K][k_b20] = [1, ]
+                    self.surf_b20_qp[K][k_b20] = [0, ]
                     self.energies[K][k_b20] = [Ehfb, ]
                     self.results [K][k_b20] = [deepcopy(obj), ]
             
@@ -435,7 +436,7 @@ class EvaluatePAVNormOver1dByKforStandardCalculation(EvaluatePAVNormOver1dByKfor
                 bu_sts_p = self.bu_folder / bu_sts
                 
                 files_ = filter(lambda x: x.endswith('.OUT'),os.listdir(bu_sts_p))
-                files_ = list(files_)
+                files_ = list  (files_)
                 
                 for k_b20, idx2 in self.deform_index_by_K[K].items():
                     if idx2 == idx: break
