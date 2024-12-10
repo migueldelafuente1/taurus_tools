@@ -104,6 +104,21 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 printf("  *",i+1, args)
         _ = 0
     
+    def _clearanceOfBUstatesFolders(self):
+        """
+        This operation is required for all qp blocking separated in folders,
+        the program will refresh the BU folders to be constructed from differtnt
+        Energies depending in the blocked state.
+        """
+        
+        bu_flds = os.listdir(self.bu_folder)
+        bu_flds = filter(lambda x: os.path.isdir(self.bu_folder / x), bu_flds )
+        bu_flds = filter(lambda x: x.startswith('BU_states_d'), bu_flds)
+        printf("  Cleaning BU-states folders.")
+        for fld_ in bu_flds:
+            printf("  Cleaning BU-states folders: ", fld_)
+            shutil.rmtree(self.bu_folder / fld_)
+    
     def _processData(self):
         """ """
         self.b20_K_sorted = {}
@@ -115,14 +130,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         self.deform_index_by_K = dict([(K, dict()) for K in self.valid_Ks])
         
         ## clear BU_deform folders if exists
-        _ = 0
-        bu_flds = os.listdir(self.bu_folder)
-        bu_flds = filter(lambda x: os.path.isdir(self.bu_folder / x), bu_flds )
-        bu_flds = filter(lambda x: x.startswith('BU_states_d'), bu_flds)
-        printf("  Cleaning BU-states folders.")
-        for fld_ in bu_flds:
-            printf("  Cleaning BU-states folders: ", fld_)
-            shutil.rmtree(self.bu_folder / fld_)
+        self._clearanceOfBUstatesFolders()
         
         self._processExportFileForTheDeformIndexes()
         printf("")
@@ -286,7 +294,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                     if os.getcwd().startswith('C') : os.chdir('..')
                     ## save PAV files
                     if _create_BU_fld:
-                        shutil.copy(exe_fld/out_fn, bu_sts)
+                        self._moveBUstatesForMultiMinima(exe_fld/out_fn, bu_sts)
                     shutil.move(exe_fld / out_fn, bu_k_fld)
                     
                 # if several compare and stablish the next b20_ref as left_wf
@@ -319,7 +327,10 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 shutil.copy(parent / f, bu_sts_fld / f"{dat_}_{head_}.dat")
         
         return bu_sts_fld
-        
+    
+    def _moveBUstatesForMultiMinima(self, src_fn, bu_sts):
+        """ src_fn = exe_fld/out_fn """
+        shutil.copy(src_fn, bu_sts)
     
     def _exportNorms(self):
         
@@ -342,7 +353,121 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
             with open(bu_k_fld / 'norm_overlaps.txt', 'w+') as f:
                 f.write('\n'.join(lines))
             printf(f" ! Exported data K={K} in {bu_k_fld / 'norm_overlaps.txt'}")
+
+class EvaluatePAVNormOver1dByKforStandardCalculation(EvaluatePAVNormOver1dByKforAllQuasiparticles):
+    
+    """
+    Same as EvaluatePAVNormOver1dByKforAllQuasiparticles but for a usual multiK 
+    evaluation:
+        Not all the QP have to be blocked independently, and the QP global folder
+        does not exists
+        
+    * The change in storaging folders goes in BU_states_d[defindex]K[K] that identify
+        the quasiparticle,
+    * All other valid converging states goes to the same minimum stored as usual (deform.*extension)
+    
+    BU_folder_B1_MZ4_z12n13/
+        1_0_VAP/
+            0.125.bin 0.125.OUT canonicalbasis_0.125.dat ...
+            0.333.bin 0.333.bin canonicalbasis_0.333.dat ...
+            export_TESb20_K1_z15n14_B1_MZ4.txt
+        BU_states_d-5K1/
+            repeated files with prefix: (*)sp[qp]_d[def_index]K[K].**
+            (*) = eigenbasis_h_, canonicalbasis_, occupation_numbers_ ...
+            **  = .OUT, .bin, .dat
+        
+    """
+    
+    def _processData(self):
+        """ """
+        self.b20_K_sorted = {}
+        self.surf_b20 = dict()
+        self.surfaces = dict()
+        self.surf_b20_qp = dict()
+        self.energies = dict()
+        self.results  = dict()
+        self.deform_index_by_K = dict([(K, dict()) for K in self.valid_Ks])
+        
+        set_EN_tuplets = filter(lambda x: x.startswith('BU_states_'), 
+                                os.listdir(self.bu_folder))
+        set_EN_tuplets = list(set_EN_tuplets)
+        
+        for K in self.valid_Ks:
+            printf(" Getting data for K",K)
+            self.surf_b20[K] = dict()
+            self.surfaces[K] = dict()
+            self.surf_b20_qp[K] = dict()
+            self.energies[K] = dict()
+            self.results [K] = dict()
+            fld_k = self.bu_folder / f"{K}_0_VAP/"
+            
+            self._processExportFileForTheDeformIndexes(K)
+            list_out = map(lambda x: x+'.OUT', self.deform_index_by_K[K].keys())
+            self.b20_K_sorted[K] = self._sort_deforms(list_out)
+            ## read the converged-selected values, as list
+            
+            files_ded = []
+            for k_b20, idx in self.deform_index_by_K[K].items():
+                k_b20 = f"{k_b20}.OUT"
+                if not os.path.exists(fld_k / k_b20):
+                    if os.path.exists(fld_k / f"broken_{k_b20}"):
+                        files_ded.append(f"broken_{k_b20}")
+                    printf(f" [WARN] Deformation [{k_b20}] not found or broken. SKIPPING")
+                    continue
+                obj  = DataTaurus(self.z, self.n, fld_k / f"{k_b20}")
+                Ehfb = obj.E_HFB
+                bin_k_b20 = k_b20.replace('.OUT', '.bin')
+                
+                if not k_b20 in self.surf_b20[K]:
+                    self.surf_b20[K][k_b20] = self.b20_K_sorted[K][1]
+                    self.surfaces[K][k_b20] = [fld_k / f"{bin_k_b20}", ]
+                    self.surf_b20_qp[K][k_b20] = [1, ]
+                    self.energies[K][k_b20] = [Ehfb, ]
+                    self.results [K][k_b20] = [deepcopy(obj), ]
+            
+            printf(" ** Broken-uncompleted results in K,qp=",K, list(files_ded))
+            ## Overwrite the with the BU states and the index of qp.
+            for bu_sts in set_EN_tuplets:
+                idx, K2 = bu_sts.replace('BU_states_d','').split('K')
+                idx, K2 = int(idx), int(K2)
+                if K2 != K: continue
+                
+                bu_sts_p = self.bu_folder / bu_sts
+                
+                files_ = filter(lambda x: x.endswith('.OUT'),os.listdir(bu_sts_p))
+                files_ = list(files_)
+                
+                for k_b20, idx2 in self.deform_index_by_K[K].items():
+                    if idx2 == idx: break
+                k_b20 = f"{k_b20}.OUT"
+                
+                self.surfaces[K][k_b20] = []
+                self.surf_b20_qp[K][k_b20] = []
+                self.energies[K][k_b20] = []
+                self.results [K][k_b20] = []
+                
+                for f in files_:
+                    qp = int(f.replace('sp', '').split('_') [0])
                     
+                    obj  = DataTaurus(self.z, self.n, bu_sts_p / f)
+                    Ehfb = obj.E_HFB
+                    bin_k_b20 = f.replace('.OUT', '.bin')
+                    
+                    self.surfaces[K][k_b20]   .append(bu_sts_p / f"{bin_k_b20}")
+                    self.surf_b20_qp[K][k_b20].append(qp)
+                    self.energies[K][k_b20].append(Ehfb)
+                    self.results [K][k_b20].append(deepcopy(obj))
+    
+    def _iteratePAVOverSolutions(self):
+        """ The same procedure, just do not copy into BU-states folders """
+        EvaluatePAVNormOver1dByKforAllQuasiparticles._iteratePAVOverSolutions(self)
+    
+    def _createBUstatesForMultiMinima(self, K, k_b20):
+        return 
+    
+    def _moveBUstatesForMultiMinima(self, src_fn, bu_sts):
+        """ src_fn = exe_fld/out_fn """
+        return
     
 def _auxWindows_executeProgram_PAV(output_fn):
         """ 
@@ -392,7 +517,7 @@ def run_b20_calculatePAVnormForKindependently(nuclei, valid_Ks=[]):
         # PN-PAV and J bound arguments set by the program, P-PAV = no
     }
     if os.getcwd().startswith('C'):
-        MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/Mg/' 
+        MAIN_FLD = 'DATA_RESULTS/SD_Kblocking_multiK/P/' 
     else: 
         MAIN_FLD = ''
     
@@ -401,5 +526,47 @@ def run_b20_calculatePAVnormForKindependently(nuclei, valid_Ks=[]):
         EvaluatePAVNormOver1dByKforAllQuasiparticles(*zn, inter, valid_Ks, MAIN_FLD)
         
         printf(" Finished the PAV norm evaluation z,n=", zn,"!")
+
+def run_b20_calculatePAVnormForStandardRunKBlocking(nuclei, valid_Ks=[]):
+    """
+    Over results evaluated for blocked states considering the tuples from a
+    direct evaluation (from a False OE) from the folders BU_states
+    calculate the norm between the contiguos deformations - qp.
     
+    # Notes:
+        1. sorting order from oblate to prolate (1st oblate excluded)
+        2. In case of tuplet, the reference state for the next step is the one with 
+        larger norm in the tuplet.
+    """
+    
+    #os.chdir('../') # this script is not in the main folder
+    
+    importAndCompile_taurus(use_dens_taurus=False, pav=True,
+                            force_compilation=not os.path.exists('taurus_pav.exe'))
+    
+    input_args_projection = {
+        InputTaurusPAV.ArgsEnum.red_hamil : 0,
+        InputTaurusPAV.ArgsEnum.com   : 1,
+        InputTaurusPAV.ArgsEnum.z_Mphi: 1,
+        InputTaurusPAV.ArgsEnum.n_Mphi: 1,
+        InputTaurusPAV.ArgsEnum.disable_simplifications_NZA: 1,
+        # InputTaurusPAV.ArgsEnum.alpha : 0,
+        # InputTaurusPAV.ArgsEnum.beta  : 0,
+        # InputTaurusPAV.ArgsEnum.gamma : 0,
+        InputTaurusPAV.ArgsEnum.disable_simplifications_JMK: 1,
+        InputTaurusPAV.ArgsEnum.disable_simplifications_P : 1,
+        InputTaurusPAV.ArgsEnum.empty_states : 0,
+        InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,
+        # PN-PAV and J bound arguments set by the program, P-PAV = no
+    }
+    if os.getcwd().startswith('C'):
+        MAIN_FLD = '' #DATA_RESULTS/SD_Kblocking_multiK/P/' 
+    else: 
+        MAIN_FLD = ''
+    
+    for zn, inter in nuclei.items():
+        EvaluatePAVNormOver1dByKforStandardCalculation.setUpPAVparameters(**input_args_projection)
+        EvaluatePAVNormOver1dByKforStandardCalculation(*zn, inter, valid_Ks, MAIN_FLD)
+        
+        printf(" Finished the PAV norm evaluation z,n=", zn,"!")
     

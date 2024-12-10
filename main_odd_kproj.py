@@ -10,7 +10,8 @@ from scripts1d.beta_Kblocking_scripts import \
     run_b20_FalseOdd_Kmixing, run_b20_FalseOE_Kmixing_exampleSingleJ, \
     run_b20_Block1KandPAV_exampleSingleJ, run_b20_testOO_Kmixing4AllCombinations, \
     run_b20_FalseOdd_exampleAllSpForKIndependly
-from scripts1d.pav_norm_b20Kblocking import run_b20_calculatePAVnormForKindependently
+from scripts1d.pav_norm_b20Kblocking import run_b20_calculatePAVnormForKindependently, \
+    run_b20_calculatePAVnormForStandardRunKBlocking
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf
 
@@ -73,7 +74,7 @@ if __name__ == '__main__':
         _6 = 'pav_norm_eval_from_allBlockKsurf' # Once evaluated case 'exe_example_allblockKsurf'
     
     ## SELECT HERE ****
-    _case = __CASES._2
+    _case = __CASES._6
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -108,8 +109,8 @@ if __name__ == '__main__':
             q_min=-0.7, q_max=0.8, N_max=13, convergences=6,   ## 0.6, 25
             parity_2_block=1,
             fomenko_points=(9, 9),
-            preconverge_blocking_sts=4, # 10,
-            find_Kfor_all_sps = True,
+            preconverge_blocking_sts=False, # 10,
+            find_Kfor_all_sps = 4,
         )
         run_b20_FalseOdd_Kmixing(*args, **kwargs)
         #=======================================================================
@@ -178,6 +179,7 @@ if __name__ == '__main__':
     elif _case == __CASES._6:
         nucleus = {(15,14): 'B1_MZ4',} # (12,13):'B1_MZ4', }#
         valid_Ks=[1,3,5,7,9]
-        run_b20_calculatePAVnormForKindependently(nucleus, valid_Ks)
+        run_b20_calculatePAVnormForStandardRunKBlocking(nucleus, valid_Ks)
+        # run_b20_calculatePAVnormForKindependently(nucleus, valid_Ks)
         
     printf("END OF SUITE.")
