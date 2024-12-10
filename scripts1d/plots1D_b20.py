@@ -10,7 +10,8 @@ from pathlib import Path
 
 from tools.plotter_1d import _Plotter1D, Plotter1D_Taurus,\
     Plotter1D_CanonicalBasis
-from tools.helpers import elementNameByZ, printf, OUTPUT_HEADER_SEPARATOR
+from tools.helpers import elementNameByZ, printf, OUTPUT_HEADER_SEPARATOR,\
+    readAntoine, QN_1body_jj
 
 from copy import deepcopy
 from tools.data import DataTaurus, DataTaurusPAV, DataTaurusMIX, \
@@ -30,16 +31,20 @@ if MATPLOTLIB_INSTALLED:
     })
 
 __K_COLORS = ['red', 'blue', 'green', 'magenta', 'cyan', 'yellow', 'black']
+__KJ_COLORS = [
+    []
+    ]
 # __K_LSTYLE = ['-', '--', ':', '-.', ' ', '']*2
 # __K_LSTYLE = ['solid', 'dashed', 'dashdot', 'dotted', 
 #               (0, (1,10)), (0, (5, 5)), (5, (10,3)), (0, (3,5,1,5)), (0, (3,5,1,5,1,5))]
 __K_LSTYLE = ['solid', (0, (5,1)), (5, (10,3)), 'dashed', 'dashdot', 
             (0, (3,1,1,1)), (0, (3,5,1,5)), (0, (5,10)), 'dotted',
             (0, (3,10,1,10)), (0, (3,10,1,10)), (0, (1,10))]
-__J_MARKER = ['.',  'd', 's', 'h', 'v', '^','+',"1", "2", "3", "x"]
+# __J_MARKER = ['.',  'd', 's', 'h', 'v', '^','+',"1", "2", "3", "x"]
+__J_MARKER = ['.',  'P', '*', 'X', 's', 'd', 'p', 'h', 'v', '^','+', "x"]
 
 GLOBAL_TAIL_INTER = ''
-
+INTERACTION_TITLE = ''
 def _getPAVdiagonalFromList(list_dat_file):
     """
     from a list of PAV elements or folders: 1,2,3,4,5,6 get the n elements (3) 
@@ -693,6 +698,7 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
     Jmax_2_plot = 33 if not Jmax_2_plot else Jmax_2_plot
     _hIntKJ = all([k%2 == 1 for k in b20_by_K_and_J.keys()])
     _frac2 = '/2' if _hIntKJ else ''
+    _ALL_Jvals = [2*i + 1 for i in range(10)]
     
     ## Verify the VAP-K surfaces
     if not plot_PAV:
@@ -705,7 +711,7 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
         ax.set_title("V-VAP K blocked preliminary TES")
         plt.show()
     
-    fig, ax = plt.subplots(1, 1, figsize=(10, 6))
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
     # b20_deform = [i-(len(energy_by_J[1])//2) for i in range(len(energy_by_J[1]))]
     # b20_deform = [i for i in range(len(energy_by_J[1]))]
     sp_e_inter_by_K, _1o2IM_inter_by_K, coriolis_coupl_by_K = {}, {}, {}
@@ -723,24 +729,26 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
                 # if b20_deform[K].__len__() != ener.__len__():
                 #     printf("   >>> ", J, ener)
                 #     continue
-                ax.plot(b20_by_K_and_J[K][J], ener, label=f'J={J}{_frac2} K={K}{_frac2}', 
-                        linestyle=__K_LSTYLE[8],#[J_vals.index(J)+1],
-                        marker=f"${J}{_frac2}$", markersize=11,
-                        color=__K_COLORS[K//2])
+                if False:
+                    ax.plot(b20_by_K_and_J[K][J], ener, label=f'J={J}{_frac2} K={K}{_frac2}', 
+                            linestyle=__K_LSTYLE[8],#[J_vals.index(J)+1],
+                            marker=f"${J}{_frac2}$", markersize=11,
+                            color=__K_COLORS[K//2])
                 
                 x = list(filter(lambda x: x < 0, b20_by_K_and_J[K][J]))
                 y = [ener[i] for i in  range(len(x))]
                 ax2.plot(x, y, label=f'J={J}{_frac2} K={K}{_frac2}', 
-                         linestyle=__K_LSTYLE[8],#[J_vals.index(J)+1],
-                         marker=__J_MARKER[J//2],
+                         linestyle=__K_LSTYLE[(_ALL_Jvals.index(J)+1)], #[8], #
+                         marker=__J_MARKER[_ALL_Jvals.index(J)],
                          # marker=f"${J}$", markersize=11,
-                         color=__K_COLORS[K//2])
+                         color=__K_COLORS[K//2], alpha=(1 - J/15))
                 x = [b20_by_K_and_J[K][J][i] for i in range(len(x), len(ener))]
                 y = [ener[i] for i in  range(len(y), len(ener))]
-                ax2.plot(x, y, linestyle=__K_LSTYLE[8], 
-                         marker=__J_MARKER[J//2],
+                ax2.plot(x, y, 
+                         linestyle=__K_LSTYLE[(_ALL_Jvals.index(J)+1)], #[8], #
+                         marker=__J_MARKER[_ALL_Jvals.index(J)],
                          # marker=f"${J}$", markersize=11
-                         color=__K_COLORS[K//2],)
+                         color=__K_COLORS[K//2], alpha=(1 - J/15))
         
         if len(energy_by_J.get(K, [])) > 1 and plot_PPR_interpolation:
             data_5o2 = energy_by_J[K][J_vals[2]] if K == 1 else None
@@ -759,15 +767,15 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
                 if (not PLOT_PPRC) or (Jmax_2_plot and (J > Jmax_2_plot)): 
                     continue 
                 ax.plot(*interp[J], '--', label=f'PPRM-SCL J,K={J}{_frac2} {K}{_frac2}',
-                                          color=__K_COLORS[K//2])
+                                          color=__K_COLORS[K//2], alpha=1- (J-K)/10)
                 ax2.plot(*interp[J], '--', label=f'PPRM-SCL J,K={J}{_frac2} {K}{_frac2}',
-                                          color=__K_COLORS[K//2])
+                                          color=__K_COLORS[K//2], alpha=1- (J-K)/10)
                 
         # ax.plot(b20_hfb [K], E_hfb [K], "o-", label=f'HFB(K={K}/2)')
-        ax.plot(b20_vap_K[K], E_vap_K[K], "o-", 
-                color=__K_COLORS[K//2], label=f'HFB-VAP K={K}{_frac2}',
-                linewidth=3)
-        ax2.plot(b20_vap_K[K], E_vap_K[K], "o-", 
+        ax.plot(b20_vap_K[K], E_vap_K[K],  [".--", "P--","d--",'o--','X--'][K//2], 
+                color=__K_COLORS[K//2], label=f'HFB-VAP K={K}{_frac2}', alpha=1 - K/7,
+                linewidth=2)
+        ax2.plot(b20_vap_K[K], E_vap_K[K], "-", 
                 color=__K_COLORS[K//2], label=f'HFB-VAP K={K}{_frac2}',
                 linewidth=3)
         
@@ -778,7 +786,7 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
         #plt.pause(2)
         
         ## Plot nicely the different K blocked surfaces:
-        ax2.set_ylim([-230, -140])
+        ax2.set_ylim([-143, -115])
         ax2.set_xlim([-0.7,  0.8])
         # x = min(b20_vap_K[K]), max(b20_vap_K[K])
         # _rngs = x[1] - x[0]
@@ -806,14 +814,14 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
         
         _rngs = _y_lims[1] - _y_lims[0]
         ax.set_ylim( [_y_lims[0] - .05*_rngs, _y_lims[1] + .05*_rngs ] )
-    # ax.set_ylim([-143, -100])
-    # ax.set_xlim([-0.7, 1.2])
+    ax.set_ylim([-143, -115])
+    ax.set_xlim([-0.7, 0.8])
     ax.set_xlabel(r"$\beta_{20}$")
     ax.set_ylabel(r"$E\ (MeV)$")
     _txt = f"{nucl[1]} PAV energies for all K-blockings"
     if PLOT_PPRC and plot_PPR_interpolation: _txt += " and PPRM interpolation"
     ax.set_title(_txt)
-    plt.legend(bbox_to_anchor=(1.1, 1.05))
+    ax.legend() #bbox_to_anchor=(1.1, 1.05))
     plt.tight_layout()
     _tail = '_allK'
     plt.savefig(FOLDER2SAVE / f"plot_pav_pprm_{nucl[0]}{_tail}{GLOBAL_TAIL_INTER}.pdf")
@@ -860,7 +868,7 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
                            figsize=(7, 5))
     any_ = False
     for i, K in enumerate(K_vals):
-        _M = '.*^d'
+        _M = '.*d^'
         if len(energy_by_J[K]) > 1 and plot_PPR_interpolation:
             _kwargs = {'marker': _M[i], 'label': f"K={K}{_frac2}", 'markersize':5}
             ax[0].plot(b20_pav_K[K], sp_e_inter_by_K[K], **_kwargs)
@@ -876,8 +884,8 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
             ax[2].set_title("Decoupling factor")
         plt.suptitle(f"{nucl[1]} PPRM derived quantities from interpolation")
         fig.tight_layout()
-        plt.savefig(FOLDER2SAVE / f"derived_pprm_parameters_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
         ax[2].legend()
+        plt.savefig(FOLDER2SAVE / f"derived_pprm_parameters_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
     else:
         plt.show()
     
@@ -887,7 +895,7 @@ def _generate_images_hfb_vapK_pav_hwg(b20_hfb, E_hfb, b20_vap_K, E_vap_K, b20_pa
             i = 0
             for J, model_diff in model_diff_by_K[K].items():
                 ax2.semilogy(b20_by_K_and_J[K][J], [abs(x) for x in model_diff], 
-                             marker=__J_MARKER[i], color=__K_COLORS[K//2],
+                             marker=__J_MARKER[i], color=__K_COLORS[K//2], alpha=1- (J-K)/14,
                              label=f'$K={K}{_frac2}^+$ $J={J}{_frac2}^+$')
                 i += 1 
         ax2.set_title(f"Correspondence PAV - PPR model SCL ({nucl[1]})")
@@ -1746,7 +1754,22 @@ def _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals, parit
                 FOLDER2SAVE=FOLDER2SAVE, Jmax_2_plot=Jmax_2_plot,
                 nucl=nucl, MAX_SIGMA=3,
             )
-    
+
+def get_sp_states_from_interaction(FLD, INTERACTION_TITLE):
+    """
+    Read the hamiltonian and store the sp-states basis with the QN jj object
+    """
+    sp_states = {}
+    with open(FLD / f'{INTERACTION_TITLE}.sho', 'r') as f:
+        sts = f.readlines()[2].strip().split()[1:]
+    i = 0
+    for st in sts:
+        n, l, j = readAntoine(st, l_ge_10=True)
+        for m in range(j, -j-1, -2): 
+            i += 1
+            sp_states[i] = QN_1body_jj(n, l, j, m=m)
+    return sp_states
+
 def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals, 
                                         parity=0, plot_PAV=False, max_2_plot=None,):
     """
@@ -1764,13 +1787,14 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
                               k/ 
                                 OUT puts
     """
-    FOLDER2SAVE= Path(MAIN_FLD)#.parent
-    global GLOBAL_TAIL_INTER
+    FOLDER2SAVE= Path(MAIN_FLD_TEMP)#.parent
+    global GLOBAL_TAIL_INTER, INTERACTION_TITLE
     _parity_str = '+' if parity == 0 else '-'
     for folder_args in folders_2_import:
         index_b20 = {}
         b20_hfb, b20_vap_K, b20_pav_K = [], {}, {}
         data_hfb, data_vap_K, data_pav_K = [], {}, {}
+        data_norm_K = {}
         E_hfb, E_vap_K = [], {}
         
         z, n = folder_args[0]
@@ -1780,7 +1804,7 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
                 rf"$^{{{z_real+n_real}}}${{{elementNameByZ[z_real]}}}")
         
         print(f"[{z}, {n}]   ******** ")
-        FLD  = folder_args[1].format(MAIN_FLD=MAIN_FLD, z=z, n=n)
+        FLD  = folder_args[1].format(MAIN_FLD=MAIN_FLD_TEMP, z=z, n=n)
         FLD  = Path(FLD)
         
         FLD_KVAP = [(k, FLD / f"{k}_{parity}_VAP") for k in K_vals]
@@ -1825,7 +1849,22 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
                     obj_ = DataTaurus(z, n, None, empty_data=True)
                     obj_.setDataFromCSVLine(line)
                     data_vap_K[K].append(obj_)
-                    
+            ## read if there is the folder norm_continuity
+            _norm_cont = FLD_KVAP[K] / f"norm_continuity/norm_overlaps.txt"
+            if os.path.exists(_norm_cont):
+                with open(_norm_cont, 'r') as f:
+                    data_norm_K[K] = {}
+                    for line in f.readlines():
+                        b20, vals = line.split(OUTPUT_HEADER_SEPARATOR)
+                        indx, b20 = b20.split(':')
+                        indx, b20 = int(indx), float(b20)
+                        data_norm_K[K][indx] = []
+                        for val in vals.split(','):
+                            q, e, n = val.split(':')
+                            q, e, n = int(q), float(e), float(n)
+                            data_norm_K[K][indx].append( [b20, n, e, q] )
+                ## import the qp states 
+                sp_states = get_sp_states_from_interaction(FLD, INTERACTION_TITLE)
             
         if FLD_KPAV.exists():
             for K in K_vals:
@@ -1849,6 +1888,8 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
                         data_pav_K[K].append(obj_)
             else:
                 print(" ERROR: TODO: define a method to get the diagonal elements without gcm file.")
+        
+        
         _ = 0
         b20_pav_K_cp  = deepcopy( b20_pav_K)
         data_vap_K_cp = deepcopy(data_vap_K)
@@ -1900,7 +1941,61 @@ def _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD_TEMP, K_vals,
             ax[i].legend()
         plt.tight_layout()
         plt.savefig(FOLDER2SAVE / f"scatter_blocking_Kvap_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
-        # plt.show()
+        plt.show()
+        
+        ## Intrinsic overlap by K and tuplet properties, 
+        #   data_norm_K[K][indx].append( [b20, n, e, q] )
+        lims_K = {1: (-143, -126), 3: (-143, -126), 
+                  5: (-143, -126), 7: (-143, -126), 9:(-143, -126)}
+        _markers_ = '..^oPv<>+d'
+        _colors_.insert(0, 'black')
+        _L_ = 'spdfghijklmn'
+        for K, dat_list in data_norm_K.items():
+            fig1, ax = plt.subplots(2, 1, figsize=(5, 6),
+                                   gridspec_kw={'height_ratios': [1.5, 1]})
+            ## process the data:
+            sort_ = sorted(list(dat_list))
+            qp_list   = []
+            b20_by_qp = {}
+            ene_by_qp = {}
+            nor_by_qp = {}
+            for idx in sort_:
+                vals = dat_list[idx]
+                for val in vals:
+                    b20, n, e, qp = val
+                    n = abs(n)
+                    if qp not in qp_list: 
+                        qp_list.append(qp)
+                        b20_by_qp[qp] = [b20, ]
+                        ene_by_qp[qp] = [e, ]
+                        nor_by_qp[qp] = [n, ]
+                    else:
+                        b20_by_qp[qp].append(b20)
+                        ene_by_qp[qp].append(e)
+                        nor_by_qp[qp].append(n)
+            ##
+            
+            for i, qp in enumerate(sorted(qp_list)):
+                s = sp_states.get(qp, None)
+                kwargs = {'label': 'all' if qp==0 else r"${}{}_{{{}/2}}$".format(s.n,_L_[s.l],s.j),
+                          'marker': _markers_[i], 
+                          'facecolor': 'None' if i!=0 else 'k',  
+                          'color': _colors_[i],}
+                ax[0].scatter (b20_by_qp[qp], ene_by_qp[qp], **kwargs)
+                ax[1].scatter (b20_by_qp[qp], nor_by_qp[qp], **kwargs)
+                
+            fig1.suptitle(f'Norm overlap on K=${K}/2^+$ tuplets by blocking.')
+            ax[1].set_xlabel(r'$\beta_{20}$')
+            ax[0].set_ylabel(r'$E_{HFB}$')
+            ax[1].set_ylabel(r'Norm$({\beta})$')
+            ax[0].legend()
+            
+            # ax[0].set_ylim( lims_K[K] )
+            # ax[1].set_ylim( (0, 1.1) )
+            plt.tight_layout()
+            plt.savefig(FOLDER2SAVE / f"hfb_norm_K{K}_{nucl[0]}{GLOBAL_TAIL_INTER}.pdf")
+        plt.show()
+        _colors_.pop(0)
         
         if not FLD_KPAV.exists(): return 
         for K, dat_list in data_pav_K.items():
@@ -2389,7 +2484,7 @@ if __name__ == '__main__':
     #===========================================================================
     SUBFLD_ = '../BU_folder_B1_MZ3_z2n1/PNAMP/'
     
-    K_val  = 11
+    K_val  = 1
     
     list_dat_file = f'list_k{K_val}_pav.dat'
     
@@ -2398,8 +2493,8 @@ if __name__ == '__main__':
     MAIN_FLD = '../DATA_RESULTS/SD_Kblocking/K{K_val}_block_PAV'
     MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_fewDefs/K{K_val}_block_PAV'
     # MAIN_FLD = '../DATA_RESULTS/example_singleJ/K{K_val}_block_PAV'
-    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/F'
-    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg'
+    MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/P'
+    # MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg'
     # MAIN_FLD = '../DATA_RESULTS/SD_Kblocking_multiK/Mg1ststateSwap_multiK'
     
     nuclei = [( 7, 8 + 2*i)  for i in range(0, 1)] # 7
@@ -2411,18 +2506,19 @@ if __name__ == '__main__':
     nuclei = [( 9,16), ( 9,18), ( 9,20),]
     nuclei = [( 1,12), ]#( 0,10), ] #(12,19), (1, 12)]
     # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
-    nuclei = [(12,13),  ] # (17,12),
+    nuclei = [(15,14),  ] # (17,12),
     # nuclei = [( 9,20),  ]
     # nuclei = [( 4, 5), ]
     
     GLOBAL_TAIL_INTER = '_B1'
+    INTERACTION_TITLE = 'B1_MZ4'
     
     folders_2_import = [
         # ((2, 1), '../BU_folder_B1_MZ3_z2n1/PNAMP/', DataTaurusPAV),
         #((2, 3), '../BU_folder_B1_MZ3_z2n3/PNAMP/', DataTaurusPAV),
         # ((8, 11), f'{MAIN_FLD}/BU_folder_B1_MZ3_z8n11/', 'export_TESb20_z{}n{}_B1_MZ3.txt'),
         
-        ((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}_axial/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
+        ((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}_test/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
         #((z, n), '{MAIN_FLD}/BU_folder_B1_MZ4_z{z}n{n}/', 'export_TESb20_z{}n{}_B1_MZ4.txt') for z,n in nuclei
         # ((z, n), '{MAIN_FLD}/BU_folder_SDPF_MIX_J_z{z}n{n}/', 'export_TESb20_z{}n{}_SDPF_MIX_J.txt') for z,n in nuclei
         # ((z, n), '{MAIN_FLD}/BU_folder_usdb_JF27_z{z}n{n}/', 'export_TESb20_z{}n{}_usdb_JF27.txt') for z,n in nuclei
@@ -2436,15 +2532,15 @@ if __name__ == '__main__':
     #                            plot_SCL_interpolation=False)
     # raise Exception("STOP HERE")
     
-    K_vals  = [1, 3, 5,]
+    K_vals  = [1, 3, 5]
     # _plotPAVresultsFromFolders_mulipleK(folders_2_import, MAIN_FLD, K_vals,
     #                                     plot_SCL_interpolation=1,
     #                                     Jmax_2_plot=9)
-    _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals,
-                                       plot_PPR_interpolation=1, parity=0,
-                                       Jmax_2_plot=11)
-    # _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD, K_vals, 
-    #                                     parity=0, plot_PAV=True, max_2_plot=11)
+    # _plotPAVresultsSameFolder_mulipleK(folders_2_import, MAIN_FLD, K_vals,
+    #                                    plot_PPR_interpolation=1, parity=0,
+    #                                    Jmax_2_plot=11)
+    _plotKblockedSurfacesWithMultiplets(folders_2_import, MAIN_FLD, K_vals, 
+                                        parity=0, plot_PAV=True, max_2_plot=11)
     # _plotK_SPindependent_vapTES(folders_2_import, MAIN_FLD, K_vals)
     raise Exception("STOP HERE")
     

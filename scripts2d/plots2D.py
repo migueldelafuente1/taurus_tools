@@ -55,7 +55,8 @@ def getVariableInLatex(var):
         if len(aux) == 1: aux.append('(total)')
         return f"$E_{{{aux[0]}}}^{{{aux[1]}}}$"
     elif var[:3] == 'var':
-        return f"$\\Delta^{{{aux[1]}}}$"
+        t = 'Z' if aux[1]=='p' else 'N'
+        return f"$\\sigma^2_{{{t}}}$"
     elif var.startswith('J'):
         if var.endswith('_var'): return f"$\Delta\ J_{{{var[1]}}}$"
         else: 
@@ -288,17 +289,28 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                         for var in observables2plot: 
                             data[cnst_pn][contr_T1][var][key_] = getattr(obj, var)
                         deforms[cnst_pn][contr_T1][key_] = defs_
-                
+        
+        data_main_dirs, defs_main_dirs = {}, {}
+        for const in (*constr_2_plot, *constraints_t1):
+            data_main_dirs[const] = {}
+            defs_main_dirs[const] = []
+            for var in observables2plot:
+                data_main_dirs[const][var] = []
+        
         nrows = 0
         for cnst_pn, dicts in data.items():
             if any(map(lambda x: len(x) > 0, dicts.values())): nrows += 1
-        
+        import matplotlib.gridspec as gridspec
+
         for indivCs in (1, 0):
             if indivCs == 0 and len(data) != 2: break
             # Plotting the surface
             figs_and_axes  = {}
             for var_plot in observables2plot:
-                if indivCs: figs_and_axes[var_plot] = plt.subplots(nrows, 2)
+                if indivCs: 
+                    figs_and_axes[var_plot] = plt.subplots(nrows, 2, figsize=(7,4))
+                    gs = gridspec.GridSpec(1, 3, width_ratios=[0.5, 1.5, 1])  # Allocate 40% less space to the left
+
                 else:       figs_and_axes[var_plot] = plt.subplots(1,2, figsize=(8,4))
             
             pn_list_data = list(data.keys())
@@ -318,6 +330,9 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                     y = np.array(y0)
                     X, Y = np.meshgrid(x, y)
                     
+                    defs_main_dirs[cnst_pn]  = y
+                    defs_main_dirs[contr_T1] = x
+                    
                     k0,k1 = [],[]
                     for k, v in deforms[cnst_pn][contr_T1].items():
                         k0.append(k[0])
@@ -328,13 +343,19 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                     for var_plot in observables2plot:
                         # Define a function for the surface (for example, a Gaussian)
                         Z = np.zeros(X.shape) # = 0.0*X + 0.0*Y
+                        v0_min = 0
+                        # if var_plot.startswith('E_HFB'):
+                        #     v0_min = min(data[cnst_pn][contr_T1][var_plot].values())
                         for key_, defs_ in data[cnst_pn][contr_T1][var_plot].items():
                             ii = key_[0] - k0_lims[0]
                             jj = key_[1] - k1_lims[0]
                             ## remember, Z indexing is [y,x]
                             val = data[cnst_pn][contr_T1][var_plot][key_]
                             if indivCs:
-                                Z[jj, ii] = val
+                                Z[jj, ii] = val - v0_min
+                                
+                                if ii == 0 and j == 0: data_main_dirs[cnst_pn] [var_plot].append(val - v0_min)
+                                if jj == 0 and i == 0: data_main_dirs[contr_T1][var_plot].append(val - v0_min)
                             else:
                                 cnst_pn2  = pn_list_data[1] 
                                 Z[jj, ii] = val - data[cnst_pn2][contr_T1][var_plot][key_]
@@ -346,7 +367,7 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                         
                         # Overlay contour lines with custom line widths and styles
                         contours = ax.contour(
-                            X, Y, Z, levels=20, colors='black',
+                            X, Y, Z, levels=15, colors='black',
                             linewidths=0.7,       # Set line thickness
                             linestyles='dashed'   # Set line style
                         )
@@ -360,13 +381,15 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                         
                         kw = {'fontsize': 15}
                         if indivCs: ax.set_aspect('equal', adjustable='box')
+                        int_str = INTER
+                        int_str = "${}^{{({})}}$".format(*INTER.split('_'))
                         if indivCs: 
-                            fig.suptitle (f"{getVariableInLatex(var_plot)}  Calculation {INTER}. {nucl[1]}", **kw)
+                            fig.suptitle (f"{getVariableInLatex(var_plot)}  {int_str}   {nucl[1]}", **kw)
                         else:
                             args = [getVariableInLatex(x) for x in 
                                     (var_plot, cnst_pn, var_plot, cnst_pn2)]
                             fig.suptitle ("{}({}) - {}({})  ".format(*args) + 
-                                          f"\nCalculation {INTER}. {nucl[1]}", **kw)
+                                          f"\n{int_str}  {nucl[1]}", **kw)
             kw = {'fontsize': 13}
             for var_plot in observables2plot:
                 # Labels and title
@@ -388,8 +411,32 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                     fig.savefig("{}/{}_contoursPT1T0_{}.pdf".format(FOLDER2SAVE, var_plot, nucl[0]))
                 else:
                     fig.savefig("{}/{}_diff_contoursPT1T0_{}.pdf".format(FOLDER2SAVE, var_plot, nucl[0]))
+        # plt.show()
+        ## plots Main delta directions
+        kw2 = {
+            InputTaurus.ConstrEnum.P_T1m1_J00:{'color':'green', 'marker':'.','markersize':6},
+            InputTaurus.ConstrEnum.P_T1p1_J00:{'color':'black', 'marker':'.','markersize':6},
+            InputTaurus.ConstrEnum.P_T10_J00:{'color':'red',  'marker':'.','markersize':10},
+            InputTaurus.ConstrEnum.P_T00_J10:{'color':'blue', 'marker':'.','markersize':10},                    
+        }
+        kw = {'fontsize': 15}
+        for var in observables2plot:
+            fig, ax = plt.subplots(1, 1, figsize=(5,4))
+            for const in (*constr_2_plot, *constraints_t1):
+                
+                ax.plot(defs_main_dirs[const][:-1], data_main_dirs[const][var][:-1], 
+                        label=getVariableInLatex(const), **kw2[const])
+            ax.set_xlabel('Pair. Coup. value $\delta^{JT}$',**kw)
+            ax.set_ylabel(getVariableInLatex(var),**kw)
+            ax.set_title(getVariableInLatex(var)+ f'  {int_str}         $Z,N=({z},{n})$',**kw)
+            ax.grid(True)
+            if var == 'pair':
+                lims = {(10,12): (-0.5,0.03), (10,16): (-0.5,0.03), (10,14): (-3.3,-2.5)}
+                ax.set_ylim(lims[(z, n)])
+            ax.legend()
+            fig.tight_layout()
+            fig.savefig("{}/{}_1dim-PTJ_{}.pdf".format(FOLDER2SAVE, var, nucl[0]))
         plt.show()
-    
 
 if __name__ == '__main__':
     #===========================================================================
@@ -414,13 +461,17 @@ if __name__ == '__main__':
     
     # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
     nuclei = [
-        (12,13), (12,12),
-        (10,10), #(10,11),
-        # (12,12)      
+        # (12,12), (12,13), (12,15),
+        # (10,10), (10,11),
+        # (10,12), 
+        (10,14), 
+        # (10,16),
+        # ( 8, 8), (14,14)
+        # (11,11), (13,13),
     ] 
     
     
-    INTER = 'B1_MZ4'
+    INTER = 'B1_MZ5'
     GLOBAL_TAIL_INTER = '_B1'
     export_templ = 'export_TES2_{}_z{}n{}_{}.txt'
     
@@ -435,11 +486,12 @@ if __name__ == '__main__':
     ]
     observables2plot = [
         'pair', 
-        'pair_pn',
+        # 'pair_pn', 'pair_pp', 'pair_nn',
         'E_HFB',
+        # 'var_n', 'var_p',
         # 'beta_isoscalar',
         # 'gamma_isoscalar',
-        'Jz',
+        # 'Jz',
         # InputTaurus.ConstrEnum.P_T00_J10,
         # InputTaurus.ConstrEnum.P_T10_J00,
         # InputTaurus.ConstrEnum.P_T00_J1m1,
@@ -447,7 +499,7 @@ if __name__ == '__main__':
         # InputTaurus.ConstrEnum.P_T1m1_J00,
     ]
     
-    MAIN_FLD = f'../DATA_RESULTS/SD_Odd_pnPairing/HFBS0/{constraints_[0]}'
+    MAIN_FLD = f'../DATA_RESULTS/SD_Odd_pnPairing/HFB_S0MZ5/{constraints_[0]}'
     folders_2_import = [
         ((z, n), '{MAIN_FLD}/BU_folder_{constrs}_{INTER}_z{z}n{n}/', export_templ) for z,n in nuclei
     ]
@@ -462,7 +514,7 @@ if __name__ == '__main__':
         # InputTaurus.ConstrEnum.P_T00_J1p1,
         InputTaurus.ConstrEnum.P_T10_J00,
     ]
-    MAIN_FLD = '../DATA_RESULTS/SD_Odd_pnPairing/HFBS0/{pair_cnstr}'
+    MAIN_FLD = '../DATA_RESULTS/SD_Odd_pnPairing/HFB_S0MZ5/{pair_cnstr}'
     plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD, 
                                                constraints_pn, observables2plot)
     
