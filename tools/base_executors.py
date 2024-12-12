@@ -126,6 +126,7 @@ class _Base1DTaurusExecutor(object):
         """
                 
         self._current_result: self.DTYPE  = None ## TODO: might be useless, remove in that case
+        self._curr_PAV_result : DataTaurusPAV = None
                 
         self.deform_oblate   : list = []
         self.deform_prolate  : list = []
@@ -137,10 +138,11 @@ class _Base1DTaurusExecutor(object):
         self._preconvergence_steps = 0
         
         self._results = [[], []]
+        self._final_bin_list_data = [{}, {}]
         
         if not keep_1stMinimum:
-            
             self._1stSeedMinimum : self.DTYPE  = None
+            self._1stSeedMinimum_blocked_st    = None
             self._base_wf_filename = None
             
             self._deform_lim_max = None
@@ -1012,7 +1014,8 @@ class _Base1DTaurusExecutor(object):
         """
         Standard step information
         """
-        cnstr = self.CONSTRAINT if list(self.CONSTRAINT) else [self.CONSTRAINT,]
+        cnstr = self.CONSTRAINT if isinstance(self.CONSTRAINT, (list, tuple)) else \
+                [self.CONSTRAINT,]
         cnstr_val_str = []
         for c in cnstr:
             c2 = c

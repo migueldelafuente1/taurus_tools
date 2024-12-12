@@ -544,7 +544,7 @@ class ExeTaurus2D_MultiConstrained(_Base2DTaurusExecutor, ExeTaurus1D_DeformB20)
     
     def setUp(self, *args, **kwargs):
         """
-        :reset_folders = True, give it as key-word argument.
+        :reset_folder = True, give it as key-word argument.
         
         Need to be overwitted to include the option of joining strings as arguments.
             NOTE: It do the same as ExeTaurus1D_DeformB20.setUp(self, *args, **kwargs)

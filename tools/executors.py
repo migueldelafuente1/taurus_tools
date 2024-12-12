@@ -39,15 +39,32 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
     
     EXPORT_LIST_RESULTS = 'export_TESq20'
         
-    def setUp(self, reset_folder=True):
+    def setUp(self, *args, **kwargs):
         """
         set up: 
             * back up folder for results
             * dumping filename
             * save the hamiltonian files in BU folder for recovery
+        
+            The arguments passed as args
+            are joined by - and identify the BU folder:
+        
+        :reset_folder = True, give it as key-word argument.
+        :args * = strings, to be joined for the BU naming
+        
+        Example:
+            x.setUp('b20', 'discrete', 'test', reset_folder=True) or 
+            x.setUp('b20', 'discrete', 'test')
+            
+        >> BU_folder_b20-discrete-test_{interaction}_z{z}n{n}
         """
+        
+        reset_folder = kwargs.get('reset_folder', True)
         self._DDparams = self.inputObj._DD_PARAMS
-        self.DTYPE.BU_folder = f'BU_folder_{self.interaction}_z{self.z}n{self.n}'
+        
+        args_str = '-'.join(args)
+        args_str = '_'+args_str if args_str != '' else ''
+        self.DTYPE.BU_folder = f'BU_folder{args_str}_{self.interaction}_z{self.z}n{self.n}'
         if reset_folder:
             self.DTYPE.setUpFolderBackUp()
         
@@ -658,6 +675,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         
         export_fn = self.EXPORT_LIST_RESULTS
         if base_calc:
+            args = list(args)
             args.insert(0, 'BASE')
             export_fn =    'BASE-' + self.EXPORT_LIST_RESULTS
         
@@ -821,7 +839,8 @@ class ExeTaurus1D_AngMomentum(ExeTaurus1D_DeformB20):
         cls.CONSTRAINT_DT = DataTaurus.getDataVariable(j_constr, beta_schm=0)
         
         cls.EXPORT_LIST_RESULTS = f'export_TES_{j_constr}'
-        DataTaurus.BU_folder = f'export_TES_{j_constr}'
+        cls.DTYPE.BU_folder     = f'BU_folder_{j_constr}'
+        ## Note:  this change in BU_folder is overwriten in the setUp method
     
 
 #===============================================================================
@@ -860,8 +879,10 @@ class ExeTaurus1D_PairCoupling(ExeTaurus1D_DeformB20):
         cls.CONSTRAINT = pair_constr
         cls.CONSTRAINT_DT = DataTaurus.getDataVariable(pair_constr, beta_schm=0)
         
-        cls.EXPORT_LIST_RESULTS = f'export_TES_{pair_constr}'
-        DataTaurus.BU_folder    = f'export_TES_{pair_constr}'
+        pair_constr_str = pair_constr.replace('_', '')
+        cls.EXPORT_LIST_RESULTS = f'export_TES_{pair_constr_str}'
+        cls.DTYPE.BU_folder     = f'BU_folder_{pair_constr_str}'
+        ## Note:  this change in BU_folder is overwriten in the setUp method
     
 
 #===============================================================================

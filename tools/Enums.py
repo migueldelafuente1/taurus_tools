@@ -42,7 +42,7 @@ class InputParts(Enum):
     Interaction_Title = 'Interaction_Title'
     Output_Parameters = 'Output_Parameters'
     SHO_Parameters = 'SHO_Parameters'
-    Valence_Space = 'Valence_Space'
+    Valence_Space  = 'Valence_Space'
     Core = 'Core'
     Force_Parameters = 'Force_Parameters'
 
@@ -76,18 +76,24 @@ class ForceEnum(Enum):
     SpinOrbit = 'SpinOrbit'
     SpinOrbitFiniteRange = 'SpinOrbitFiniteRange'
     SpinOrbitShortRange  = 'SpinOrbitShortRange'
-    SpinOrbitSquaredFiniteRange = 'SpinOrbitSquaredFiniteRange'
-    Brink_Boeker  = 'Brink_Boeker'
+    Quadratic_SpinOrbit  = 'Quadratic_SpinOrbit'
+    Brink_Boeker    = 'Brink_Boeker'
     PotentialSeries = 'PotentialSeries'
-    Density_Dependent = 'Density_Dependent'
+    YukawiansM3Y    = 'M3Y_yukawians'
+    Density_Dependent    = 'Density_Dependent'
     Density_Dependent_From_File = 'Density_From_File'
-    OrbitalMomentumSquared = 'OrbitalMomentumSquared'
-    Kinetic_2Body  = 'Kinetic_2Body'
+    Density_FiniteRange  = 'DensityFiniteRange'
+    ElectromageticCentral     = 'ElectromageticCentral'
+    ElectromageticNonCentral  = 'ElectromageticNonCentral'
+    Quadratic_OrbitalMomentum = 'Quadratic_OrbitalMomentum'
+    OTPEP_Tensor = "OTPEP_Tensor"
+    Kinetic_2Body    = 'Kinetic_2Body'
     Multipole_Delta  = 'Multipole_Delta'
     Multipole_Moment = 'Multipole_Moment'
     SkyrmeBulk = 'SkyrmeBulk'
     TensorS12  = 'TensorS12'
     Force_From_File = 'Force_From_File'
+    CentralGeneralized = 'CentralGeneralized'
 
 class PotentialForms(Enum):
     Gaussian    = 'gaussian'                # exp(-(r/mu_)^2)
@@ -96,6 +102,9 @@ class PotentialForms(Enum):
     Yukawa      = 'yukawa'                  # exp(-r/mu_) / (r/mu_)
     Power       = 'power'                   # (r/mu_)^n_power
     Gaussian_power = 'gaussian_power'       # exp(-(r/mu_)^2) / (r/mu_)^n_power
+    Wood_Saxon  = 'wood_saxon'              # (r/mu_)^n_power /( 1 + exp((r-mu_2 * A^1/3)/mu_3) )
+    Exponential_power = 'exponential_power' # exp(-r/mu_) * (r/mu_)^n_power
+    YukawaGauss_power = 'gauss_yukawa_power'# exp(-(r/mu_)-(r/mu_2)^2) / (r/mu_)^n_power
 
 #===============================================================================
 # FORCE PARAMETERS DEFINITIONS
@@ -106,6 +115,9 @@ class CentralMEParameters(Enum):
     constant  = 'constant'
     mu_length = 'mu_length'
     n_power   = 'n_power'
+    opt_mu_2  = 'opt_mu_2'   # optional
+    opt_mu_3  = 'opt_mu_3'   # optional
+    opt_cutoff= 'opt_cutoff' # optional (1 - exp(-(r/cutoff_len)^2))
 
 class BrinkBoekerParameters(Enum):
     mu_length   = 'mu_length'
@@ -114,16 +126,25 @@ class BrinkBoekerParameters(Enum):
     Bartlett    = 'Bartlett'
     Heisenberg  = 'Heisenberg'
 
-class CentralWithExchangeParameters(Enum):
-    potential = 'potential'
-    constant  = 'constant'
-    mu_length = 'mu_length'
-    n_power   = 'n_power'
-    Wigner    = 'Wigner'
-    Majorana  = 'Majorana'
-    Bartlett  = 'Bartlett'
-    Heisenberg= 'Heisenberg'
-    
+class CentralWithExchangeParameters(CentralMEParameters, BrinkBoekerParameters):
+    pass
+
+# class CentralWithExchangeParameters(Enum):
+#     potential = 'potential'
+#     constant  = 'constant'
+#     mu_length = 'mu_length'
+#     n_power   = 'n_power'
+#     Wigner    = 'Wigner'
+#     Majorana  = 'Majorana'
+#     Bartlett  = 'Bartlett'
+#     Heisenberg= 'Heisenberg'
+
+class CentralGeneralizedMEParameters(CentralMEParameters):
+    potential_R = 'potential_R'
+    constant_R  = 'constant_R'
+    mu_length_R = 'mu_length_R'
+    n_power_R   = 'n_power_R'
+
 class PotentialSeriesParameters(Enum):
     part    = 'part'
 
@@ -134,6 +155,10 @@ class DensityDependentParameters(Enum):
     core  = 'core'
     file  = 'file'
     integration = 'integration'
+    
+class DensityAndExchangeParameters(CentralWithExchangeParameters, 
+                                   DensityDependentParameters):
+    pass
     
 class SkyrmeBulkParameters(Enum):
     t0 = 't0'
@@ -159,23 +184,29 @@ class ForceFromFileParameters(Enum):
 ForceVariablesDict = {
     ForceEnum.Brink_Boeker    : BrinkBoekerParameters,
     ForceEnum.PotentialSeries : PotentialSeriesParameters,
-    ForceEnum.Central : CentralWithExchangeParameters,    # CentralMEParameters DEP
-    ForceEnum.Coulomb : Enum,
-    ForceEnum.Tensor  : CentralMEParameters,
+    ForceEnum.YukawiansM3Y    : BrinkBoekerParameters,
+    ForceEnum.Central   : CentralWithExchangeParameters,    # CentralMEParameters DEP
+    ForceEnum.Coulomb   : Enum,
+    ForceEnum.Tensor    : CentralMEParameters,
     ForceEnum.TensorS12 : CentralWithExchangeParameters,
+    ForceEnum.OTPEP_Tensor : Enum, 
     ForceEnum.SpinOrbit : CentralMEParameters,
     ForceEnum.SpinOrbitShortRange : CentralMEParameters,
     ForceEnum.SpinOrbitFiniteRange: CentralWithExchangeParameters,
-    ForceEnum.SpinOrbitSquaredFiniteRange: CentralWithExchangeParameters,
+    ForceEnum.Quadratic_SpinOrbit : CentralWithExchangeParameters,
     ForceEnum.Density_Dependent   : DensityDependentParameters,
     ForceEnum.Density_Dependent_From_File: DensityDependentParameters,
-    ForceEnum.OrbitalMomentumSquared     : CentralWithExchangeParameters,
+    ForceEnum.Density_FiniteRange        : DensityAndExchangeParameters, 
+    ForceEnum.Quadratic_OrbitalMomentum  : CentralWithExchangeParameters,
     ForceEnum.SkyrmeBulk    : SkyrmeBulkParameters, 
     ForceEnum.Kinetic_2Body : Enum,
     ForceEnum.SDI           : SDIParameters,
     ForceEnum.Multipole_Delta : MultipoleParameters,
     ForceEnum.Multipole_Moment: CentralMEParameters, 
+    ForceEnum.ElectromageticCentral     : Enum, 
+    ForceEnum.ElectromageticNonCentral  : Enum,
     ForceEnum.Force_From_File : ForceFromFileParameters,
+    ForceEnum.CentralGeneralized : CentralGeneralizedMEParameters,
 }
 
 ForcesWithRepeatedParametersList = [

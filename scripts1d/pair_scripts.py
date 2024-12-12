@@ -113,7 +113,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         for ip, pair_constr in enumerate(pair_constrs):
             
             ExeTaurus1D_PairCoupling.setPairConstraint(pair_constr)
-            # ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
+            ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
             
             try:
                 # if ip == 0:
@@ -126,7 +126,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
                 exe_.setInputCalculationArguments(axial_calc=True, 
                                                   **input_args_onrun)
                 exe_.defineDeformationRange(p_min,  p_max, N_max)
-                exe_.setUp()
+                # export for folder with naming, ie: BU_folder_PT00J1m1_B1_MZ3_z10n8
+                exe_.setUp(pair_constr.replace('_',''))
                 exe_.setUpExecution(**input_args_onrun)
                 exe_.force_converg = True
                 exe_.run()
