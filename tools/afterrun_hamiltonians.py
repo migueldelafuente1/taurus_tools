@@ -76,7 +76,7 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         self.n = n
         
         Mzmax, Mz0, b_len  = interaction_params
-        self.b_length = b_len
+        self.b_length = b_len if isinstance(b_len, float) else 1.005*((z+n)**(1/6))
         self.MZmin    = Mz0
         self.MZmax    = Mzmax
         
