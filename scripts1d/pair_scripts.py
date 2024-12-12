@@ -45,6 +45,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     if not InputTaurus.ConstrEnum.P_T00_J1p1 in pair_constrs:
         _3d_PT0JM[InputTaurus.ConstrEnum.P_T00_J1p1] = 0.0
     constr_onrun = {**constr_onrun, **_3d_PT0JM}
+    if sym_calc_setup: constr_onrun[sym_calc_setup] = True
     
     ## Normal execution.
     ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
