@@ -76,7 +76,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
             InputTaurus.ArgsEnum.seed: seed_base,
-            InputTaurus.ArgsEnum.iterations: 1000,
+            InputTaurus.ArgsEnum.iterations: 2000,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
@@ -87,7 +87,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
             InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.iterations: 2000,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
             **constr_onrun
