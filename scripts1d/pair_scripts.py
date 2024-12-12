@@ -19,6 +19,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
                          p_min=-0.05, p_max=2.0, N_max=41, convergences=0,
+                         sym_calc_setup=None,
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
@@ -84,6 +85,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             **constr_onrun
         }
         
+        if sym_calc_setup: constr_onrun[sym_calc_setup] = True
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
             InputTaurus.ArgsEnum.seed: 1,
@@ -98,8 +100,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         
         try:
             exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
-            exe_.setInputCalculationArguments(axial_calc=True, 
-                                              **input_args_start)
+            exe_.setInputCalculationArguments(**input_args_start)
             exe_.defineDeformationRange(p_min,  p_max, N_max)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
