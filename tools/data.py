@@ -1269,13 +1269,21 @@ class DataTaurus(_DataObjectBase):
         d1, d2, d3 = self.date_start, self.date_start_iter, self.date_end_iter
         #FMT = '%Y/%m/%d %H_%M_%S.%f'
         try:
-            self.date_start  = datetime.strftime(self.date_start, self.FMT_DT)
+            self.date_start      = datetime.strftime(self.date_start, self.FMT_DT)
+            self.date_start_iter = datetime.strftime(self.date_start_iter, self.FMT_DT)
+            self.date_end_iter   = datetime.strftime(self.date_end_iter, self.FMT_DT)
         except ValueError:
             self.FMT_DT = '%Y/%m/%d %H_%M_%S'
-            self.date_start  = datetime.strftime(self.date_start, self.FMT_DT)
-        self.date_start_iter = datetime.strftime(self.date_start_iter, self.FMT_DT)
-        self.date_end_iter   = datetime.strftime(self.date_end_iter, self.FMT_DT)
-        
+            self.date_start      = datetime.strftime(self.date_start, self.FMT_DT)
+            self.date_start_iter = datetime.strftime(self.date_start_iter, self.FMT_DT)
+            self.date_end_iter   = datetime.strftime(self.date_end_iter, self.FMT_DT)
+        except TypeError:
+            ## Dates are None (i.e. normal taurusvap) and therefore, no register
+            ## is valid, append 
+            self.date_start      = datetime.fromtimestamp(0)
+            self.date_start_iter = datetime.fromtimestamp(0)
+            self.date_end_iter   = datetime.fromtimestamp(0)
+                
         public_attr = filter(lambda a: not a[0].startswith('_'), self.__dict__.items())
         dict_ = ', '.join([k+' : '+str(v) for k,v in public_attr])
         self.date_start, self.date_start_iter, self.date_end_iter = d1, d2, d3
