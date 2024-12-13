@@ -34,6 +34,9 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         :p_max
         :N_steps:
         :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :sym_calc_setup=None: Symmetry for the calculation to use, i.e. certain
+                            symmetry restrictions for the constraints for non axial calculuations:
+                            _Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC
         :constr_onrun other constraints to set up the calculation.
     """
     assert all(map(lambda x: x.startswith('P_T'), pair_constrs)), f"invalid pair constraint {pair_constrs}"

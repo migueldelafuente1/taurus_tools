@@ -155,7 +155,9 @@ def run_b20_surface(nucleus, interactions,
 def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
                           q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
-                          fomenko_points=(1, 1)):
+                          fomenko_points=(1, 1),
+                          sym_calc_setup=None,
+                          **constr_onrun):
     """
     Reqire:
     Args:
@@ -171,6 +173,11 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :fomenko_points: (M protons, M neutron), default is HFB
         :parity_2_block: parity of the states to block
+        
+        :sym_calc_setup=None: Symmetry for the calculation to use, i.e. certain
+                            symmetry restrictions for the constraints for non axial calculuations:
+                            _Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC
+        :constr_onrun other constraints to set up the calculation.
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -187,6 +194,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
     
     ExeTaurus1D_DeformB20.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_DeformB20.GENERATE_RANDOM_SEEDS = bool(convergences)
+    
+    if sym_calc_setup: constr_onrun[sym_calc_setup] = True
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n, 
@@ -212,9 +221,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
+            **constr_onrun
         }
         
         input_args_onrun = {
@@ -225,9 +233,8 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
-            InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
-            InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
+            **constr_onrun
         }
         
         ExeTaurus1D_DeformB20.EXPORT_LIST_RESULTS = f"export_TESb20_z{z}n{n}_{interaction}.txt"

@@ -237,13 +237,13 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         _HFN = 'No. of gauge angles neutrons  '
         with open(file_out, 'r') as f:
             lines = f.readlines()[:90]  ## These lines are difficult to be moved
-            for i,h in {22: _HHM, 29: _HZ, 30: _HN, 31: _HFZ, 32: _HFN}.items():
+            for i,h in {24: _HHM, 31: _HZ, 32: _HN, 33: _HFZ, 34: _HFN}.items():
                 assert lines[i].startswith(h), "Something wrong with the taurus-vap Output!"
-            inter = lines[22].replace(_HHM, '').strip()
-            z     = lines[29].replace(_HZ , '').replace('.00', '').strip()
-            n     = lines[30].replace(_HN , '').replace('.00', '').strip()
-            fomz  = lines[31].replace(_HFZ, '').strip()
-            fomn  = lines[32].replace(_HFN, '').strip()
+            inter = lines[24].replace(_HHM, '').strip()
+            z     = lines[31].replace(_HZ , '').replace('.00', '').strip()
+            n     = lines[32].replace(_HN , '').replace('.00', '').strip()
+            fomz  = lines[33].replace(_HFZ, '').strip()
+            fomn  = lines[34].replace(_HFN, '').strip()
         ref_fom  = int(fomz), int(fomn)
         
         ok_ = [
@@ -325,5 +325,9 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         
         with open(self.export_filenames[inter], 'w+') as f:
             f.write(lines)
-        
-        
+
+class ExeTaurus2D_AfterRun_HamilDecomposition(ExeTaurus1D_AfterRun_HamilDecomposition):
+    '''
+    Extension of the previous class to 2 or more dimensions 
+    '''
+    pass

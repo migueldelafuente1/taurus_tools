@@ -1,0 +1,126 @@
+ __________________________________________________________
+|                                                          |
+|  (______)                                                |
+|  <(0  0)>   TAURUS_vap, version 2022.12.21               |
+|    (°°)                                                  |
+|                                                          |
+| This code performs the particle-number variation after   |
+| projection of real general Bogoliubov quasi-particle     |
+| states represented in a spherical harmonic oscillator    |
+| basis.                                                   |
+|                                                          |
+| Licence: GNU General Public License version 3 or later   |
+| DOI: 10.5281/zenodo.6906647                              |
+| Git: https://github.com/project-taurus/taurus_pav.git    |
+|                                                          |
+| Contributors: B. Bally, T. Rodríguez, A. Sánchez-F.      |
+|__________________________________________________________|
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                      INPUT PARAMETERS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+{input_text}
+  
+Warning: the name in the 2-body file = D1S-Gradient vs for t3=1390.600MeV (frac=  1.000) does not correspond with the one of the main file = Density 2BME on explicit HFB wf from taurus, Scalar PARAMS:: t3= 1390.600 MeV  X0=   1.00000 ALPHA=0
+  
+TIME_START: {time_start}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                           NUCLEUS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Part \ No.     Z          N          A
+----------------------------------------
+Valence      {z}.00      {n}.00      {a}.00
+Core          0.00       0.00       0.00
+Nucleus      {z}.00      {n}.00      {a}.00
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                          HO BASIS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    Quantity          Value
+---------------------------
+No. of sp states        80
+Max. value of N          3
+Max. value of l          3
+Max. value of 2j         7
+hbar*omega (MeV)    12.383
+Osc. length b (fm)   1.830
+No. of shells           10
+List of shells           1    101    103    205  10001
+                       203    307  10103    305  10101
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                         HAMILTONIAN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   Description        Value
+---------------------------
+Main name of files    hamil_gdd_100
+Name of hamiltonian   Density 2BME on explicit HFB wf from taurus, Scalar PARAMS:: t3= 1390.600 MeV  X0=   1.00000 ALPHA=0
+Type of hamiltonian     3   (J-scheme, NO2B)
+Read from file          0   (normal)
+Number of 2BME        73194       
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        WAVE FUNCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+   Description         Value
+----------------------------
+Initial type of seed     {seed}   (axial BCS, good P + Jz, separate N/Z)
+Number of qp blocked     0
+Total number parity      1
+No. of fully occ. sp     0
+
+  Symmetry       ?      Mean              Action
+----------------------------------------------------------
+Separate N/Z    yes                   integral [1,pi]     
+Good Z           no   {z}.00000    
+Good N           no   {n}.00000    
+Good P          yes   {parity}
+Good Jz         yes   {Jz}
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                DENSITY DEPENDENT PARAMETERS                
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ 
+{input_dd_term}
+ 
+  Hamiltonian cpd deallocated  because it will not be used!
+ 
+ * Density dependent parameters imported.
+ * Initial rearrangement field NOT found.
+ * DD module is TURNED OFF, skip DD array setting.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                   ITERATIVE MINIMIZATION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+TIME_START: {time_start_iter}
+ 
+Iteration     Gradient       Energy      Protons    Var(Prot)    Neutrons   Var(Neut)     eta      mu
+---------------------------------------------------------------------------------------------------------
+{txt_gradient}
+
+{msg_enditer_status}
+TIME_END: {time_end_iter} ITER_FINAL= {iter_final}
+
+{data_proj_hfb}
+
+{data_qp_hfb}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    COMPLEMENTARY FILES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+     Description                 File
+--------------------------------------------
+ Occupation numbers : occupation_numbers.dat
+ Canonical basis    : canonicalbasis.dat
+ Eigenbasis h       : eigenbasis_h.dat
+ Eigenbasis H11     : eigenbasis_H11.dat
+ Final wave function: final_wf.bin
+ Reduced hamiltonian: hamil_gdd_100.red
+
+This is the end, my only friend, the end.

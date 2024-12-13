@@ -15,7 +15,9 @@ from tools.helpers import printf
 
 def run_J_surface(nucleus, interactions, J_i, 
                   seed_base=0, ROmega=(13, 13),
-                  j_min= 0.0, j_max=25.0, N_max=50, convergences=0):
+                  j_min= 0.0, j_max=25.0, N_max=50, convergences=0,
+                  sym_calc_setup=None,
+                  **constr_onrun):
     """
     Reqire:
     Args:
@@ -29,6 +31,10 @@ def run_J_surface(nucleus, interactions, J_i,
         :j_max
         :N_steps: 
         :convergences: <int> number of random seeds / blocked states to get the global minimum
+        :constr_onrun other constraints to set up the calculation.
+        :sym_calc_setup=None: Symmetry for the calculation to use, i.e. certain
+                            symmetry restrictions for the constraints for non axial calculuations:
+                            _Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC
     """
     assert J_i.startswith('J') and J_i in InputTaurus.ConstrEnum.members(), \
         "Script only accepts Jx, Jy, Jz"
@@ -44,6 +50,8 @@ def run_J_surface(nucleus, interactions, J_i,
     
     ExeTaurus1D_AngMomentum.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_AngMomentum.GENERATE_RANDOM_SEEDS = bool(convergences)
+    
+    if sym_calc_setup: constr_onrun[sym_calc_setup] = True
     
     for z, n in nucleus:
         interaction = getInteractionFile4D1S(interactions, z, n)
@@ -64,6 +72,7 @@ def run_J_surface(nucleus, interactions, J_i,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
+            **constr_onrun
         }
         
         input_args_onrun = {
@@ -72,6 +81,7 @@ def run_J_surface(nucleus, interactions, J_i,
             InputTaurus.ArgsEnum.iterations: 600,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
+            **constr_onrun
         }
         
         ExeTaurus1D_AngMomentum.setAngularMomentumConstraint(J_i)        
