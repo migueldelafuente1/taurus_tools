@@ -325,7 +325,7 @@ class TBMEXML_Setter(object):
         ## filename could be either in 2B_MatrixElement suite or in taurustools
         ## check and modify to be readed from TBME_SUITE (which is running)
         _ERR = f"Unfound file to import [{filename}]. from [{os.getcwd()}]"
-        if 'results' in filename:
+        if ('results' in filename) or ('savedHamilsBeq1' in filename):
             # Assumed to be in TBME_SUITE, check from tt
             assert os.path.exists(Path(TBME_SUITE) / filename), _ERR
         else:

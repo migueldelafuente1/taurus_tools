@@ -7,7 +7,7 @@ from tools.helpers import importAndCompile_taurus, printf
 import os
 from tools.hamiltonianMaker import TBMEXML_Setter
 from tools.Enums import PotentialForms, CentralMEParameters,\
-    BrinkBoekerParameters, GognyEnum
+    BrinkBoekerParameters, GognyEnum, ForceFromFileParameters
 from tools.inputs import InputTaurus, InputTaurusPAV
 from tools.afterrun_hamiltonians import ExeTaurus1D_AfterRun_HamilDecomposition 
 
@@ -106,6 +106,9 @@ def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',]):
     interactions['coulomb'] = (
         TBMEXML_Setter.set_coulomb_force,  
         {}
+    )
+    interactions['void'] = (
+        TBMEXML_Setter.set_file_force, {'filename' : 'savedHamilsBeq1/void.2b', }
     )
     
     MAIN_FLD = ''
