@@ -37,6 +37,9 @@ def run_pair_surfaces_2d(nucleus, interactions, pair_constrs,
         :convergences: <int> number of random seeds / blocked states to get the global minimum
         :constr_onrun other constraints to set up the calculation.
         :fomenko_points: (<int>, <int>)
+        :sym_calc_setup=None: Symmetry for the calculation to use, i.e. certain
+                            symmetry restrictions for the constraints for non axial calculuations:
+                            _Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC
         :valid_Ks_to_block: [list, int] Usage:
             1. for seed_base != 1: is used to stablish the valid Ks for axial 
                                     odd-nuclei calculations

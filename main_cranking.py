@@ -4,11 +4,11 @@ Created on Jan 10, 2023
 @author: Miguel
 '''
 import os
-from tools.helpers import importAndCompile_taurus, TBME_SUITE, __log_file
+from tools.helpers import importAndCompile_taurus
 
-from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
 from scripts1d.cranking_scripts import run_J_surface
+from tools.base_executors import _Base1DTaurusExecutor
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
@@ -35,10 +35,21 @@ if __name__ == '__main__':
         # (18,18): (5, 0, 1.80), (18,19): (5, 0, 1.80),
         # # (20,20): (5, 0, 1.76), 
     }
+    constr_onrun = {
+        InputTaurus.ConstrEnum.b10 : (0.0, 0.0),
+        InputTaurus.ConstrEnum.b11 : (0.0, 0.0),
+        InputTaurus.ConstrEnum.b21 : (0.0, 0.0),
+        InputTaurus.ConstrEnum.b31 : (0.0, 0.0),
+        InputTaurus.ConstrEnum.b41 : (0.0, 0.0),
+        #InputTaurus.ConstrEnum.Jx: 0.0
+    }
+    
     nucleus = sorted(list(interactions.keys()))
     
     run_J_surface(nucleus, interactions, InputTaurus.ConstrEnum.Jx, 
                   seed_base=0, ROmega=(16,16), 
                   convergences=3,                  
-                  j_min=-0.5, j_max=15.0, N_max=5 )
+                  j_min=-0.5, j_max=15.0, N_max=5,
+                  sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
+                  **constr_onrun)
     

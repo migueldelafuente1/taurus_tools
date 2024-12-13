@@ -92,7 +92,7 @@ if __name__ == '__main__':
         gogny_interaction = GognyEnum.
     """
     interactions_D1S = {
-        (1,  2): 'B1_MZ3', #(3, 0, 1.81), # (12, 10): (3, 0, 1.83), 
+        (1,  2): (2, 0, 1.81), # (12, 10): (3, 0, 1.83), 
         # (12, 12): (3, 0, 1.83), (12, 14): (3, 0, 1.79), 
         # (12, 16): (3, 0, 1.80), (12, 18): (3, 0, 1.86),
         # (12, 20): (3, 0, 2.01), (12, 20): (3, 0, 2.01),
@@ -102,11 +102,20 @@ if __name__ == '__main__':
     #     (12, 10): (3, 0, 1.94), (12, 12): (3, 0, 1.92), (12, 14): (3, 0, 1.95), 
     #     #(12, 16): (3, 0, 1.94), (12, 18): (3, 0, 1.98), (12, 20): (3, 0, 2.01),
     # }
-    
+    constr_onrun = {
+        # InputTaurus.ConstrEnum.b10 : (0.0, 0.0),
+        # InputTaurus.ConstrEnum.b11 : (0.0, 0.0),
+        # InputTaurus.ConstrEnum.b21 : (0.0, 0.0),
+        # InputTaurus.ConstrEnum.b31 : (0.0, 0.0),
+        # InputTaurus.ConstrEnum.b41 : (0.0, 0.0),
+        #InputTaurus.ConstrEnum.Jx: 0.0
+    }
+        
     nucleus = sorted(list(interactions_D1S.keys()))
     run_b20_Gogny_surface(nucleus, interactions_D1S, GognyEnum.B1,
-                          seed_base=3, ROmega=(0,0), 
-                          q_min=-0.6,  q_max=0.6, N_max=5, convergences=4) # 50
+                          seed_base=0, ROmega=(0,0), 
+                          q_min=-0.6,  q_max=0.6, N_max=5, convergences=4,
+                          sym_calc_setup=None)
     raise Exception("STOP HERE.")
     
     
