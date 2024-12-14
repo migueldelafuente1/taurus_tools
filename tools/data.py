@@ -1280,9 +1280,10 @@ class DataTaurus(_DataObjectBase):
         except TypeError:
             ## Dates are None (i.e. normal taurusvap) and therefore, no register
             ## is valid, append 
-            self.date_start      = datetime.fromtimestamp(0)
-            self.date_start_iter = datetime.fromtimestamp(0)
-            self.date_end_iter   = datetime.fromtimestamp(0)
+            aux = datetime.fromtimestamp(0)
+            self.date_start      = datetime.strftime(aux, self.FMT_DT)
+            self.date_start_iter = datetime.strftime(aux, self.FMT_DT)
+            self.date_end_iter   = datetime.strftime(aux, self.FMT_DT)
                 
         public_attr = filter(lambda a: not a[0].startswith('_'), self.__dict__.items())
         dict_ = ', '.join([k+' : '+str(v) for k,v in public_attr])
