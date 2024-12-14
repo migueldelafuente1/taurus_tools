@@ -19,6 +19,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
                          p_min=-0.05, p_max=2.0, N_max=41, convergences=0,
+                         fomenko_points=(0, 0), parity_2_block= 1,
                          sym_calc_setup=None,
                          **constr_onrun):
     """
@@ -62,6 +63,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     
     ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = bool(convergences)
+    ExeTaurus1D_PairCoupling.PARITY_TO_BLOCK       = parity_2_block
     
     for z, n in nucleus:
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
@@ -80,6 +82,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 2000,
             InputTaurus.ArgsEnum.grad_type: 1,
@@ -92,6 +96,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         if sym_calc_setup: constr_onrun[sym_calc_setup] = True
         input_args_onrun = {
             InputTaurus.ArgsEnum.red_hamil: 1,
+            InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+            InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 2000,
             InputTaurus.ArgsEnum.grad_type: 1,

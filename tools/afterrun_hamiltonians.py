@@ -193,6 +193,7 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         ## create surfaces-binary paths for execution and exporting
         self.surfaces = dict()
         self.results  = dict([(int_, dict()) for int_ in self._interaction_parts])
+        self.resultsPAV = dict([(int_, dict()) for int_ in self._interaction_parts])
         self.hamil_dest_folders = {}
         
         for inter in self._interaction_parts:
@@ -201,6 +202,8 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
             if dest_fld.exists():
                 shutil.rmtree(dest_fld)
             os.mkdir(dest_fld)
+            if self.DO_PROJECTION:
+                os.mkdir(dest_fld / 'PNAMP')
             self.hamil_dest_folders[inter] = dest_fld
             for tail_ in OutputFileTypes.members():
                 f = inter + tail_
@@ -271,18 +274,21 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         """
         assert self.input_vap.iterations == 0, "Fix iterations to 0!!"
         
+        inp_fn = self.input_vap.input_filename
+        out_fn = 'aux_output.OUT'
+        
         for i, k_b20 in enumerate(self.b20_sorted):
             k_b20, b20 = k_b20
             if i > 0: self.input_vap.red_hamil = 1 # already executed
             
             shutil.copy(self.surfaces[k_b20], 'initial_wf.bin')
+            if os.getcwd().startswith('C'): ## Testing Windows
+                aux = self.surfaces[k_b20]
+                shutil.copy(aux.parent / str(aux.name).replace('bin','OUT'), out_fn)
             
             printf(f"  exe b20 = {b20:5.3f} / {k_b20}")
             printf("   * interaction *:   [   E HFB  ]  [   E HF   ]  [ E pairing]   ------")
             for inter in self._interaction_parts:
-                inp_fn = self.input_vap.input_filename
-                out_fn = 'aux_output.OUT'
-                
                 ## create the input file
                 self.input_vap.interaction = inter
                 with open(inp_fn, 'w+') as f:
@@ -304,6 +310,8 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
                 printf(f"   {inter: >15}:  {res.E_HFB:12.4f}  {res.hf:12.4f}  {res.pair:12.4f}")
                 ## teardown results into 
                 self._exportFileFromEachInteraction(inter)
+                
+            if self.DO_PROJECTION: self._evalDiagonalProjection(k_b20)
             
     
     def _exportFileFromEachInteraction(self, inter):
@@ -325,7 +333,42 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         
         with open(self.export_filenames[inter], 'w+') as f:
             f.write(lines)
-
+    
+    def _evalDiagonalProjection(self, k_b20):
+        """
+        Evaluate the PAV projection after the inclusion of the
+        """
+        printf("   [projection] begins:")
+        shutil.copy('initial_wf.bin',  'left_wf.bin')
+        shutil.copy('initial_wf.bin', 'right_wf.bin')
+        self.input_pav.red_hamil = 1 # it's always done after the VAP calculation
+        
+        for inter in self._interaction_parts:
+            inp_fn = self.input_pav.input_filename
+            out_fn = 'pav_output.OUT'
+            
+            ## create the input file
+            self.input_pav.interaction = inter
+            with open(inp_fn, 'w+') as f:
+                f.write(self.input_pav.getText4file())
+            
+            ## execute void step
+            ok_ = True
+            try:
+                # NOTE: for test Windows, put a output in main folder
+                if not os.getcwd().startswith('C'): 
+                    os.system(f'./taurus_pav.exe < {inp_fn} > {out_fn}')
+                res = DataTaurusPAV(self.z, self.n, out_fn)
+                self.resultsPAV[inter][k_b20] = deepcopy(res)
+                path_ = Path('PNAMP') / k_b20.replace('bin', 'OUT')
+                shutil.copy(out_fn, self.hamil_dest_folders[inter] / path_)
+                
+            except BaseException as e:
+                printf(f' [Error] execution failed for [{inter}], skipping!')
+                ok_ = False
+            printf(f"   [projection] {inter} - STATUS OK={ok_}")
+            
+        
 class ExeTaurus2D_AfterRun_HamilDecomposition(ExeTaurus1D_AfterRun_HamilDecomposition):
     '''
     Extension of the previous class to 2 or more dimensions 

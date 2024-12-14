@@ -1238,8 +1238,10 @@ class DataTaurus(_DataObjectBase):
         Method to set all available attributes Dict Like 
         """
         elements = line_text.split(',')
-        
-        elements = dict([tuple(l.split(':')) for l in elements])
+        aux = [tuple(l.split(':')) for l in elements]
+        aux = filter(lambda x: len(x)==2, aux)
+        elements = dict(aux)
+        # elements = dict([tuple(l.split(':')) for l in elements])
         for k, val in elements.items():
             
             k = k.strip()

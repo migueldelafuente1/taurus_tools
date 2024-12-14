@@ -11,7 +11,8 @@ from tools.Enums import PotentialForms, CentralMEParameters,\
 from tools.inputs import InputTaurus, InputTaurusPAV
 from tools.afterrun_hamiltonians import ExeTaurus1D_AfterRun_HamilDecomposition 
 
-def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',]):
+def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',], 
+                                         fomenko_points=(1, 1),):
     """
     Evaluate the different contributions from the Gogny interaction. Evaluate 
     as no-core Hamiltonian Generator.
@@ -23,8 +24,8 @@ def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',]):
                             force_compilation=not os.path.exists('taurus_pav.exe'))
     input_args ={
         InputTaurus.ArgsEnum.red_hamil : 0,
-        InputTaurus.ArgsEnum.z_Mphi    : 1,
-        InputTaurus.ArgsEnum.n_Mphi    : 1,
+        InputTaurus.ArgsEnum.z_Mphi    : fomenko_points[0],
+        InputTaurus.ArgsEnum.n_Mphi    : fomenko_points[1],
         InputTaurus.ArgsEnum.com       : 1,
         InputTaurus.ArgsEnum.grad_type : 0,
         InputTaurus.ArgsEnum.iterations: 0,
@@ -36,8 +37,8 @@ def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',]):
     input_args_projection = {
         InputTaurusPAV.ArgsEnum.red_hamil : 0,
         InputTaurusPAV.ArgsEnum.com   : 1,
-        InputTaurusPAV.ArgsEnum.z_Mphi: 1,
-        InputTaurusPAV.ArgsEnum.n_Mphi: 1,
+        InputTaurusPAV.ArgsEnum.z_Mphi: fomenko_points[0],
+        InputTaurusPAV.ArgsEnum.n_Mphi: fomenko_points[1],
         InputTaurusPAV.ArgsEnum.disable_simplifications_NZA: 1,
         # InputTaurusPAV.ArgsEnum.alpha : 0,
         # InputTaurusPAV.ArgsEnum.beta  : 0,
@@ -117,7 +118,7 @@ def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',]):
         ExeTaurus1D_AfterRun_HamilDecomposition.HAMIL_NAME = GognyEnum.B1
         
         exe_ = ExeTaurus1D_AfterRun_HamilDecomposition(*zn, inter, MAIN_FLD)
-        # exe_.setUpPAVparameters(**input_args_projection)
+        #exe_.setUpPAVparameters(**input_args_projection)
         exe_.setUpVAPparameters(**input_args)
         exe_.setUpHamiltonians(interactions, combine_all=True)
         
