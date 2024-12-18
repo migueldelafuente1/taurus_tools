@@ -18,3 +18,4 @@ __pycache__/
 *.OUT
 *.INP
 scripts1d/*.pdf
+plotting_scripts/*.pdf

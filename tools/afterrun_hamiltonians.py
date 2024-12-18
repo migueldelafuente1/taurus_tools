@@ -113,6 +113,7 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         
         ## Get all the results and combine them from the files
         if combine_all:
+            if 'bench' in interactions: del interactions['bench']
             bench_combination = []
             for name in self._interaction_parts:
                 # reference from the 2B_MatrixElements folder

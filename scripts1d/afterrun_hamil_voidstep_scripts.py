@@ -104,10 +104,7 @@ def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',],
             CentralMEParameters.n_power:           0,
         }
     )
-    interactions['coulomb'] = (
-        TBMEXML_Setter.set_coulomb_force,  
-        {}
-    )
+    interactions['coulomb'] = (TBMEXML_Setter.set_coulomb_force,  {})
     interactions['void'] = (
         TBMEXML_Setter.set_file_force, {'filename' : 'savedHamilsBeq1/void.2b', }
     )

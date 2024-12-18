@@ -792,25 +792,25 @@ if __name__ == '__main__':
     # _graph.plot()
     
     ## ##  EXAMPLE FOR LEVEL GRAPHS ## ## ======================================
-    levels_1 = EnergyLevelGraph(title='B1')
-    levels_1.setData(example_levels, program='taurus_hwg') 
-    
-    levels_2 = EnergyLevelGraph(title='Fermi')
-    levels_2.setData(example_levels_2, program='taurus_hwg') 
+    # levels_1 = EnergyLevelGraph(title='B1')
+    # levels_1.setData(example_levels, program='taurus_hwg') 
     #
-    levels_3 = EnergyLevelGraph(title='HFB sph')
-    levels_3.setData(example_levels_3, program='taurus_hwg')  
-    
-    BaseLevelContainer.RELATIVE_PLOT = True
-    BaseLevelContainer.ONLY_PAIRED_STATES = False
-    BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 6
-    
-    _graph = BaseLevelContainer()
-    _graph.global_title = "23Mg HWG(B1 MZ=4), Mix 2K=1,3,5 "#"Comparison HWG D1S from densities"
-    _graph.add_LevelGraph(levels_1)
-    # _graph.add_LevelGraph(levels_2)
-    # _graph.add_LevelGraph(levels_3)
-    _graph.plot()
+    # levels_2 = EnergyLevelGraph(title='Fermi')
+    # levels_2.setData(example_levels_2, program='taurus_hwg') 
+    # #
+    # levels_3 = EnergyLevelGraph(title='HFB sph')
+    # levels_3.setData(example_levels_3, program='taurus_hwg')  
+    #
+    # BaseLevelContainer.RELATIVE_PLOT = True
+    # BaseLevelContainer.ONLY_PAIRED_STATES = False
+    # BaseLevelContainer.MAX_NUM_OF_SIGMAS  = 6
+    #
+    # _graph = BaseLevelContainer()
+    # _graph.global_title = "23Mg HWG(B1 MZ=4), Mix 2K=1,3,5 "#"Comparison HWG D1S from densities"
+    # _graph.add_LevelGraph(levels_1)
+    # # _graph.add_LevelGraph(levels_2)
+    # # _graph.add_LevelGraph(levels_3)
+    # _graph.plot()
     
     
     
