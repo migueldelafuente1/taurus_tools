@@ -99,6 +99,7 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         """
         From Hamiltonian
         """
+        if combine_all and 'bench' in interactions: del interactions['bench']
         
         for name, interaction_runable in interactions.items():
             exe_ = TBME_HamiltonianManager(self.b_length, self.MZmax, self.MZmin, 
@@ -113,7 +114,6 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         
         ## Get all the results and combine them from the files
         if combine_all:
-            if 'bench' in interactions: del interactions['bench']
             bench_combination = []
             for name in self._interaction_parts:
                 # reference from the 2B_MatrixElements folder

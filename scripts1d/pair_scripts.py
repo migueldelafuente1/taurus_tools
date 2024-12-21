@@ -68,7 +68,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     for z, n in nucleus:
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
               datetime.now().time(), "\n")
-        
+        _isEvenEven = (z%2 + n%2) == 0
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)
         if interaction == None or not os.path.exists(interaction+'.sho'):
@@ -85,8 +85,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
-            InputTaurus.ArgsEnum.iterations: 2000,
-            InputTaurus.ArgsEnum.grad_type: 1,
+            InputTaurus.ArgsEnum.iterations: 5000,
+            InputTaurus.ArgsEnum.grad_type: 1 if _isEvenEven else 2,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
@@ -99,8 +99,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
-            InputTaurus.ArgsEnum.iterations: 2000,
-            InputTaurus.ArgsEnum.grad_type: 1,
+            InputTaurus.ArgsEnum.iterations: 6000,
+            InputTaurus.ArgsEnum.grad_type: 1 if _isEvenEven else 2,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
             **constr_onrun
         }

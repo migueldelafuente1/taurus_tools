@@ -25,9 +25,10 @@ if __name__ == '__main__':
         # (10,10): (2, 0, 1.80), (10,12): (4, 0, 1.75),
         # (12,12): (4, 0, 1.75), (12,14): (4, 0, 1.75),
         # (10,10): (5, 0, None), 
-        (10,11): (5, 0, None), (10,12): (5, 0, None),
-        # (12,12): (5, 0, None), 
-        (12,13): (5, 0, None), (12,14): (5, 0, None), (12,15): (5, 0, None),
+        # (10,11): (5, 0, None), (10,12): (5, 0, None),
+        (12,12): (5, 0, None), 
+        # (12,13): (2, 0, None), 
+        (12,14): (2, 0, None), #(12,15): (5, 0, None),
         # (14,14): (4, 0, 1.65), (14,16): (4, 0, 1.80),
         # (16,16): (4, 0, 1.85), (16,18): (4, 0, 1.75),
         # (17,18): (4, 0, 1.80), (16,17): (4, 0, 1.80),
@@ -66,11 +67,11 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.b41 : (0.0, 0.0),
         #InputTaurus.ConstrEnum.Jx: 0.0
     }
-    fomenko_points = (1, 1)
+    fomenko_points = (7, 7)
     if False:
         run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS,
                              gogny_interaction=GognyEnum.B1,
-                             ROmega=(0,0), convergences=10,
+                             ROmega=(0,0), convergences=5,
                              #ROmega=(14,16), convergences=3,
                              seed_base=0, 
                              p_min=-0.05, p_max=1.5, N_max=31,
