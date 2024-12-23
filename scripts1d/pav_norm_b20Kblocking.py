@@ -227,7 +227,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         cases, 0 by default.
         """
         obj : DataTaurus = self.results[K][k_b20][i]
-        empty_states = (obj.var_p < 1.0e-6) or (obj.var_n < 1.0e-6 )
+        empty_states = (obj.var_p < 1.0e-7) or (obj.var_n < 1.0e-7 )
         self.input_pav.empty_states = int(empty_states)
     
     def _execute_PAV_norm(self, output_fn):
