@@ -249,6 +249,8 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                     os.system('./taurus_pav.exe < {} > {}'.format(self.INP_FN, output_fn))
                 
                 obj = DataTaurusPAV(self.z, self.n, output_fn)
+                norm_i = obj.proj_norm[0]
+                
                 return obj
             except BaseException as e:
                 if i == 1: raise e
