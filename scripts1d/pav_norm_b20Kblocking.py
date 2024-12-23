@@ -235,10 +235,23 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         Problems related to the EmptyStates Switching, in cases where ES=1, even
         with zero-pairing. Revert the option if there 0-norm PAV exception.
         """
-        for i in range(2):
-            if i == 1: 
-                ## change the input states
-                self.input_pav.empty_states = abs(self.input_pav.empty_states - 1)
+        for i in range(3):
+            ## switch cutoff -> 1e-6 if IE=1, switch IE if tried
+            if i == 0: 
+                self.input_pav.cutoff_overlap = 0 ## reset cutoff norm
+            if i == 1:
+                if self.input_pav.empty_states == 1: 
+                    self.input_pav.cutoff_overlap = 1.0e-6
+                else: 
+                    self.input_pav.empty_states   = 1
+                    self.input_pav.cutoff_overlap = 0
+            else: 
+                if self.input_pav.empty_states == 1:
+                    self.input_pav.empty_states   = 0
+                    self.input_pav.cutoff_overlap = 0
+                else: 
+                    self.input_pav.cutoff_overlap = 1.0e-6
+            ## run
             try:
                 with open(self.INP_FN, 'w+') as f: 
                     f.write(self.input_pav.getText4file())
