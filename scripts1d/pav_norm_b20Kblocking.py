@@ -29,7 +29,8 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         3_0_VAP/
         ...
     '''
-
+    INP_FN = 'aux_pav.INP'
+    
     def __init__(self, z, n, interaction, valid_Ks=[], bu_folder=''):
         '''
         
@@ -226,8 +227,32 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         cases, 0 by default.
         """
         obj : DataTaurus = self.results[K][k_b20][i]
-        empty_states = (obj.var_p < 1.0e-5) or (obj.var_n < 1.0e-5 )
+        empty_states = (obj.var_p < 1.0e-6) or (obj.var_n < 1.0e-6 )
         self.input_pav.empty_states = int(empty_states)
+    
+    def _execute_PAV_norm(self, output_fn):
+        """
+        Problems related to the EmptyStates Switching, in cases where ES=1, even
+        with zero-pairing. Revert the option if there 0-norm PAV exception.
+        """
+        for i in range(2):
+            if i == 1: 
+                ## change the input states
+                self.input_pav.empty_states = abs(self.input_pav.empty_states - 1)
+            try:
+                with open(self.INP_FN, 'w+') as f: 
+                    f.write(self.input_pav.getText4file())
+                    # run PAV
+                if os.getcwd().startswith('C:'): ## Testing purpose 
+                    _auxWindows_executeProgram_PAV(output_fn)
+                else:
+                    os.system('./taurus_pav.exe < {} > {}'.format(self.INP_FN, output_fn))
+                
+                obj = DataTaurusPAV(self.z, self.n, output_fn)
+                return obj
+            except BaseException as e:
+                if i == 1: raise e
+                printf(f"       ** failed PAV projection, switching EmptyStates")
     
     def _iteratePAVOverSolutions(self):
         """ Execute for the different b20 - K, """
@@ -238,9 +263,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
             if not os.path.exists(fld_ / f'{self.inter}{tail_}'): continue
             shutil.copy(fld_ / f'{self.inter}{tail_}', exe_fld)
         if exe_fld != Path(): shutil.copy('taurus_pav.exe', exe_fld)
-        
-        INP_FN = 'aux_pav.INP'
-        
+                
         self.norms = dict()
         self.pav_results = dict()
         for K in self.valid_Ks:
@@ -279,15 +302,9 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                     os.chdir(exe_fld)
                     args = K, self.surf_b20_qp[K][k_b20][i], b20_ref, k_b20.replace("_","-")
                     out_fn = 'overlap_K{}_qp{}_{}_{}'.format(*args)
-                    with open(INP_FN, 'w+') as f: f.write(self.input_pav.getText4file())
+                    
                     try:
-                        # run PAV
-                        if os.getcwd().startswith('C:'): ## Testing purpose 
-                            _auxWindows_executeProgram_PAV(out_fn)
-                        else:
-                            os.system('./taurus_pav.exe < {} > {}'.format(INP_FN, out_fn))
-                        
-                        obj = DataTaurusPAV(self.z, self.n, out_fn)
+                        obj : DataTaurusPAV = self._execute_PAV_norm(out_fn)
                         
                         norm_i = obj.proj_norm[0]
                         self.norms[K][k_b20].append(norm_i)
