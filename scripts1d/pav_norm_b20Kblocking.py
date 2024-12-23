@@ -218,9 +218,19 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         """ skip the quasiparticle blocked if the energy is already found.  """
         return all(map(lambda x: abs(x-Ehfb) < 1.0e-6, self.energies[K][k_b20]))
     
+    def _emptyStatesSetUpByPairingSituation(self, K, k_b20, i):
+        """
+        For Mean-field results, the absence of pairing in proton or neutron part
+        lead to some problems with the pfaffian-norm evaluation (getting N>=1.0).
+        The problem should be considered with option empty_states=1 only in that
+        cases, 0 by default.
+        """
+        obj : DataTaurus = self.results[K][k_b20][i]
+        empty_states = (obj.var_p < 1.0e-5) or (obj.var_n < 1.0e-5 )
+        self.input_pav.empty_states = int(empty_states)
+    
     def _iteratePAVOverSolutions(self):
         """ Execute for the different b20 - K, """
-        _ = 0
         ## copy the hamiltonian files
         exe_fld = Path('TEMP_BU') if os.getcwd().startswith('C') else Path()
         fld_ = self.bu_folder
@@ -260,6 +270,8 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 
                 _lenqp = len(self.surf_b20_qp[K][k_b20])
                 for i, kb20i_pth in enumerate(self.surfaces[K][k_b20]):
+                    
+                    self._emptyStatesSetUpByPairingSituation(K, k_b20, i)
                     shutil.copy(kb20i_pth, exe_fld / 'right_wf.bin')
                     
                     printf(f"    <{b20_ref} | {b20:5.3f}> : ", kb20i_pth)
@@ -281,10 +293,12 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                         self.norms[K][k_b20].append(norm_i)
                         self.pav_results[K][k_b20].append(deepcopy(obj))
                         
-                        printf(f"      = {norm_i:5.3f} [OK] i:",i,_lenqp)
+                        printf(f"      = {norm_i:5.3f} [OK] i:[{i}/{_lenqp}] "
+                               f"EmptySt={self.input_pav.empty_states}" )
                         
                     except BaseException as e:
-                        printf("      [Error] PAV-HFB not obtained i:", i, _lenqp)
+                        printf(f"      [Error] PAV-HFB not obtained i:[{i}/{_lenqp}] "
+                               f"EmptySt={self.input_pav.empty_states}")
                         self.norms[K][k_b20].append(0.0)
                         self.pav_results[K][k_b20].append(None)
                         
