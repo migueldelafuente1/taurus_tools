@@ -1070,6 +1070,7 @@ Disable simplifications P     {disable_simplifications_P}"""
                 self.ArgsEnum.disable_simplifications_NZA,
                 self.ArgsEnum.disable_simplifications_P,
                 self.ArgsEnum.empty_states,
+                self.ArgsEnum.cutoff_overlap,
                 ):
             setattr(self, atr, 0)
         

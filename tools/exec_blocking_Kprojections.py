@@ -598,8 +598,8 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
             printf("   * Overlap criteria begins ---------------")
             shutil.copy(self._previous_bin_path, 'left_wf.bin')
             
-            overlap_min = -999999  # - if sorting for largest norm, + for 1 nearest
-            for id_ in self._container.getAllResults().keys():
+            overlap_max = -999999  # - if sorting for largest norm, + for 1 nearest
+            for id_, res in self._container.getAllResults().items():
                 bin_ = self._container.get(id_)[1]
                 shutil.copy(f'{self._container.BU_folder}/{bin_}', 'right_wf.bin')
                 
@@ -610,8 +610,12 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 if self.inputObj.n_Mphi > 0: inp_pav.n_Mphi = self.inputObj.n_Mphi 
                 
                 res_ov: DataTaurusPAV = None
-                for empty_states_case in (0, 1):
+                _EMPSTS = (0, 1)
+                if (res.var_p < 1.0e-7 or res.var_n < 1.0e-7): _EMPSTS = (1, 0)
+                for empty_states_case in _EMPSTS:
                     inp_pav.empty_states = empty_states_case
+                    ## include reaonable cutoff for empty states = 1
+                    inp_pav.cutoff_overlap = 1.0e-6 if empty_states_case == 1 else 0
                     
                     fn_ = 'check_overlap'
                     with open(f'{fn_}.inp', 'w+') as f: 
@@ -631,14 +635,18 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                               empty_states_case)
                         continue
                     overl  = res_ov.proj_norm[0]
+                    if abs(overl) > 1 and _EMPSTS == (0, 1):
+                        printf(f"     *(N>1 skip) overlap_{id_}= {overl:6.5f}")
+                        continue
+                    
                     # overl_new = abs(1 - abs(overl)) # to 1: overl_new < overlap_min
                     overl_new = abs(overl)          # larges: overl_new > overlap_min
-                    if overl_new > overlap_min:  ## ovelap has an arbitrary phase 
-                        overlap_min = overl_new
+                    if overl_new > overlap_max:  ## ovelap has an arbitrary phase 
+                        overlap_max = overl_new
                         id_sel = id_
-                        printf(f"     *( pass) overlap_{id_}= {overl:6.5f}")
+                        printf(f"     *( pass)    overlap_{id_}= {overl:6.5f}")
                     else:
-                        printf(f"     *(large) overlap_{id_}= {overl:6.5f}")
+                        printf(f"     *(smaller)  overlap_{id_}= {overl:6.5f}")
                     break
             
             ## Highly 
