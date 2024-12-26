@@ -256,7 +256,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
             elif i == 1:
                 self.input_pav.cutoff_overlap = 1.0e-6
             else:
-                self.input_pav.empty_states   = 0
+                self.input_pav.empty_states = abs(self.input_pav.empty_states - 1)
             
             ## run
             try:
