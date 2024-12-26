@@ -237,20 +237,27 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
         """
         for i in range(3):
             ## switch cutoff -> 1e-6 if IE=1, switch IE if tried
-            if i == 0: 
-                self.input_pav.cutoff_overlap = 0 ## reset cutoff norm
-            if i == 1:
-                if self.input_pav.empty_states == 1: 
-                    self.input_pav.cutoff_overlap = 1.0e-6
-                else: 
-                    self.input_pav.empty_states   = 1
-                    self.input_pav.cutoff_overlap = 0
-            else: 
-                if self.input_pav.empty_states == 1:
-                    self.input_pav.empty_states   = 0
-                    self.input_pav.cutoff_overlap = 0
-                else: 
-                    self.input_pav.cutoff_overlap = 1.0e-6
+            # if i == 0: 
+            #     self.input_pav.cutoff_overlap = 0 ## reset cutoff norm
+            # if i == 1:
+            #     if self.input_pav.empty_states == 1: 
+            #         self.input_pav.cutoff_overlap = 1.0e-6
+            #     else: 
+            #         self.input_pav.empty_states   = 1
+            #         self.input_pav.cutoff_overlap = 0
+            # else: 
+            #     if self.input_pav.empty_states == 1:
+            #         self.input_pav.empty_states   = 0
+            #         self.input_pav.cutoff_overlap = 0
+            #     else: 
+            #         self.input_pav.cutoff_overlap = 1.0e-6
+            if   i == 0:
+                self.input_pav.cutoff_overlap = 0                    
+            elif i == 1:
+                self.input_pav.cutoff_overlap = 1.0e-6
+            else:
+                self.input_pav.empty_states   = 0
+            
             ## run
             try:
                 with open(self.INP_FN, 'w+') as f: 
@@ -263,7 +270,9 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 
                 obj = DataTaurusPAV(self.z, self.n, output_fn)
                 norm_i = obj.proj_norm[0]
-                if norm_i > 1: continue
+                if norm_i > 1: 
+                    printf(f"       ** N>1 [{norm_i}] skipping (i{i})")
+                    continue
                 
                 return obj
             except BaseException as e:
