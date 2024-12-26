@@ -610,12 +610,13 @@ class ExeTaurus1D_B20_OEblocking_Ksurfaces_Base(ExeTaurus1D_DeformB20):
                 if self.inputObj.n_Mphi > 0: inp_pav.n_Mphi = self.inputObj.n_Mphi 
                 
                 res_ov: DataTaurusPAV = None
-                _EMPSTS = (0, 1)
-                if (res.var_p < 1.0e-7 or res.var_n < 1.0e-7): _EMPSTS = (1, 0)
-                for empty_states_case in _EMPSTS:
+                _EMPSTS = (0, 0, 1)
+                if (res.var_p < 1.0e-7 or res.var_n < 1.0e-7): _EMPSTS = (1, 1, 0)
+                for case_, empty_states_case in enumerate(_EMPSTS):
+                    ## Cases: 0: ES=(1,0)CO=0; 1: ES=(1,0)CO>0; 2: ES=(0,1)CO>0
+                    ## include reasonable cutoff if direct method fails
                     inp_pav.empty_states = empty_states_case
-                    ## include reaonable cutoff for empty states = 1
-                    inp_pav.cutoff_overlap = 1.0e-6 if empty_states_case == 1 else 0
+                    inp_pav.cutoff_overlap = 1.0e-6 if case_ > 0 else 0
                     
                     fn_ = 'check_overlap'
                     with open(f'{fn_}.inp', 'w+') as f: 
