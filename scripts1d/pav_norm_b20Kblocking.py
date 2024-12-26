@@ -262,7 +262,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 
                 return obj
             except BaseException as e:
-                if i == 1: raise e
+                if i == 2: raise e
                 printf(f"       ** failed PAV projection, ES/CO=",
                        self.input_pav.empty_states,self.input_pav.cutoff_overlap)
     
