@@ -262,9 +262,9 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 
                 return obj
             except BaseException as e:
-                if i == 2: raise e
                 printf(f"       ** failed PAV projection, ES/CO=",
                        self.input_pav.empty_states,self.input_pav.cutoff_overlap)
+                if i == 2: raise e
     
     def _iteratePAVOverSolutions(self):
         """ Execute for the different b20 - K, """
