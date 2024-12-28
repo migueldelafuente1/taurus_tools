@@ -2940,7 +2940,7 @@ class BaseResultsContainer1D(_DataObjectBase):
 
 
 if __name__ == '__main__':
-    pass
+    
     # res = DataTaurus(12, 12, '../DATA_RESULTS/Beta20/Mg_GDD_test/24_VAP9/BU_folder_hamil_gdd_100_z12n12/res_z12n12_d1_0.OUT')
     # res = DataTaurus(10, 6, '../data_resources/testing_files/TEMP_res_z1n12_taurus_vap.txt') # TEMP_res_z2n1_0-dbase3odd
     
@@ -2967,7 +2967,9 @@ if __name__ == '__main__':
     # res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z2n1_odd_oldversion.txt')
     # res = DataTaurusPAV(12, 19, '../data_resources/testing_files/TEMP_res_PAV_z0n3_resultwithproblems.txt')
     # res = DataTaurusPAV(8, 9, '../data_resources/testing_files/TEMP_res_PAV_z8n9_1result.txt')
-        
+    
+    # res = DataTaurus(12, 14, '../DATA_RESULTS\PN_mixing\hamilParts_S0B1VAP_MZ5\BU_folder_PT00J10_B1_MZ5_z12n14/res_z12n14_d0_1.OUT')
+    # print(res.getAttributesDictLike)
     _ = 0
     
     

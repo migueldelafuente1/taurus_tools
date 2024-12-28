@@ -125,7 +125,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             
             ExeTaurus1D_PairCoupling.setPairConstraint(pair_constr)
             ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
-            
+            shutil.copy('base_initial_wf.bin', 'initial_wf.bin')
             try:
                 # if ip == 0:
                 #     exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)
