@@ -758,7 +758,7 @@ class TBME_HamiltonianManager(object):
             c_time = time()
             printf(f"    ** [] Running [{TBME_SUITE}] for [{self.xml_input_filename}]")
             if os.getcwd().startswith('C:'):
-                py3 = 'C:/ProgramData/anaconda3/python.exe'
+                py3 = 'C:/Users/delafuente/anaconda3/python.exe'
                 e_ = subprocess.call(f'{py3} main.py {self.xml_input_filename} > temp.txt',
                                      timeout= self._getDefaultTimeOut(),
                                      shell=True)

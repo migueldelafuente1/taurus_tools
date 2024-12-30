@@ -180,11 +180,14 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         export_fn = f"export_TES_{export_fn}_z{self.z}n{self.n}_{self.interaction}.txt"
         self.deform_indexes = {}
         if os.path.exists(fld_bu / export_fn):
-            with open(export_fn, 'r') as f:
+            with open(fld_bu / export_fn, 'r') as f:
                 for l in f.readlines()[1:]:
                     args, _ = l.split(OUTPUT_HEADER_SEPARATOR)
                     i, v = args.split(':')
                     i = int(i)
+                    ## NOTE. export files with 0.000 sometimes have -0.000 due 
+                    ##       the real minimum small value: fixing
+                    if abs(float(v)) < 1.0e-6: v = v.replace('-', '')
                     v = v.strip().replace('+','') + '.bin'
                     self.deform_indexes[v] = i
         else:
@@ -215,7 +218,7 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
             self.export_filenames[inter] = dest_fld / export_fn_2
             
         ## Read the files to be copied
-        verify_out = True
+        verify_out = os.getcwd().startswith('/home')
         for f, _ in self.b20_sorted:
             self.surfaces[f] = fld_bu / f"PNVAP/{f}"
             if verify_out:
@@ -321,6 +324,11 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         """
         lines = [f'DataTaurus, {self.observable}', ]
         for k_b20, _ in self.b20_sorted:
+            ## CONDITION: for avoiding sign problem for almost 0.000 results.
+            if not k_b20 in self.deform_indexes:
+                if float(k_b20[:-4]) < 1.0e-5: 
+                    k_b20 = '-'+k_b20 if not '-' in k_b20 else k_b20.replace('-','')
+                if not k_b20 in self.deform_indexes: continue
             indx = self.deform_indexes[k_b20]
             b20  = k_b20[:-4]
             b20  = '+'+b20 if not '-' in b20 else b20
