@@ -53,7 +53,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     
     ## Normal execution.
     ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
-        ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_SWEEPING
+        ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_STD #EVEN_STEP_SWEEPING
         
     ExeTaurus1D_PairCoupling.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
@@ -113,7 +113,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             exe_.setInputCalculationArguments(**input_args_start)
             exe_.defineDeformationRange(p_min,  p_max, N_max)
             exe_.setUp()
-            exe_.setUpExecution(**input_args_onrun)
+            exe_.setUpExecution(reset_seed= seed_base == 1, **input_args_onrun)
             exe_.globalTearDown(zip_bufolder=True, base_calc=True)
         except ExecutionException as e:
             printf("[PAIR_SCRIPT ERROR] :: Execution Exception rose:")
