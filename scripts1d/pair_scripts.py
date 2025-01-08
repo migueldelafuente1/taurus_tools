@@ -114,7 +114,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             exe_.defineDeformationRange(p_min,  p_max, N_max)
             exe_.setUp()
             exe_.setUpExecution(reset_seed= seed_base == 1, **input_args_onrun)
-            exe_.globalTearDown(zip_bufolder=True, base_calc=True)
+            if convergences > 0:
+                exe_.globalTearDown(zip_bufolder=True, base_calc=True)
         except ExecutionException as e:
             printf("[PAIR_SCRIPT ERROR] :: Execution Exception rose:")
             printf(e)
