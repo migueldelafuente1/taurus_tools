@@ -53,7 +53,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     
     ## Normal execution.
     ExeTaurus1D_PairCoupling.ITERATIVE_METHOD = \
-        ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_STD #EVEN_STEP_SWEEPING
+        ExeTaurus1D_PairCoupling.IterativeEnum.EVEN_STEP_SWEEPING
         
     ExeTaurus1D_PairCoupling.SAVE_DAT_FILES = [
         DataTaurus.DatFileExportEnum.canonicalbasis,
