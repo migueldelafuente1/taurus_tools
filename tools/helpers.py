@@ -122,6 +122,46 @@ def zipBUresults(folder, z,n,interaction, *args):
         printf("[ERROR] zipping of the BUresults cannot be done:: $",order)
         printf(">>>", be.__class__.__name__, ":", be)
 
+def getVariableInLatex(var):
+    """
+    Get the variable from Data-Taurus VAP in LaTex 
+    """
+    _P_vars = {  ## InputTaurus.ConstrEnum.
+        'P_T00_J10' : '$\delta^{T=0}_{J=1\ M=0}$',
+        'P_T00_J1m1': '$\delta^{T=0}_{J=1\ M=-1}$',
+        'P_T00_J1p1': '$\delta^{T=0}_{J=1\ M=+1}$',
+        'P_T10_J00' : '$\delta^{T=1\ M_T=0}_{J=0}$',
+        'P_T1m1_J00': '$\delta^{pp}_{J=0}$',
+        'P_T1p1_J00': '$\delta^{nn}_{J=0}$',
+    }
+    aux = var.split('_')
+    if   var.startswith('b') or var.startswith('q'):
+        if aux[0] == 'beta': aux[0] = ''
+        aux[0] = f"$\\beta_{{{aux[0][1:]}}}" if var.startswith('b') else f"$Q_{{{aux[0][:1]}}}"
+        return aux[0] + f"^{{({aux[1]})}}$"
+    elif  var.startswith('gamma'):
+        aux[0] = f"$\\gamma" 
+        return aux[0] + f"^{{({aux[1]})}}$"
+    elif var.startswith('P_'):
+        return _P_vars[var]
+    elif var.startswith('E_HFB'):
+        if len(aux) == 2: aux.append('(total)')
+        return f'$E_{{HFB}}^{{{aux[2]}}}$'
+    elif var[:2] in ('ki', 'pa', 'hf'):
+        if len(aux) == 1: aux.append('(total)')
+        return f"$E_{{{aux[0]}}}^{{{aux[1]}}}$"
+    elif var[:3] == 'var':
+        t = 'Z' if aux[1]=='p' else 'N'
+        return f"$\\sigma^2_{{{t}}}$"
+    elif var.startswith('J'):
+        if var.endswith('_var'): return f"$\Delta\ J_{{{var[1]}}}$"
+        else: 
+            aux.append('')
+            return f"$J_{{{var[1]}}}^{{{aux[1]}}}$"
+    elif var.startswith('r_'):
+        return f"$r^{{{aux[1]}}}$"
+    else:raise Exception("Unimplemented:", var)
+
 def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
     
     header = ''.join([delimiter]*level)

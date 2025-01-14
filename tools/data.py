@@ -435,8 +435,11 @@ class EigenbasisData(_DataObjectBase):
         self.v2   = []
         self.h    = []
         self.H11  = []
+        self.dim  = 0
         
         self.filename = filename
+        if self.filename != None:
+            self.getResults()
         
     def getResults(self):
         """
@@ -482,8 +485,8 @@ class EigenbasisData(_DataObjectBase):
                     self.h  .append(vals[8])
                 if self.DAT_FILE == DataTaurus.DatFileExportEnum.eigenbasis_H11:
                     self.H11.append(vals[8])    
-        _=0
-    
+        self.dim = len(self.index)
+        
     def _setDATFile(self, lines_file):
         """ Identify the file by the column names at the top. """
         if   self.EIGENBASIS_H11_HEADER in lines_file[0]:
@@ -719,6 +722,9 @@ class DataTaurus(_DataObjectBase):
         Jz       = '  Z    '
         PairT0J1 = 'T = 0 ; J = 1'
         PairT1J0 = 'T = 1 ; J = 0'
+        Pair2bT0J1 = '2B T= 0; J= 1'
+        Pair2bT1J0 = '2B T= 1; J= 0'
+        VariancePN = 'Var. p; pn; n'
         
         SP_dim  = 'No. of sp states'
         SH_dim  = 'No. of shells   '
@@ -796,6 +802,7 @@ class DataTaurus(_DataObjectBase):
         self.neutron_numb = None
         self.var_p    = None
         self.var_n    = None
+        self.var_pn   = -404     # optional value
         self.parity   = None
         self.overlap  = 0
         self.label_state = None
@@ -926,6 +933,13 @@ class DataTaurus(_DataObjectBase):
         self.P_T10_J00  = None
         self.P_T1m1_J00 = None
         self.P_T1p1_J00 = None
+        
+        self.P2b_T00_J10  = -404 # optional values
+        self.P2b_T00_J1m1 = -404
+        self.P2b_T00_J1p1 = -404
+        self.P2b_T10_J00  = -404
+        self.P2b_T1m1_J00 = -404
+        self.P2b_T1p1_J00 = -404
         
         self.date_start      = None
         self.date_start_iter = None
@@ -1078,6 +1092,9 @@ class DataTaurus(_DataObjectBase):
                 self._getAngularMomentum(line)
             if self.HeaderEnum.PairT0J1 in line or self.HeaderEnum.PairT1J0 in line:
                 self._getPairCoupling(line)
+            if ((self.HeaderEnum.Pair2bT0J1 in line) or (self.HeaderEnum.Pair2bT1J0 in line)
+                or (self.HeaderEnum.VariancePN in line)):
+                self._getPair_2B_Coupling(line)
         
         # return dict([(e, float(val)) for e, val in energies.items()]), prop_fin
     
@@ -1231,7 +1248,21 @@ class DataTaurus(_DataObjectBase):
         elif self.HeaderEnum.PairT1J0 in line:
             vals = self._getValues(line, self.HeaderEnum.PairT1J0)
             self.P_T10_J00 = vals[1]
-            self.P_T1m1_J00, self.P_T1p1_J00 = vals[0], vals[2]            
+            self.P_T1m1_J00, self.P_T1p1_J00 = vals[0], vals[2]
+        
+    def _getPair_2B_Coupling(self, line):
+        
+        if self.HeaderEnum.Pair2bT0J1 in line:
+            vals = self._getValues(line, self.HeaderEnum.Pair2bT0J1)
+            self.P2b_T00_J10 = vals[1]
+            self.P2b_T00_J1m1, self.P2b_T00_J1p1 = vals[0], vals[2]
+        elif self.HeaderEnum.Pair2bT1J0 in line:
+            vals = self._getValues(line, self.HeaderEnum.Pair2bT1J0)
+            self.P2b_T10_J00 = vals[1]
+            self.P2b_T1m1_J00, self.P2b_T1p1_J00 = vals[0], vals[2]
+        elif self.HeaderEnum.VariancePN in line:
+            vals = self._getValues(line, self.HeaderEnum.Pair2bT1J0)
+            self.var_pn = vals[1] # the others are for protons [0] and neutr.[2]
     
     def setDataFromCSVLine(self, line_text):
         """ 
