@@ -787,6 +787,8 @@ class DataTaurus(_DataObjectBase):
     
     def __init__(self, z, n, filename, empty_data=False):
         
+        empty_data = filename == None
+        
         self.z = z
         self.n = n
         self.properly_finished = False
