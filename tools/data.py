@@ -1263,7 +1263,7 @@ class DataTaurus(_DataObjectBase):
             self.P2b_T10_J00 = vals[1]
             self.P2b_T1m1_J00, self.P2b_T1p1_J00 = vals[0], vals[2]
         elif self.HeaderEnum.VariancePN in line:
-            vals = self._getValues(line, self.HeaderEnum.Pair2bT1J0)
+            vals = self._getValues(line, self.HeaderEnum.VariancePN)
             self.var_pn = vals[1] # the others are for protons [0] and neutr.[2]
     
     def setDataFromCSVLine(self, line_text):
