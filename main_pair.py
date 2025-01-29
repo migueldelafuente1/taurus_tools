@@ -78,8 +78,8 @@ if __name__ == '__main__':
     if True:
         run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS,
                              gogny_interaction=GognyEnum.D1S,
-                             ROmega=(0,0), convergences=4,
-                             #ROmega=(14,16), convergences=3,
+                             # ROmega=(0,0), convergences=4,
+                             ROmega=(14,14), convergences=3,
                              seed_base=0, 
                              p_min=-0.05, p_max=1.5, N_max=31,
                              fomenko_points=fomenko_points, parity_2_block=1,
