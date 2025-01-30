@@ -11,7 +11,6 @@ from tools.Enums import PotentialForms, CentralMEParameters,\
 from tools.inputs import InputTaurus, InputTaurusPAV
 from tools.afterrun_hamiltonians import ExeTaurus1D_AfterRun_HamilDecomposition 
 from copy import deepcopy
-from pydantic.v1.generics import Parametrization
 
 # def run_b20_decomposeHamiltonian_GognyB1(nuclei, constraints=['',], 
 #                                          fomenko_points=(1, 1),):
