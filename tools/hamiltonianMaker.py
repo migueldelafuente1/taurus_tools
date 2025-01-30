@@ -23,7 +23,8 @@ from tools.helpers import GITHUB_2BME_HTTP, ValenceSpacesDict_l_ge10_byM,\
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters, Constants,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes, Enum,\
-    GognyEnum, PotentialSeriesParameters, CentralMEParameters, PotentialForms
+    GognyEnum, PotentialSeriesParameters, CentralMEParameters, PotentialForms,\
+    M3YEnum
 from tools.data import DataTaurus
 
 #===============================================================================
@@ -399,6 +400,7 @@ class TBME_HamiltonianManager(object):
         self.do_coulomb = True
         self.do_LS      = True
         self.do_DD      = False
+        self.do_tensor  = True
         self.inner_core = None
         
         self.xml_input_filename = None
@@ -551,6 +553,174 @@ class TBME_HamiltonianManager(object):
         f4.tail = '\n\t'
         return forces
     
+    def _set_M3YParameters(self, forces, m3y_interaction):
+        
+        ## Clear the Forces element file
+        for s_elem in list(forces):
+            forces.remove(s_elem)
+            
+        ## D1S PARAMS: *********************************************************
+        t3_  = dict( value='1320',    units='MeV*fm^-4')
+        alp_ = dict( value='0.333333')
+        x0_  = dict( value='1')
+        if m3y_interaction == M3YEnum.P0:
+            central= {
+                'Wigner': {"part_1": "8840.0000", "part_2": "-2275.0000", "part_3": " 3.4878", },
+                'Heisenberg': {"part_1": "-2565.5000", "part_2": "453.0000", "part_3": " 6.9752", },
+                'Bartlett': {"part_1": "3816.0000", "part_2": "-972.0000", "part_3": "-6.9753", },
+                'Majorana': {"part_1": "3876.5000", "part_2": "-1800.0000", "part_3": "-13.9507", },
+                'mu_length': {"part_1": " 0.2500", "part_2": " 0.4000", "part_3": " 1.4140", },
+            }
+            spinOrb= {
+                'Wigner': {"part_1": "-1749.5000", "part_2": "-242.2500", },
+                'Heisenberg': {"part_1": "-801.0000", "part_2": "73.7500", },
+                'Bartlett': {"part_1": "-1749.5000", "part_2": "-242.2500", },
+                'Majorana': {"part_1": "-801.0000", "part_2": "73.7500", },
+                'mu_length': {"part_1": " 0.2500", "part_2": " 0.4000", },
+            }
+            tensor= {
+                'Wigner': {"part_1": "-213.0000", "part_2": "-3.8250", },
+                'Heisenberg': {"part_1": "-335.0000", "part_2": "-11.6250", },
+                'Bartlett': {"part_1": "-213.0000", "part_2": "-3.8250", },
+                'Majorana': {"part_1": "-335.0000", "part_2": "-11.6250", },
+                'mu_length': {"part_1": " 0.4000", "part_2": " 0.7000", },
+            }
+            self.do_DD = False
+        elif m3y_interaction == M3YEnum.P2:
+            central= {
+                'Wigner': {"part_1": "1501.7500", "part_2": "-1299.0000", "part_3": " 3.4878", },
+                'Heisenberg': {"part_1": "-4411.7500", "part_2": "531.0000", "part_3": " 6.9752", },
+                'Bartlett': {"part_1": "3438.2500", "part_2": "-1224.0000", "part_3": "-6.9753", },
+                'Majorana': {"part_1": "5551.7500", "part_2": "-2274.0000", "part_3": "-13.9507", },
+                'mu_length': {"part_1": " 0.2500", "part_2": " 0.4000", "part_3": " 1.4140", },
+            }
+            spinOrb= {
+                'Wigner': {"part_1": "-3149.1000", "part_2": "-436.0500", },
+                'Heisenberg': {"part_1": "-1441.8000", "part_2": "132.7500", },
+                'Bartlett': {"part_1": "-3149.1000", "part_2": "-436.0500", },
+                'Majorana': {"part_1": "-1441.8000", "part_2": "132.7500", },
+                'mu_length': {"part_1": " 0.2500", "part_2": " 0.4000", },
+            }
+            tensor= {
+                'Wigner': {"part_1": "-25.5600", "part_2": "-0.4590", },
+                'Heisenberg': {"part_1": "-40.2000", "part_2": "-1.3950", },
+                'Bartlett': {"part_1": "-25.5600", "part_2": "-0.4590", },
+                'Majorana': {"part_1": "-40.2000", "part_2": "-1.3950", },
+                'mu_length': {"part_1": " 0.4000", "part_2": " 0.7000", },
+            }
+            self.do_DD = False
+        elif m3y_interaction == M3YEnum.P6:
+            central= {
+                'Wigner': {"part_1": "7741.2500", "part_2": "-2079.0000", "part_3": " 3.4878", },
+                'Heisenberg': {"part_1": "-3868.2500", "part_2": "475.0000", "part_3": " 6.9752", },
+                'Bartlett': {"part_1": "2722.2500", "part_2": "-1012.0000", "part_3": "-6.9753", },
+                'Majorana': {"part_1": "1878.7500", "part_2": "-1978.0000", "part_3": "-13.9507", },
+                'mu_length': {"part_1": " 0.2500", "part_2": " 0.4000", "part_3": " 1.4140", },
+            }
+            spinOrb= {
+                'Wigner': {"part_1": "-3848.9000", "part_2": "-532.9500", },
+                'Heisenberg': {"part_1": "-1762.2000", "part_2": "162.2500", },
+                'Bartlett': {"part_1": "-3848.9000", "part_2": "-532.9500", },
+                'Majorana': {"part_1": "-1762.2000", "part_2": "162.2500", },
+                'mu_length': {"part_1": " 0.2500", "part_2": " 0.4000", },
+            }
+            tensor= {
+                'Wigner': {"part_1": "-213.0000", "part_2": "-3.8250", },
+                'Heisenberg': {"part_1": "-335.0000", "part_2": "-11.6250", },
+                'Bartlett': {"part_1": "-213.0000", "part_2": "-3.8250", },
+                'Majorana': {"part_1": "-335.0000", "part_2": "-11.6250", },
+                'mu_length': {"part_1": " 0.4000", "part_2": " 0.7000", },
+            }
+            self.do_DD = False
+        else:
+            raise Exception("Invalid M3Y interaction", m3y_interaction)
+        _TT = '\n\t\t'
+        bb_ = BrinkBoekerParameters
+        ## *********************************************************************
+        ## *********************************************************************
+        cou_const = 1 / self.b_length  # e^2 were in the interaction constant
+        printf(f" > doing Coul m.e.", self.do_coulomb, f"1/b= {cou_const:8.3f}")
+        f2  = et.SubElement(forces, ForceEnum.Force_From_File,  
+                            attrib={AttributeArgs.ForceArgs.active : str(self.do_coulomb)})
+        f2.text = _TT
+        _ = et.SubElement(f2, ForceFromFileParameters.file, 
+                          attrib={AttributeArgs.name : PATH_COUL_IN_2BMESUITE})
+        _.tail=_TT
+        _ = et.SubElement(f2, ForceFromFileParameters.options,
+                          attrib={AttributeArgs.FileReader.ignorelines : '1',
+                                  AttributeArgs.FileReader.constant: str(cou_const),
+                                  AttributeArgs.FileReader.l_ge_10: 'True'})
+        _.tail='\n\t'
+        f2.tail = '\n\t'
+        ## *********************************************************************
+        printf(f" > doing M3Y-Central m.e.: active= True")
+        f3  = et.SubElement(forces, ForceEnum.YukawiansM3Y, 
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f3.text = _TT
+        _ = et.SubElement(f3, bb_.mu_length, attrib= central[bb_.mu_length])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Wigner,    attrib= central[bb_.Wigner])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Bartlett,  attrib= central[bb_.Bartlett])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Heisenberg,attrib= central[bb_.Heisenberg])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Majorana,  attrib= central[bb_.Majorana])
+        _.tail = '\n\t'
+        f3.tail = '\n\t'
+        ## *********************************************************************
+        printf(f" > doing M3Y-LS m.e.: active= True")
+        f3  = et.SubElement(forces, ForceEnum.M3YSpinOrbit, 
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f3.text = _TT
+        _ = et.SubElement(f3, bb_.mu_length, attrib= spinOrb[bb_.mu_length])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Wigner,    attrib= spinOrb[bb_.Wigner])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Bartlett,  attrib= spinOrb[bb_.Bartlett])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Heisenberg,attrib= spinOrb[bb_.Heisenberg])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Majorana,  attrib= spinOrb[bb_.Majorana])
+        _.tail = '\n\t'
+        f3.tail = '\n\t'
+        ## *********************************************************************
+        printf(f" > doing M3Y-Tensor S12 m.e.: active= True")
+        f3  = et.SubElement(forces, ForceEnum.M3YTensor, 
+                            attrib={AttributeArgs.ForceArgs.active : 'True'})
+        f3.text = _TT
+        _ = et.SubElement(f3, bb_.mu_length, attrib= tensor[bb_.mu_length])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Wigner,    attrib= tensor[bb_.Wigner])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Bartlett,  attrib= tensor[bb_.Bartlett])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Heisenberg,attrib= tensor[bb_.Heisenberg])
+        _.tail = _TT
+        _ = et.SubElement(f3, bb_.Majorana,  attrib= tensor[bb_.Majorana])
+        _.tail = '\n\t'
+        f3.tail = '\n\t'
+        
+        ## *********************************************************************
+        printf(f" > doing DD m.e.: if core. Core=", self.inner_core)
+        self.do_DD = bool(self.inner_core!=None) or self.do_DD
+        f4 = et.SubElement(forces, ForceEnum.Density_Dependent,
+                attrib={AttributeArgs.ForceArgs.active : str(self.do_DD)})
+        f4.text = _TT
+        _ = et.SubElement(f4, DensityDependentParameters.constant, attrib = t3_ )
+        _.tail = _TT
+        _ = et.SubElement(f4, DensityDependentParameters.alpha,    attrib = alp_)
+        _.tail = _TT
+        _ = et.SubElement(f4, DensityDependentParameters.x0,       attrib = x0_ )
+        if isinstance(self.inner_core, tuple):
+            _.tail = _TT
+            core_ = {AttributeArgs.CoreArgs.protons:  str(self.inner_core[0]),
+                     AttributeArgs.CoreArgs.neutrons: str(self.inner_core[1])}
+            _ = et.SubElement(f4, DensityDependentParameters.core, attrib = core_ )
+        _.tail = '\n\t'
+        f4.tail = '\n\t'
+        return forces
+    
     def _generateCOMFileFromFile(self, com_filename=None):
         """ 
         Import all states up to MZmax and then filter the results from a file 
@@ -612,6 +782,8 @@ class TBME_HamiltonianManager(object):
             name += "_noCoul"
         if not self.do_LS:
             name += "_noLS"
+        # if not self.do_tensor:
+        #     name += "_noTens"
         if self.do_DD:
             name += "_COREz{}n{}".format(*self.inner_core)
         name += f"_MZ{self.MZmax}"
@@ -651,6 +823,7 @@ class TBME_HamiltonianManager(object):
         Normal force parameters, process to introduce the proper attributes 
         i.e. value=, name=, ...
         """
+        raise Exception('TODO: Implement me!')
         for key_, arg in inter_args.items():
             _ = 0
             
@@ -686,7 +859,39 @@ class TBME_HamiltonianManager(object):
         tree.write(self.xml_input_filename)
         
         self.runTBMERunnerSuite()
+    
+    def setAndRun_M3Y_xml(self, m3y_interaction, title=''):
+        """
+        Import the file from template and set up forces and valence space
+            (NOTE): method called from CWD=taurus_tools/ to import its resources
+                Change in CWD to 2BMatrixElement/ for execution in self.runTBMERunnerSuite()
+        """
+        if self.MZmin > 0:
+            raise Exception("Valence-space calculations not implemented yet!")
         
+        self._path_xml = 'data_resources/input_D1S.xml'
+        if os.getcwd().endswith(TBME_SUITE):
+            self._path_xml = '../'+self._path_xml
+            
+        printf(os.getcwd())
+        tree = et.parse(self._path_xml)
+        root = tree.getroot()
+        
+        aux_tit = f"Processed M3Y-{m3y_interaction}: S12.{self.do_tensor} LS.{self.do_LS} C.{self.do_coulomb} MZ={self.MZmax}"
+        title_ = root.find(InputParts.Interaction_Title)
+        title_.text = aux_tit if title == "" else title
+        
+        root =  self.__setXMLforCommonArguments(root, m3y_interaction)
+        
+        forces = root.find(InputParts.Force_Parameters)
+        forces = self._set_M3YParameters(forces, m3y_interaction)
+        
+        self.xml_input_filename = 'final_input.xml'
+        tree.write(self.xml_input_filename)
+        
+        self.runTBMERunnerSuite()
+        
+    
     def setAndRun_ComposeInteractions(self, interactions_TBMEXML, title=''):
         """
         :interactions_TBMEXML must be composed as functions and arguments for

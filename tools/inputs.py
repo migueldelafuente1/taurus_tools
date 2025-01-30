@@ -9,7 +9,7 @@ Module to generate input files for programs.
 import numpy as np
 from copy import deepcopy, copy
 import os
-from tools.Enums import Enum
+from tools.Enums import Enum, GognyEnum, M3YEnum
 from tools.helpers import readAntoine, printf
 
 class _Input(object):
@@ -234,6 +234,38 @@ additional options-modes    = {more_options}
         InpDDEnum.export_vs   : 0,
         InpDDEnum.more_options: {},
     }
+    
+    @classmethod
+    def getDDParametersByInteraction(cls, interaction):
+        
+        if interaction in (GognyEnum.B1, M3YEnum.P0):
+            return {cls.InpDDEnum.eval_dd: 0,}
+        elif interaction == GognyEnum.D1:
+            return {
+                cls.InpDDEnum.eval_dd : 1,    cls.InpDDEnum.eval_rea: 1,
+                cls.InpDDEnum.x0_param: 1.0,  cls.InpDDEnum.alpha_param : 0.333333,  
+                cls.InpDDEnum.t3_param: 1350, }
+        elif interaction == GognyEnum.D1S:
+            return {
+                cls.InpDDEnum.eval_dd : 1,    cls.InpDDEnum.eval_rea: 1,
+                cls.InpDDEnum.x0_param: 1.0,  cls.InpDDEnum.alpha_param : 0.333333,  
+                cls.InpDDEnum.t3_param: 1390.6, }
+        elif interaction == M3YEnum.P2:
+            return {
+                cls.InpDDEnum.eval_dd : 1,       cls.InpDDEnum.eval_rea: 1,
+                cls.InpDDEnum.x0_param: 0.72576, cls.InpDDEnum.alpha_param : 0.333333,  
+                cls.InpDDEnum.t3_param: 1320, }
+        elif interaction == M3YEnum.P6:
+            return {
+                cls.InpDDEnum.eval_dd : 1,     cls.InpDDEnum.eval_rea: 1,
+                cls.InpDDEnum.x0_param: 1.0,   cls.InpDDEnum.alpha_param : 0.333333,  
+                cls.InpDDEnum.t3_param: 482.5, 
+                cls.InpDDEnum.more_options: {
+                    31: 1.0,    32: 1.0,
+                    33: 96.0,   34:-1.0,    35:-1.0,    36: 1.0,    37: 1.0}
+                }
+        else:
+            return {cls.InpDDEnum.eval_dd: 0, }
     
     def __init__(self, z, n, interaction, input_filename=None, **params):
         """
@@ -531,8 +563,9 @@ additional options-modes    = {more_options}
                             assert not False in [i.isdigit() for i in val], \
                                 "string values should be integers"
                         val = "{} {}".format(len(val), " ".join(val))
-                elif isinstance(val, int) and (val > 0):
-                    val = 99 ## to ensure export all the space and ignore the states.
+                elif isinstance(val, int) and (val >= 0):
+                    val = val if (val == 0) else 99 
+                    ## 99 to ensure export all the space and ignore the states.
                 else:
                     raise InputException(
                         "The export of valence space should be 0, integer "

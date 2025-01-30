@@ -5,7 +5,7 @@ Created on Jan 23, 2023
 '''
 import os
 import shutil
-from tools.Enums import OutputFileTypes, GognyEnum
+from tools.Enums import OutputFileTypes, GognyEnum, M3YEnum
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.helpers import printf
 
@@ -64,14 +64,17 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True, do_BB
             assert type(MZmax)==int and type(MZmin) == int and type(b_length)==float, MSG_
             assert MZmax >= MZmin and MZmin >= 0, "MZmax >= Mzmin >= 0"
             
-            printf(f"  ** [] Generating Matrix Elements for D1S, zn={z},{n}, b={b_length:5.3f}"
+            printf(f"  ** [] Generating Matrix Elements for [{gogny_interaction}], zn={z},{n}, b={b_length:5.3f}"
                   f"  Major shells: [{MZmin}, {MZmax}]")
             exe_ = TBME_HamiltonianManager(b_length, MZmax, MZmin, set_com2=True)
             exe_.do_coulomb = do_Coulomb
             exe_.do_LS      = do_LS
             exe_.do_BB      = do_BB
             
-            exe_.setAndRun_Gogny_xml(gogny_interaction)
+            if gogny_interaction in M3YEnum.members():
+                exe_.setAndRun_M3Y_xml(gogny_interaction)
+            else:
+                exe_.setAndRun_Gogny_xml(gogny_interaction)
             interaction = exe_.hamil_filename
             printf(f" ** [DONE] Interaction: [{interaction}]")
             
@@ -79,7 +82,6 @@ def getInteractionFile4D1S(interactions, z,n, do_Coulomb=True, do_LS=True, do_BB
         
         else:
             raise Exception(f"Invalid interactions[z,n] types given: {interaction}")
-
 
 
 def parseTimeVerboseCommandOutputFile(time_filename):

@@ -88,7 +88,10 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
         
         self.bu_folder = Path(bu_folder)
         
+        self.eval_dd_edf = False
         self._interaction_parts = []
+        self._interaction_DD_parts = []
+        self._dd_input_object   = {}
         self.hamil_dest_folders = {}
         self.input_vap : InputTaurus    = None
         self.input_pav : InputTaurusPAV = None
@@ -134,6 +137,54 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
                                                   os.listdir())) )
         printf(LINE_2)
     
+    def setUpDDTerm(self, input_DD_params):
+        """
+        Set up DD terms functionals (can be used multiple times)
+        1. create a void interaction and added to the bench part if present
+        2. set up the DD dependent input
+        """
+        assert self._interaction_parts.__len__() > 0, "DD term must be called after the main Hamiltonian parts were defined."
+        
+        self.eval_dd_edf = True
+        ith_term = len(self._interaction_DD_parts)+1
+        void_dd = f'DD_{ith_term}'
+        self._interaction_DD_parts.append(void_dd)
+        ## create the file sho, com and 
+        with open(void_dd+'.2b', 'w+') as f:
+            f.write(f"Void Interaction for the [{ith_term}] DD term\n")
+        hamil = self._interaction_parts[0]
+        for tail in ('.com', '.sho'):
+            shutil.copy(hamil+tail, void_dd+tail)
+        
+        ##
+        self.input_vap.set_inputDDparamsFile(**input_DD_params)
+        self._dd_input_object[void_dd] = deepcopy(self.input_vap._DD_PARAMS)
+        self._dd_input_object[void_dd][InputTaurus.InpDDEnum.eval_dd]  = True
+        self._dd_input_object[void_dd][InputTaurus.InpDDEnum.eval_rea] = True
+    
+    def _merge_dd_parameters(self):
+        """
+        Obtain one equivalent DD-input file for the program, 
+        remember that dens_taurus_vap only accepts 1 edf term, use densN_taurus_vap
+        """
+        if not self.eval_dd_edf:
+            raise Exception("Not evaluating a DD-interaction!, Why are you calling me?")
+        
+        void_dd = 'DD_1'
+        dict_   = deepcopy(self._dd_input_object[void_dd])
+        for k, inter in enumerate(self._interaction_DD_parts[1:]):
+            dict_2 = self._dd_input_object[inter]
+            t3 = dict_2.get(InputTaurus.InpDDEnum.t3_param)
+            x0 = dict_2.get(InputTaurus.InpDDEnum.x0_param)
+            xH = dict_2.get(InputTaurus.InpDDEnum.more_options, {}).get(31, 0)
+            xM = dict_2.get(InputTaurus.InpDDEnum.more_options, {}).get(32, 0)
+            alp= dict_2.get(InputTaurus.InpDDEnum.alpha_param)
+            
+            for i, val in enumerate([t3, x0, xH, xM, alp,]):
+                dict_[InputTaurus.InpDDEnum.more_options][33+(5*k)+i] = val
+            
+        return dict_
+        
     def setUpVAPparameters(self, **input_args):
         self.input_vap    = InputTaurus(self.z, self.n, '', None, **input_args)
         self.VAP_INP_ARGS = input_args
@@ -195,12 +246,16 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
                 self.deform_indexes[len(self.deform_indexes)] = v
         
         ## create surfaces-binary paths for execution and exporting
-        self.surfaces = dict()
-        self.results  = dict([(int_, dict()) for int_ in self._interaction_parts])
+        self.surfaces   = dict()
+        self.results    = dict([(int_, dict()) for int_ in self._interaction_parts])
         self.resultsPAV = dict([(int_, dict()) for int_ in self._interaction_parts])
         self.hamil_dest_folders = {}
+        if self.eval_dd_edf:
+            for int_ in self._interaction_DD_parts:
+                self.results    [int_ ]=  dict()
+                self.resultsPAV [int_ ]=  dict()
         
-        for inter in self._interaction_parts:
+        for inter in (*self._interaction_parts, *self._interaction_DD_parts):
             ## Create the storage folders for each inter
             dest_fld = fld_bu / f'HAMIL_DECOMP_{inter}'
             if dest_fld.exists():
@@ -291,13 +346,27 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
                 shutil.copy(aux.parent / str(aux.name).replace('bin','OUT'), out_fn)
             
             printf(f"  exe b20 = {b20:5.3f} / {k_b20}")
-            printf("   * interaction *:   [   E HFB  ]  [   E HF   ]  [ E pairing]   ------")
-            for inter in self._interaction_parts:
+            printf( "   * interaction *:   [   E HFB  ]  [   E HF   ]  [ E pairing]   ------")
+            
+            _dd_fn = InputTaurus.INPUT_DD_FILENAME
+            for inter in (*self._interaction_parts, *self._interaction_DD_parts):
+                if os.path.exists(_dd_fn): os.remove(_dd_fn)
+                inter_is_dd = inter in self._interaction_DD_parts
                 ## create the input file
                 self.input_vap.interaction = inter
                 with open(inp_fn, 'w+') as f:
                     f.write(self.input_vap.getText4file())
                 
+                ## evaluate the DD term
+                if inter_is_dd or (inter=='bench' and self.eval_dd_edf):
+                    inp = InputTaurus(self.z, self.n, inter)
+                    if inter == 'bench':
+                        inp.set_inputDDparamsFile(**self._merge_dd_parameters())
+                    else:
+                        inp.set_inputDDparamsFile(**self._dd_input_object[inter])
+                    with open(inp.INPUT_DD_FILENAME, 'w+') as f:
+                        f.write(self.input_vap.get_inputDDparamsFile())
+                    
                 ## execute void step
                 try:
                     # NOTE: for test Windows, put a output in main folder
@@ -312,7 +381,7 @@ class ExeTaurus1D_AfterRun_HamilDecomposition(object):
                 shutil.copy(out_fn, self.hamil_dest_folders[inter] / k_b20.replace('bin', 'OUT'))
                 
                 printf(f"   {inter: >15}:  {res.E_HFB:12.4f}  {res.hf:12.4f}  {res.pair:12.4f}")
-                ## teardown results into 
+                ## tear down results into 
                 self._exportFileFromEachInteraction(inter)
                 
             if self.DO_PROJECTION: self._evalDiagonalProjection(k_b20)

@@ -70,6 +70,7 @@ class CoreParameters(Enum):
         
 class ForceEnum(Enum):
     SDI = 'SDI'
+    Delta   = 'Delta'
     Central = 'Central'
     Coulomb = 'Coulomb'
     Tensor  = 'Tensor'
@@ -80,6 +81,8 @@ class ForceEnum(Enum):
     Brink_Boeker    = 'Brink_Boeker'
     PotentialSeries = 'PotentialSeries'
     YukawiansM3Y    = 'M3Y_yukawians'
+    M3YTensor       = 'M3Y_tensor'
+    M3YSpinOrbit    = 'M3Y_SpinOrbit'
     Density_Dependent    = 'Density_Dependent'
     Density_Dependent_From_File = 'Density_From_File'
     Density_FiniteRange  = 'DensityFiniteRange'
@@ -99,12 +102,13 @@ class PotentialForms(Enum):
     Gaussian    = 'gaussian'                # exp(-(r/mu_)^2)
     Exponential = 'exponential'             # exp(-r/mu_)
     Coulomb     = 'coulomb'                 # mu_/r
+    Delta       = 'delta'                   # delta(r)/r^2
     Yukawa      = 'yukawa'                  # exp(-r/mu_) / (r/mu_)
     Power       = 'power'                   # (r/mu_)^n_power
-    Gaussian_power = 'gaussian_power'       # exp(-(r/mu_)^2) / (r/mu_)^n_power
+    Gaussian_power = 'gaussian_power'       # exp(-(r/mu_)^2) * (r/mu_)^n_power
     Wood_Saxon  = 'wood_saxon'              # (r/mu_)^n_power /( 1 + exp((r-mu_2 * A^1/3)/mu_3) )
     Exponential_power = 'exponential_power' # exp(-r/mu_) * (r/mu_)^n_power
-    YukawaGauss_power = 'gauss_yukawa_power'# exp(-(r/mu_)-(r/mu_2)^2) / (r/mu_)^n_power
+    YukawaGauss_power = 'gauss_yukawa_power'# exp(-(r/mu_)-(r/mu_2)^2) * (r/mu_)^n_power
 
 #===============================================================================
 # FORCE PARAMETERS DEFINITIONS
@@ -185,6 +189,8 @@ ForceVariablesDict = {
     ForceEnum.Brink_Boeker    : BrinkBoekerParameters,
     ForceEnum.PotentialSeries : PotentialSeriesParameters,
     ForceEnum.YukawiansM3Y    : BrinkBoekerParameters,
+    ForceEnum.M3YTensor       : BrinkBoekerParameters,
+    ForceEnum.M3YSpinOrbit    : BrinkBoekerParameters,
     ForceEnum.Central   : CentralWithExchangeParameters,    # CentralMEParameters DEP
     ForceEnum.Coulomb   : Enum,
     ForceEnum.Tensor    : CentralMEParameters,
@@ -201,6 +207,7 @@ ForceVariablesDict = {
     ForceEnum.SkyrmeBulk    : SkyrmeBulkParameters, 
     ForceEnum.Kinetic_2Body : Enum,
     ForceEnum.SDI           : SDIParameters,
+    ForceEnum.Delta         : BrinkBoekerParameters,
     ForceEnum.Multipole_Delta : MultipoleParameters,
     ForceEnum.Multipole_Moment: CentralMEParameters, 
     ForceEnum.ElectromageticCentral     : Enum, 
@@ -289,3 +296,8 @@ class GognyEnum(Enum):
     D1S = 'D1S'
     D1  = 'D1'
     B1  = 'B1'
+
+class M3YEnum(Enum):
+    P0 = 'P0'
+    P2 = 'P2'
+    P6 = 'P6'

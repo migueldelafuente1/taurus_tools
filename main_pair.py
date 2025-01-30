@@ -9,11 +9,12 @@ from tools.helpers import importAndCompile_taurus, TBME_SUITE, printf, __log_fil
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from tools.inputs import InputTaurus
 from scripts1d.pair_scripts import run_pair_surface_D1S
-from scripts1d.afterrun_hamil_voidstep_scripts import run_b20_decomposeHamiltonian_GognyB1,\
-    run_b20_decomposeHamiltonian_GognyD1S 
+from scripts1d.afterrun_hamil_voidstep_scripts import \
+    run_b20_decomposeHamiltonian_Gogny, run_b20_decomposeHamiltonian_M3Y
+
 from tools.base_executors import _Base1DTaurusExecutor
 
-from tools.Enums import GognyEnum
+from tools.Enums import GognyEnum, M3YEnum
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
 
@@ -75,19 +76,20 @@ if __name__ == '__main__':
         #InputTaurus.ConstrEnum.Jx: 0.0
     }
     fomenko_points = (1, 1)
+    ROmega         = (14,14) #(0, 0) #
     if True:
         run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS,
-                             gogny_interaction=GognyEnum.D1S,
-                             # ROmega=(0,0), convergences=4,
-                             ROmega=(14,14), convergences=3,
+                            gogny_interaction=GognyEnum.D1S,
+                            # gogny_interaction=M3YEnum.P6,
+                             ROmega=ROmega, convergences=4,
                              seed_base=0, 
-                             p_min=-0.05, p_max=1.5, N_max=31,
+                             p_min=-0.05, p_max=1.5, N_max=3, #31
                              fomenko_points=fomenko_points, parity_2_block=1,
                              sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
                              **constr_onrun)
         # interactions[()] = (5, 0, None)
     # run_b20_decomposeHamiltonian_GognyB1(interactions, PAIR_CONSTRS, fomenko_points) 
-    run_b20_decomposeHamiltonian_GognyD1S(interactions, PAIR_CONSTRS, fomenko_points) 
-    # run_b20_decomposeHamiltonian_GognyM3Y(interactions, PAIR_CONSTRS, fomenko_points)
+    run_b20_decomposeHamiltonian_Gogny(interactions, GognyEnum.D1S, PAIR_CONSTRS, fomenko_points, ROmega) 
+    # run_b20_decomposeHamiltonian_M3Y(interactions, M3YEnum.P6, PAIR_CONSTRS, fomenko_points, ROmega)
     printf("I finished!")
 

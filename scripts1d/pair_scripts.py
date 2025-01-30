@@ -12,7 +12,7 @@ from tools.inputs import InputTaurus
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.data import DataTaurus
 from tools.helpers import LINE_2, prettyPrintDictionary, printf
-from tools.Enums import GognyEnum
+from tools.Enums import GognyEnum, M3YEnum
 
 
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
@@ -64,7 +64,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = bool(convergences)
     ExeTaurus1D_PairCoupling.PARITY_TO_BLOCK       = parity_2_block
-    
+        
     for z, n in nucleus:
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",
               datetime.now().time(), "\n")
@@ -75,10 +75,11 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             printf(f"Interaction not found for (z,n)=({z},{n}), Continue.")
             continue
         
-        InputTaurus.set_inputDDparamsFile(
-            **{InputTaurus.InpDDEnum.eval_dd : ROmega != (0, 0),
-               InputTaurus.InpDDEnum.r_dim : ROmega[0],
-               InputTaurus.InpDDEnum.omega_dim : ROmega[1]})
+        ddParams = InputTaurus.getDDParametersByInteraction(gogny_interaction)
+        ddParams[InputTaurus.InpDDEnum.eval_dd]   = ROmega != (0, 0)
+        ddParams[InputTaurus.InpDDEnum.r_dim  ]   = ROmega[0]
+        ddParams[InputTaurus.InpDDEnum.omega_dim] = ROmega[1]
+        InputTaurus.set_inputDDparamsFile(**ddParams)
         
         input_args_start = {
             InputTaurus.ArgsEnum.com : 1,
