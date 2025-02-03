@@ -223,25 +223,25 @@ def run_b20_decomposeHamiltonian_M3Y(nuclei, parametrization, constraints=['',],
     elif parametrization == M3YEnum.P6:
         COMPONENTS = {
             "central": {
-            'Wigner': {1: 7741.2500, 2: -2079.0000, 3:  3.4878, },
-            'Heisenberg': {1: -3868.2500, 2: 475.0000, 3:  6.9752, },
-            'Bartlett': {1: 2722.2500, 2: -1012.0000, 3: -6.9753, },
-            'Majorana': {1: 1878.7500, 2: -1978.0000, 3: -13.9507, },
-            'mu_length': {1:  0.2500, 2:  0.4000, 3:  1.4140, },
-        },
-        "spinOrb": {
-            'Wigner': {1: -3848.9000, 2: -532.9500, },
-            'Heisenberg': {1: -1762.2000, 2: 162.2500, },
-            'Bartlett': {1: -3848.9000, 2: -532.9500, },
-            'Majorana': {1: -1762.2000, 2: 162.2500, },
-            'mu_length': {1:  0.2500, 2:  0.4000, },
-        },
-        "tensor": {
-            'Wigner': {1: -213.0000, 2: -3.8250, },
-            'Heisenberg': {1: -335.0000, 2: -11.6250, },
-            'Bartlett': {1: -213.0000, 2: -3.8250, },
-            'Majorana': {1: -335.0000, 2: -11.6250, },
-            'mu_length': {1:  0.4000, 2:  0.7000, },
+                'Wigner': {1: 7741.2500, 2: -2079.0000, 3:  3.4878, },
+                'Heisenberg': {1: -3868.2500, 2: 475.0000, 3:  6.9752, },
+                'Bartlett': {1: 2722.2500, 2: -1012.0000, 3: -6.9753, },
+                'Majorana': {1: 1878.7500, 2: -1978.0000, 3: -13.9507, },
+                'mu_length': {1:  0.2500, 2:  0.4000, 3:  1.4140, },
+            },
+            "spinOrb": {
+                'Wigner': {1: -3848.9000, 2: -532.9500, },
+                'Heisenberg': {1: -1762.2000, 2: 162.2500, },
+                'Bartlett': {1: -3848.9000, 2: -532.9500, },
+                'Majorana': {1: -1762.2000, 2: 162.2500, },
+                'mu_length': {1:  0.2500, 2:  0.4000, },
+            },
+            "tensor": {
+                'Wigner': {1: -213.0000, 2: -3.8250, },
+                'Heisenberg': {1: -335.0000, 2: -11.6250, },
+                'Bartlett': {1: -213.0000, 2: -3.8250, },
+                'Majorana': {1: -335.0000, 2: -11.6250, },
+                'mu_length': {1:  0.4000, 2:  0.7000, },
         }}
         input_DD = {
             InputTaurus.InpDDEnum.eval_dd : 1, InputTaurus.InpDDEnum.eval_rea: 1,
@@ -265,7 +265,7 @@ def run_b20_decomposeHamiltonian_M3Y(nuclei, parametrization, constraints=['',],
         mu_lengths = dict_[BrinkBoekerParameters.mu_length]
         for term in BrinkBoekerParameters.members():
             if term == BrinkBoekerParameters.mu_length: continue
-            if not term in _gaussians: continue # term is not present
+            if not term in COMPONENTS[termY]: continue # term is not present
             
             for part in (1, 2, 3):
                 if termY != 'central' and part == 3: continue
