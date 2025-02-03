@@ -278,7 +278,7 @@ def run_b20_decomposeHamiltonian_M3Y(nuclei, parametrization, constraints=['',],
                     interactions[f'centralYuk{part}{term}'] = (
                         TBMEXML_Setter.set_central_force, parameters )
                 elif termY == 'spinOrbit':
-                    interactions[f'tenYuk{part}{term}'] = (
+                    interactions[f'LS_Yuk{part}{term}'] = (
                         TBMEXML_Setter.set_spinorbitFR_force, parameters )
                 elif termY == 'tensor':
                     interactions[f'tenYuk{part}{term}'] = (
