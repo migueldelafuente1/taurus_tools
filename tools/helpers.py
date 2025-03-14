@@ -174,6 +174,8 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
             if isinstance(val, (list,tuple)) and len(val) > 0:
                 if isinstance(val[0], float):
                     str_ = ["{:6.4f}".format(x) for x in val]
+                else:
+                    str_ = val
                 str_ = '[{}]'.format(', '.join(str_))
             else:
                 str_ = str(val)
