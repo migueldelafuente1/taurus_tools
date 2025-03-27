@@ -66,7 +66,7 @@ def run_symmetry_restricted_for_hamiltonian(nucleus, MZmax=6,
         }
         ## process to save the results _ index is just the index
         try:
-            if convergences != None:
+            if convergences == None:
                 # for even-odd run blocked states until left without valence space
                 if not (z%2 or n%2): ## its even-even
                     # for even-even nuclei run only  one case
@@ -87,10 +87,5 @@ def run_symmetry_restricted_for_hamiltonian(nucleus, MZmax=6,
         
         ## Maybe to use a single evaluation of a 1d script. Then read the 
         # zip BASE for the seed results.
-        
-        
-    
-    pass
-
 
         

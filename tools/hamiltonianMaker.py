@@ -358,6 +358,55 @@ class TBMEXML_Setter(object):
 # # HAMILTONIAN MAKER. - Manages 2bME suite
 #===============================================================================
 
+def generateCOMFileFromFile(MZmax, sp_states_list, com_filename=None):
+    """ 
+    Import all states up to MZmax and then filter the results from a file 
+    (WARNING, the com file must be in format qqnn with l_ge_10)
+    """
+    if MZmax > 10:
+        raise Exception("There is no COM file larger than 10 and TBME_Runner won't calculate it. Bye.")
+    if (sp_states_list) == 0:
+        raise Exception("self.sp_states_list is not defined, call the method after")
+    
+    with open(TBME_SUITE+'/'+PATH_COM2_IN_2BMESUITE, 'r') as f:
+        data = f.readlines()
+        
+    skip_block = False
+    final_com  = [f'Truncated MZ={MZmax} From_ '+data[0], ]
+    
+    for line in data[1:]:
+        l_aux = line.strip()
+        header = l_aux.startswith('0 5 ')
+        
+        if header:
+            t0,t1,a,b,c,d, j0,j1 = l_aux.split()
+            skip_block = False
+            for qn in (a, b, c, d): 
+                qn = '001' if qn == '1' else qn 
+                
+                if qn not in sp_states_list:
+                    skip_block = True
+                    break
+            
+            if not skip_block:
+                final_com.append(line)
+            continue
+        
+        if skip_block: continue
+        
+        final_com.append(line)
+    
+    if not com_filename.endswith('.com'):
+        com_filename = com_filename+'.com'
+    
+    if com_filename == None:  
+        com_filename = 'aux_com2_{}.com'.format(MZmax)
+    com_text = ''.join(final_com)[:-2]  # omit the last jump /n
+    with open(com_filename, 'w+') as f:
+        f.write(com_text)
+        
+    return com_filename
+
 class TBME_HamiltonianManager(object):
     '''
     Class to clone the github repository and manage the hamiltonian input.
@@ -731,43 +780,9 @@ class TBME_HamiltonianManager(object):
         if (self.sp_states_list) == 0:
             raise Exception("self.sp_states_list is not defined, call the method after")
         
-        with open(TBME_SUITE+'/'+PATH_COM2_IN_2BMESUITE, 'r') as f:
-            data = f.readlines()
-            
-        skip_block = False
-        final_com  = [f'Truncated MZ={self.MZmax} From_ '+data[0], ]
-        
-        for line in data[1:]:
-            l_aux = line.strip()
-            header = l_aux.startswith('0 5 ')
-            
-            if header:
-                t0,t1,a,b,c,d, j0,j1 = l_aux.split()
-                skip_block = False
-                for qn in (a, b, c, d): 
-                    qn = '001' if qn == '1' else qn 
-                    
-                    if qn not in self.sp_states_list:
-                        skip_block = True
-                        break
-                
-                if not skip_block:
-                    final_com.append(line)
-                continue
-            
-            if skip_block: continue
-            
-            final_com.append(line)
-        
         self.com_filename = None
-        if not com_filename.endswith('.com'):
-            com_filename = com_filename+'.com'
-        
-        if com_filename == None:  
-            com_filename = 'aux_com2_{}.com'.format(self.MZmax)
-        com_text = ''.join(final_com)[:-2]  # omit the last jump /n
-        with open(com_filename, 'w+') as f:
-            f.write(com_text)
+        com_filename = generateCOMFileFromFile(self.MZmax, self.sp_states_list, 
+                                               com_filename)
         self.com_filename = com_filename
     
     def _set_defaultHamilName(self, gogny_interaction):

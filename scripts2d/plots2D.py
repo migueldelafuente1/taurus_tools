@@ -9,11 +9,13 @@ import itertools
 import numpy as np
 
 from tools.inputs import InputTaurus
-from tools.helpers import elementNameByZ
+from tools.helpers import elementNameByZ, getVariableInLatex
 from tools.data import DataTaurus
 from tools.helpers import OUTPUT_HEADER_SEPARATOR
 from tools.plotter_levels import MATPLOTLIB_INSTALLED
 from copy import deepcopy
+from matplotlib import ticker
+
 if MATPLOTLIB_INSTALLED:
     import matplotlib.pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
@@ -28,43 +30,6 @@ if MATPLOTLIB_INSTALLED:
 
 INTER = ''
 GLOBAL_TAIL_INTER = ''
-
-def getVariableInLatex(var):
-    _P_vars = {
-        InputTaurus.ConstrEnum.P_T00_J10:  '$\delta^{T=0}_{J=1\ M=0}$',
-        InputTaurus.ConstrEnum.P_T00_J1m1: '$\delta^{T=0}_{J=1\ M=-1}$',
-        InputTaurus.ConstrEnum.P_T00_J1p1: '$\delta^{T=0}_{J=1\ M=+1}$',
-        InputTaurus.ConstrEnum.P_T10_J00:  '$\delta^{T=1\ M_T=0}_{J=0}$',
-        InputTaurus.ConstrEnum.P_T1m1_J00: '$\delta^{pp}_{J=0}$',
-        InputTaurus.ConstrEnum.P_T1p1_J00: '$\delta^{nn}_{J=0}$',
-    }
-    aux = var.split('_')
-    if   var.startswith('b') or var.startswith('q'):
-        if aux[0] == 'beta': aux[0] = ''
-        aux[0] = f"$\\beta_{{{aux[0][1:]}}}" if var.startswith('b') else f"$Q_{{{aux[0][:1]}}}"
-        return aux[0] + f"^{{({aux[1]})}}$"
-    elif  var.startswith('gamma'):
-        aux[0] = f"$\\gamma" 
-        return aux[0] + f"^{{({aux[1]})}}$"
-    elif var.startswith('P_'):
-        return _P_vars[var]
-    elif var.startswith('E_HFB'):
-        if len(aux) == 2: aux.append('(total)')
-        return f'$E_{{HFB}}^{{{aux[2]}}}$'
-    elif var[:2] in ('ki', 'pa', 'hf'):
-        if len(aux) == 1: aux.append('(total)')
-        return f"$E_{{{aux[0]}}}^{{{aux[1]}}}$"
-    elif var[:3] == 'var':
-        t = 'Z' if aux[1]=='p' else 'N'
-        return f"$\\sigma^2_{{{t}}}$"
-    elif var.startswith('J'):
-        if var.endswith('_var'): return f"$\Delta\ J_{{{var[1]}}}$"
-        else: 
-            aux.append('')
-            return f"$J_{{{var[1]}}}^{{{aux[1]}}}$"
-    elif var.startswith('r_'):
-        return f"$r^{{{aux[1]}}}$"
-    else:raise Exception("Unimplemented:", var)
         
     
 def convertPairingShortcuts(constraints):
@@ -308,7 +273,7 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
             figs_and_axes  = {}
             for var_plot in observables2plot:
                 if indivCs: 
-                    figs_and_axes[var_plot] = plt.subplots(nrows, 2, figsize=(7,4))
+                    figs_and_axes[var_plot] = plt.subplots(nrows, 2, figsize=(7,4)) #(6,5)) # 
                     gs = gridspec.GridSpec(1, 3, width_ratios=[0.5, 1.5, 1])  # Allocate 40% less space to the left
 
                 else:       figs_and_axes[var_plot] = plt.subplots(1,2, figsize=(8,4))
@@ -371,26 +336,31 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                             linewidths=0.7,       # Set line thickness
                             linestyles='dashed'   # Set line style
                         )
-                        ax.clabel(contours, inline=True, fontsize=6)  # Label the contour lines
+                        ax.clabel(contours, inline=True, fontsize=10)  # Label the contour lines
                         # Add a color bar for reference
-                        fig.colorbar(filled_contours, ax=ax)#, label="Z Value")
-                        ax.xaxis.set_major_locator(MaxNLocator(5))  # Set maximum 5 ticks on x-axis
-                        ax.yaxis.set_major_locator(MaxNLocator(5))  # Set maximum 4 ticks on y-axis
+                        cbar = fig.colorbar(filled_contours, ax=ax)#, label="Z Value")
+                        cbar.locator = ticker.MaxNLocator(nbins=5)
+                        cbar.ax.tick_params(labelsize=14)
+                        ax.xaxis.set_major_locator(MaxNLocator(3))  # Set maximum 5 ticks on x-axis
+                        ax.yaxis.set_major_locator(MaxNLocator(3))  # Set maximum 4 ticks on y-axis
                         ax.set_xlim(0, max(x))
                         ax.set_ylim(0, max(y))
+                        ax.tick_params(labelsize=16)
                         
-                        kw = {'fontsize': 15}
+                        kw = {'fontsize': 20} # 15
                         if indivCs: ax.set_aspect('equal', adjustable='box')
                         int_str = INTER
                         int_str = "${}^{{({})}}$".format(*INTER.split('_'))
-                        if indivCs: 
-                            fig.suptitle (f"{getVariableInLatex(var_plot)}  {int_str}   {nucl[1]}", **kw)
-                        else:
-                            args = [getVariableInLatex(x) for x in 
-                                    (var_plot, cnst_pn, var_plot, cnst_pn2)]
-                            fig.suptitle ("{}({}) - {}({})  ".format(*args) + 
-                                          f"\n{int_str}  {nucl[1]}", **kw)
-            kw = {'fontsize': 13}
+                        # if indivCs: 
+                        #     # fig.suptitle (f"{getVariableInLatex(var_plot)}  {int_str}   {nucl[1]}", **kw)
+                        #     fig.suptitle(f"{getVariableInLatex(var_plot)}   {nucl[1]}", **kw)
+                        # else:
+                        #     args = [getVariableInLatex(x) for x in 
+                        #             (var_plot, cnst_pn, var_plot, cnst_pn2)]
+                        #     fig.suptitle ("{}({}) - {}({})  ".format(*args) + 
+                        #                   f"         ({nucl[1]})", **kw)
+                        #     # fig.suptitle(f"{getVariableInLatex(var_plot)}    {nucl[1]}", **kw)
+            kw = {'fontsize': 20}
             for var_plot in observables2plot:
                 # Labels and title
                 fig, ax = figs_and_axes[var_plot]
@@ -419,7 +389,7 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
             InputTaurus.ConstrEnum.P_T10_J00:{'color':'red',  'marker':'.','markersize':10},
             InputTaurus.ConstrEnum.P_T00_J10:{'color':'blue', 'marker':'.','markersize':10},                    
         }
-        kw = {'fontsize': 15}
+        kw = {'fontsize': 18}
         for var in observables2plot:
             fig, ax = plt.subplots(1, 1, figsize=(5,4))
             for const in (*constr_2_plot, *constraints_t1):
@@ -432,7 +402,7 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
             ax.grid(True)
             if var == 'pair':
                 lims = {(10,12): (-0.5,0.03), (10,16): (-0.5,0.03), (10,14): (-3.3,-2.5)}
-                ax.set_ylim(lims[(z, n)])
+                if (z,n) in lims: ax.set_ylim(lims[(z, n)])
             ax.legend()
             fig.tight_layout()
             fig.savefig("{}/{}_1dim-PTJ_{}.pdf".format(FOLDER2SAVE, var, nucl[0]))
@@ -461,7 +431,7 @@ if __name__ == '__main__':
     
     # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
     nuclei = [
-        # (12,12), (12,13), (12,15),
+        # (12,12), (12,13), # (12,15),
         # (10,10), (10,11),
         # (10,12), 
         (10,14), 
