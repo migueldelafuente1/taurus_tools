@@ -163,9 +163,9 @@ if __name__ == '__main__':
     Z, N = 8, 8
     MZmax_global = 4
     INTERACTIONS = [
-        # (GognyEnum.B1 , 'B1base_MZ8' , 'B1_MZ{}' ),
-        (GognyEnum.D1S, 'D1Sbase_MZ4', 'D1S_MZ{}'),
-        # (M3YEnum.P2   , 'M3Y_P2base_MZ7', 'M3Y_P2_MZ{}'),
+        (GognyEnum.B1 , 'B1base_MZ8' , 'B1_MZ{}' ),
+        (GognyEnum.D1S, 'D1Sbase_MZ7', 'D1S_MZ{}'),
+        (M3YEnum.P2   , 'M3Y_P2base_MZ7', 'M3Y_P2_MZ{}'),
         # (M3YEnum.P6   , 'M3Y_P6base_MZ7', 'M3Y_P6_MZ{}'),
     ]
     params = {
