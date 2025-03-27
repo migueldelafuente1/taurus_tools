@@ -358,7 +358,7 @@ class TBMEXML_Setter(object):
 # # HAMILTONIAN MAKER. - Manages 2bME suite
 #===============================================================================
 
-def generateCOMFileFromFile(MZmax, sp_states_list, com_filename=None):
+def generateCOMFileFromFile(MZmax, sp_states_list, com_filename=None, path_com=None):
     """ 
     Import all states up to MZmax and then filter the results from a file 
     (WARNING, the com file must be in format qqnn with l_ge_10)
@@ -368,7 +368,9 @@ def generateCOMFileFromFile(MZmax, sp_states_list, com_filename=None):
     if (sp_states_list) == 0:
         raise Exception("self.sp_states_list is not defined, call the method after")
     
-    with open(TBME_SUITE+'/'+PATH_COM2_IN_2BMESUITE, 'r') as f:
+    if not path_com:
+        path_com = TBME_SUITE+'/'+PATH_COM2_IN_2BMESUITE
+    with open(path_com, 'r') as f:
         data = f.readlines()
         
     skip_block = False

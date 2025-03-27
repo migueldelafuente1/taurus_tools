@@ -11,7 +11,7 @@ Non - Exe based script
     2. 
 
 '''
-import os, shutil
+import os, shutil, sys
 import subprocess
 import xml.etree.ElementTree as et
 from pathlib import Path
@@ -20,7 +20,7 @@ from tools.Enums import InputParts, Output_Parameters, SHO_Parameters,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     GognyEnum, M3YEnum
 from tools.helpers import TBME_SUITE, GITHUB_2BME_HTTP,\
-    ValenceSpacesDict_l_ge10_byM
+    ValenceSpacesDict_l_ge10_byM, PATH_COM2_IN_2BMESUITE
 from tools.hamiltonianMaker import generateCOMFileFromFile
 from tools.inputs import InputTaurus
 from tools.data import DataTaurus
@@ -29,8 +29,10 @@ if not os.path.exists(TBME_SUITE):
     order_ = "git clone {}".format(GITHUB_2BME_HTTP)
     e_ = subprocess.call(order_, shell=True, timeout=180)
 
+if not os.getcwd().startswith('C:'):
+    sys.path.append(sys.path[0] + '/..')
 
-def __runTBMERunnerSuite(xml_filename, file_out, MZmax, sp_list, com_filename):
+def __runTBMERunnerSuite(xml_filename, file_out, MZmax, sp_list):
     """
     Run process and copy of the files back into the main folder for execution
     """
@@ -48,7 +50,7 @@ def __runTBMERunnerSuite(xml_filename, file_out, MZmax, sp_list, com_filename):
     for tail in ('.sho', '.2b'): shutil.copy(f'results/{file_out}{tail}', '..')
     
     ## truncate the COM file
-    com_hamil = generateCOMFileFromFile(MZmax, sp_list, com_filename)
+    com_hamil = generateCOMFileFromFile(MZmax, sp_list, file_out, PATH_COM2_IN_2BMESUITE)
     shutil.copy(com_hamil, '..')
     
     os.chdir('..')
@@ -91,12 +93,14 @@ def __import_and_cut_shellrange_interaction(file_base, hamil_file, MZmax,
     hbo_.text = hbaromega
     
     val_ = root.find(InputParts.Valence_Space)
+    sp_list = []
     for MZ in range(MZmax +1):
         for qn in ValenceSpacesDict_l_ge10_byM[MZ]:
             _ = et.SubElement(val_, ValenceSpaceParameters.Q_Number, 
                               attrib={AttributeArgs.ValenceSpaceArgs.sp_state: qn,
                                       AttributeArgs.ValenceSpaceArgs.sp_energy:''})
             _.tail = _TT
+            sp_list.append(qn)
         
     forces = root.find(InputParts.Force_Parameters)
     f2  = et.SubElement(forces, ForceEnum.Force_From_File,  
@@ -116,7 +120,7 @@ def __import_and_cut_shellrange_interaction(file_base, hamil_file, MZmax,
     
     ## TBME execution
     shutil.copy(xml_filename, TBME_SUITE)
-    __runTBMERunnerSuite(xml_filename, hamil_file)
+    __runTBMERunnerSuite(xml_filename, hamil_file, MZmax, sp_list)
     
     
 def __runTaurusBaseSolution(Z,N, hamil_name, input_taurus: InputTaurus, fld_2_save):
@@ -131,6 +135,9 @@ def __runTaurusBaseSolution(Z,N, hamil_name, input_taurus: InputTaurus, fld_2_sa
     
     e_ = subprocess.call(f'./taururs_vap.exe < {INP} > out.txt',
                          timeout=100000, shell=True)
+    if os.getcwd().startswith('C:'):
+        for f in ('out.txt', 'final_wf.bin', 'eigenbasis_h.dat'):
+            with open(f, 'w+') as ff: ff.write("TESTFILE\n...")
     
     shutil.copy('out.txt', f"{fld_2_save}/out_z{Z}n{N}_{hamil_name}.txt")
     shutil.copy('final_wf.bin', f"{fld_2_save}/seed_z{Z}n{N}_{hamil_name}.bin")
@@ -174,21 +181,25 @@ if __name__ == '__main__':
             shutil.rmtree(args[0])
         os.mkdir(args[0])
     
-    input = InputTaurus(Z, N, **params)
+    input = InputTaurus(Z, N, 'hamil', **params)
     
     for MZmax in range(3, MZmax_global +1):
-        
+        print(" [ ] Doing MZmax=",MZmax)
         for args in INTERACTIONS:
             interaction, file_base, hamil_file = args
-            
+            print(f"      Executing interaction [{interaction}]")
             hamil_file =  hamil_file.format(MZmax)
             __import_and_cut_shellrange_interaction(file_base, hamil_file, MZmax, 
                                                     interaction)
             
             input.interaction = hamil_file
-            input.set_inputDDparams(**InputTaurus.getDDParametersByInteraction(interaction))
+            input.set_inputDDparamsFile(**InputTaurus.getDDParametersByInteraction(interaction))
             __runTaurusBaseSolution(Z, N, hamil_file, input, interaction)
             
-        
+            for tl in ('.sho', '.2b', '.com'): 
+                shutil.move(f'{hamil_file}{tl}', interaction)
+    
+    print(" [END] Calculation finished")
+    
     ## Plot Stuff
     pass
