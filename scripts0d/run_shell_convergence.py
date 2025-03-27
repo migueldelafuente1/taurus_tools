@@ -138,8 +138,7 @@ def __runTaurusBaseSolution(Z,N, hamil_name, input_taurus: InputTaurus, fld_2_sa
     with open(input_taurus.INPUT_DD_FILENAME, 'w+') as f:
         f.write(input_taurus.get_inputDDparamsFile())
     
-    e_ = subprocess.call(f'./taururs_vap.exe < {INP} > out.txt &',
-                         timeout=100000, shell=True)
+    os.system(f'./taurus_vap.exe < {INP} > out.txt &')
     if os.getcwd().startswith('C:'):
         for f in ('out.txt', 'final_wf.bin', 'eigenbasis_h.dat'):
             with open(f, 'w+') as ff: ff.write("TESTFILE\n...")
