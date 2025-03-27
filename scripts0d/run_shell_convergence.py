@@ -161,7 +161,7 @@ if __name__ == '__main__':
     
     #===========================================================================
     Z, N = 8, 8
-    MZmax_global = 4
+    MZmax_global = 7
     INTERACTIONS = [
         (GognyEnum.B1 , 'B1base_MZ8' , 'B1_MZ{}' ),
         (GognyEnum.D1S, 'D1Sbase_MZ7', 'D1S_MZ{}'),
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     params = {
         InputTaurus.ArgsEnum.com  : 1,
         InputTaurus.ArgsEnum.seed : 3,
-        InputTaurus.ArgsEnum.iterations: 3000,
+        InputTaurus.ArgsEnum.iterations: 2000,
         InputTaurus.ArgsEnum.grad_type : 1,
         InputTaurus.ArgsEnum.grad_tol  : 0.001,
         InputTaurus.ArgsEnum.beta_schm : 1, ## 0= q_lm, 1 b_lm, 2 triaxial
@@ -190,6 +190,10 @@ if __name__ == '__main__':
     for MZmax in range(3, MZmax_global +1):
         print(" [ ] Doing MZmax=",MZmax)
         for args in INTERACTIONS:
+            if params[InputTaurus.ArgsEnum.seed] in (0, 4) and MZmax > 6: 
+                print("   ** Continue, will diverge!!")
+                continue
+            
             interaction, file_base, hamil_file = args
             print(f"      Executing interaction [{interaction}]")
             hamil_file =  hamil_file.format(MZmax)
