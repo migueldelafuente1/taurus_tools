@@ -16,6 +16,9 @@ import subprocess
 import xml.etree.ElementTree as et
 from pathlib import Path
 
+if not os.getcwd().startswith('C:'):
+    sys.path.append(sys.path[0] + '/..')
+
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     GognyEnum, M3YEnum
@@ -29,8 +32,10 @@ if not os.path.exists(TBME_SUITE):
     order_ = "git clone {}".format(GITHUB_2BME_HTTP)
     e_ = subprocess.call(order_, shell=True, timeout=180)
 
-if not os.getcwd().startswith('C:'):
-    sys.path.append(sys.path[0] + '/..')
+#===============================================================================
+# 
+#===============================================================================
+
 
 def __runTBMERunnerSuite(xml_filename, file_out, MZmax, sp_list):
     """
@@ -133,7 +138,7 @@ def __runTaurusBaseSolution(Z,N, hamil_name, input_taurus: InputTaurus, fld_2_sa
     with open(input_taurus.INPUT_DD_FILENAME, 'w+') as f:
         f.write(input_taurus.get_inputDDparamsFile())
     
-    e_ = subprocess.call(f'./taururs_vap.exe < {INP} > out.txt',
+    e_ = subprocess.call(f'./taururs_vap.exe < {INP} > out.txt &',
                          timeout=100000, shell=True)
     if os.getcwd().startswith('C:'):
         for f in ('out.txt', 'final_wf.bin', 'eigenbasis_h.dat'):
