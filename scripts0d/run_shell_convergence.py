@@ -19,6 +19,9 @@ from pathlib import Path
 if not os.getcwd().startswith('C:'):
     sys.path.append(sys.path[0] + '/..')
 
+from tools.plotter_levels import MATPLOTLIB_INSTALLED
+if MATPLOTLIB_INSTALLED:
+    import matplotlib.pyplot as plt
 from tools.Enums import InputParts, Output_Parameters, SHO_Parameters,\
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     GognyEnum, M3YEnum
@@ -26,7 +29,7 @@ from tools.helpers import TBME_SUITE, GITHUB_2BME_HTTP,\
     ValenceSpacesDict_l_ge10_byM, PATH_COM2_IN_2BMESUITE
 from tools.hamiltonianMaker import generateCOMFileFromFile
 from tools.inputs import InputTaurus
-from tools.data import DataTaurus
+from tools.data import DataTaurus, EvolTaurus
 
 if not os.path.exists(TBME_SUITE):
     order_ = "git clone {}".format(GITHUB_2BME_HTTP)
@@ -151,7 +154,97 @@ def __runTaurusBaseSolution(Z,N, hamil_name, input_taurus: InputTaurus, fld_2_sa
             shutil.copy(f"{dat}.dat", f"{fld_2_save}/{dat}_z{Z}n{N}_{hamil_name}.dat")
         
     
-
+def plotNumberOfShellsConvergences(Z, N, interactions):
+    
+    data, data_pn = {}, {}
+    evol, evol_pn = {}, {}
+    inter_names = [args[0] for args in interactions]
+    ## Import data
+    for args in interactions:
+        interaction, _, int_tmplate = args
+        data[interaction] = {}
+        evol[interaction] = {}
+        data_pn[interaction] = {}
+        evol_pn[interaction] = {}
+        
+        if not interaction in os.listdir():
+            continue
+        
+        out_files = filter(lambda x: x.startswith('out'), os.listdir(interaction))
+        for out_ in out_files:
+            if interaction.startswith('P'):
+                _, zn, _, hamil, mz = out_.replace('.txt', '').split('_')
+            else:
+                _, zn, hamil, mz = out_.replace('.txt', '').split('_')
+            
+            data[interaction][mz] = DataTaurus(Z, N, f"{interaction}/{out_}")
+            evol[interaction][mz] = EvolTaurus(f"{interaction}/{out_}")
+        ## PN files
+        if not interaction+'_pn' in os.listdir():
+            continue
+        
+        out_files = filter(lambda x: x.startswith('out'), os.listdir(interaction+'_pn'))
+        for out_ in out_files:
+            if interaction.startswith('P'):
+                _, zn, _, hamil, mz = out_.replace('.txt', '').split('_')
+            else:
+                _, zn, hamil, mz = out_.replace('.txt', '').split('_')
+            
+            data_pn[interaction][mz] = DataTaurus(Z, N, f"{interaction}_pn/{out_}")
+            evol_pn[interaction][mz] = EvolTaurus(f"{interaction}_pn/{out_}")
+    
+    ## Plotting the Energy vs MZ
+    _COLOR = 'rbgkmcy'
+    fig, ax = plt.subplots(1, 1,)
+    for inter, data_mz in data.items():
+        x, y   = [], []
+        xx, yy = [], []
+        for mz, dt in data_mz.items():
+            x.append( int(mz[2:]) )
+            y.append( dt.E_HFB )
+        
+        if inter in data_pn:
+            for mz, dt in data_pn[inter].items():
+                xx.append( int(mz[2:]) )
+                yy.append( dt.E_HFB )
+            
+        ic = inter_names.index(inter)
+        ax.plot(x, y, label=f"{inter}", 
+                linestyle='--', marker='o', color=_COLOR[ic], markerfacecolor='none', )
+        if yy:
+            ax.plot(xx, yy, label=f"{inter}-pn", linestyle='-', marker='.', color=_COLOR[ic], )
+    
+    ax.legend()
+    # plt.show()
+    ## Plotting convergence evolution
+    fig, ax = plt.subplots(len(interactions), 1, figsize=(5, 7))
+    ii = -1
+    for inter, data_mz in evol.items():
+        ii += 1
+        x, y, lab    = [], [], []
+        xx, yy, labb = [], [], []
+        for mz, de in data_mz.items():
+            lab.append( int(mz[2:]) )
+            # x.append( )
+            y.append( de.e_hfb )
+        
+        if inter in evol_pn:
+            for mz, de in evol_pn[inter].items():
+                labb.append( int(mz[2:]) )
+                yy.append( de.e_hfb )
+            
+        ic = inter_names.index(inter)
+        for i, mz in enumerate(lab):
+            ax[ii].plot(y[i], label=f"{inter} N={mz}", 
+                        linestyle='--', marker='o', color=_COLOR[i], markerfacecolor='none', )
+        if yy:
+            for i, mz in enumerate(labb):
+                ax[ii].plot(yy[i], label=f"{inter}-pn N={mz}", linestyle='-', marker='.', color=_COLOR[i], )
+    
+        ax[ii].legend()
+        ax[ii].set_xlim( (-1, 150) )
+    plt.show()
+    
 #===============================================================================
 # 
 #===============================================================================
@@ -170,44 +263,52 @@ if __name__ == '__main__':
     ]
     params = {
         InputTaurus.ArgsEnum.com  : 1,
-        InputTaurus.ArgsEnum.seed : 3,
-        InputTaurus.ArgsEnum.iterations: 2000,
+        InputTaurus.ArgsEnum.seed : 3, # 0 
+        InputTaurus.ArgsEnum.iterations: 700,
         InputTaurus.ArgsEnum.grad_type : 1,
         InputTaurus.ArgsEnum.grad_tol  : 0.001,
         InputTaurus.ArgsEnum.beta_schm : 1, ## 0= q_lm, 1 b_lm, 2 triaxial
         InputTaurus.ArgsEnum.pair_schm : 1,
     }
+    params_dd = {
+        InputTaurus.InpDDEnum.r_dim :    16,
+        InputTaurus.InpDDEnum.omega_dim: 14,
+    }
      
     #===========================================================================
     ## Execution stuff
-    for args in INTERACTIONS:
-        if os.path.exists(args[0]):
-            shutil.rmtree(args[0])
-        os.mkdir(args[0])
-    
-    input = InputTaurus(Z, N, 'hamil', **params)
-    
-    for MZmax in range(3, MZmax_global +1):
-        print(" [ ] Doing MZmax=",MZmax)
+    if not os.getcwd().startswith('C'):
         for args in INTERACTIONS:
-            if params[InputTaurus.ArgsEnum.seed] in (0, 4) and MZmax > 6: 
-                print("   ** Continue, will diverge!!")
-                continue
-            
-            interaction, file_base, hamil_file = args
-            print(f"      Executing interaction [{interaction}]")
-            hamil_file =  hamil_file.format(MZmax)
-            __import_and_cut_shellrange_interaction(file_base, hamil_file, MZmax, 
-                                                    interaction)
-            
-            input.interaction = hamil_file
-            input.set_inputDDparamsFile(**InputTaurus.getDDParametersByInteraction(interaction))
-            __runTaurusBaseSolution(Z, N, hamil_file, input, interaction)
-            
-            for tl in ('.sho', '.2b', '.com'): 
-                shutil.move(f'{hamil_file}{tl}', interaction)
+            if os.path.exists(args[0]):
+                shutil.rmtree(args[0])
+            os.mkdir(args[0])
+        
+        input = InputTaurus(Z, N, 'hamil', **params)
+        
+        for MZmax in range(3, MZmax_global +1):
+            print(" [ ] Doing MZmax=",MZmax)
+            for args in INTERACTIONS:
+                if params[InputTaurus.ArgsEnum.seed] in (0, 4) and MZmax > 6: 
+                    print("   ** Continue, will diverge!!")
+                    continue
+                
+                interaction, file_base, hamil_file = args
+                print(f"      Executing interaction [{interaction}]")
+                hamil_file =  hamil_file.format(MZmax)
+                __import_and_cut_shellrange_interaction(file_base, hamil_file, MZmax, 
+                                                        interaction)
+                
+                input.interaction = hamil_file
+                input.set_inputDDparamsFile(**InputTaurus.getDDParametersByInteraction(interaction))
+                input.set_inputDDparamsFile(**params_dd)
+                __runTaurusBaseSolution(Z, N, hamil_file, input, interaction)
+                
+                for tl in ('.sho', '.2b', '.com'): 
+                    shutil.move(f'{hamil_file}{tl}', interaction)
     
-    print(" [END] Calculation finished")
+        print(" [END] Calculation finished")
+    
     
     ## Plot Stuff
-    pass
+    else:
+        plotNumberOfShellsConvergences(Z, N, INTERACTIONS)
