@@ -225,7 +225,9 @@ class _Base1DTaurusExecutor(object):
         ## Updated to include multi-dimensional calculations
         cntrs_ = self.CONSTRAINT if isinstance(self.CONSTRAINT, list) else [self.CONSTRAINT, ]
         if any([ctr_ in input_kwargs.keys() for ctr_ in cntrs_]):
-            raise ExecutionException("The executor constraint must not be set static, remove it.")
+            del input_kwargs[self.CONSTRAINT]
+            printf("[WARNING] The executor constraint must not be set static. Removing from static constraints.")
+            #raise ExecutionException("The executor constraint must not be set static, remove it.")
         
         self.inputObj = self.ITYPE(self.z, self.n, self.interaction)
         

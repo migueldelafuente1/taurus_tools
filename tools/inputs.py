@@ -510,7 +510,7 @@ additional options-modes    = {more_options}
                     InputException( "Only r^2 or multipoles are allowed to "
                                    f"separate p/n constraints. [{cons_key}]")
                 return f'2  {val[0]:+6.3f}  {val[1]:+6.3f}'
-            elif isinstance(val, float):
+            elif isinstance(val, (float, int)):
                 return f'1  {val:+6.3f}'
             else:
                 raise InputException(f"WTF did you give in [{cons_key}]? [{val}]")
@@ -621,7 +621,7 @@ additional options-modes    = {more_options}
                     InputException( "Only r^2 or multipoles are allowed to "
                                    f"separate p/n constraints. [{constr}]")
                 setattr(self, constr, (float(value[0]), float(value[1])) )
-            elif isinstance(value, float) or value==None:
+            elif isinstance(value, (float, int)) or value==None:
                 setattr(self, constr, value)
             else:
                 raise InputException( "Invalid constraint format, got:"
