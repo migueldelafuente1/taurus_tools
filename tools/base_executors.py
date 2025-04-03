@@ -153,6 +153,10 @@ class _Base1DTaurusExecutor(object):
     def numberParity(self):
         return (self.z % 2, self.n % 2)
     
+    @property
+    def getExecutionSeedMinimumDT(self):
+        return self._1stSeedMinimum
+    
     @classmethod
     def updateTotalKForOddNuclei(cls, validKs=[]):
         """

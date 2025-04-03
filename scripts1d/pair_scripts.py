@@ -15,12 +15,26 @@ from tools.helpers import LINE_2, prettyPrintDictionary, printf
 from tools.Enums import GognyEnum, M3YEnum
 
 
+def _fixPairConstraintsForMinimum(base_dt_obj: DataTaurus):
+    """
+    Return the values of the pair-coupling values of a Taurus result.
+    """
+    pair_constr = [
+        InputTaurus.ConstrEnum.P_T00_J10,  InputTaurus.ConstrEnum.P_T10_J00,
+        InputTaurus.ConstrEnum.P_T1m1_J00, InputTaurus.ConstrEnum.P_T1p1_J00,
+    ]
+    fixed_constr = {}
+    for attr_ in pair_constr:
+        fixed_constr[attr_] = getattr(base_dt_obj, attr_, 0.0)
+    return fixed_constr
+
 def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
                          gogny_interaction=GognyEnum.D1S,
                          seed_base=0, ROmega=(13, 13),
                          p_min=-0.05, p_max=2.0, N_max=41, convergences=0,
                          fomenko_points=(0, 0), parity_2_block= 1,
                          sym_calc_setup=None,
+                         fixed_PairsChannels=False,
                          **constr_onrun):
     """
     This method runs for each nucleus all pair constrains given, builds D1S m.e
@@ -38,6 +52,8 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
         :sym_calc_setup=None: Symmetry for the calculation to use, i.e. certain
                             symmetry restrictions for the constraints for non axial calculuations:
                             _Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC
+        :fixed_PairsChannels=False: Fixes the pair-coupl constraints to the minimum
+                                    value, then the constraint PJT_1 don't affect the other PJT channels
         :constr_onrun other constraints to set up the calculation.
     """
     assert all(map(lambda x: x.startswith('P_T'), pair_constrs)), f"invalid pair constraint {pair_constrs}"
@@ -123,11 +139,17 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             printf("[PAIR_SCRIPT ERROR] Could not preconverge the w.f, skipping isotope.\n")
             continue
         
+        
         for ip, pair_constr in enumerate(pair_constrs):
             
             ExeTaurus1D_PairCoupling.setPairConstraint(pair_constr)
             ExeTaurus1D_PairCoupling.EXPORT_LIST_RESULTS += f"_z{z}n{n}_{interaction}.txt"
             shutil.copy('base_initial_wf.bin', 'initial_wf.bin')
+            if fixed_PairsChannels:
+                _1st_obj = exe_.getExecutionSeedMinimumDT
+                input_args_onrun = {**input_args_onrun, 
+                                    **_fixPairConstraintsForMinimum(_1st_obj)}
+            
             try:
                 # if ip == 0:
                 #     exe_ = ExeTaurus1D_PairCoupling(z, n, interaction)

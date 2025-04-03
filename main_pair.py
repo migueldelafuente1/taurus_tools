@@ -28,9 +28,9 @@ if __name__ == '__main__':
         # (10,10): (2, 0, 1.80), (10,12): (4, 0, 1.75),
         # (12,12): (4, 0, 1.75), (12,14): (4, 0, 1.75),
         
-        (10,10): (M, 0, None), # (12,16): (2, 0, None), 
-        (14,14): (M, 0, None), (16,16): (M, 0, None),
-        (18,18): (M, 0, None), ( 8, 8): (M, 0, None), 
+        #(10,10): (M, 0, None), # (12,16): (2, 0, None), 
+        #(14,14): (M, 0, None), (16,16): (M, 0, None),
+        #(18,18): (M, 0, None), ( 8, 8): (M, 0, None), 
         
         # (10,11): (5, 0, None), (10,12): (5, 0, None),
         # (12,16):  'bench', #(5, 0, None), #
@@ -68,8 +68,8 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.P_T10_J00,
         InputTaurus.ConstrEnum.P_T1m1_J00, 
         InputTaurus.ConstrEnum.P_T1p1_J00,
-        InputTaurus.ConstrEnum.P_T00_J1m1,
-        InputTaurus.ConstrEnum.P_T00_J1p1,
+        # InputTaurus.ConstrEnum.P_T00_J1m1,
+        # InputTaurus.ConstrEnum.P_T00_J1p1,
     ]
     
     constr_onrun = {
@@ -79,14 +79,8 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.b31 : (0.0, 0.0),
         InputTaurus.ConstrEnum.b41 : (0.0, 0.0),
         #InputTaurus.ConstrEnum.Jx: 0.0
-        InputTaurus.ConstrEnum.P_T00_J10 : 0,  
-        InputTaurus.ConstrEnum.P_T10_J00 : 0,
-        InputTaurus.ConstrEnum.P_T1m1_J00: 0, 
-        InputTaurus.ConstrEnum.P_T1p1_J00: 0,
-        InputTaurus.ConstrEnum.P_T00_J1m1: 0,
-        InputTaurus.ConstrEnum.P_T00_J1p1: 0,
     }
-    fomenko_points = (7, 7)
+    fomenko_points = (1, 1)
     ROmega         = (0, 0) #(14,14) #
     if True:
         run_pair_surface_D1S(nucleus, interactions, PAIR_CONSTRS,
@@ -97,6 +91,7 @@ if __name__ == '__main__':
                              p_min=-1.5, p_max=1.5, N_max=31, #31
                              fomenko_points=fomenko_points, parity_2_block=1,
                              sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
+                             fixed_PairsChannels=True, 
                              **constr_onrun)
         # interactions[()] = (5, 0, None)
     # run_b20_decomposeHamiltonian_Gogny(interactions, GognyEnum.B1, PAIR_CONSTRS, fomenko_points, ROmega) 
