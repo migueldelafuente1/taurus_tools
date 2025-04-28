@@ -406,6 +406,15 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                     (self.PARITY_TO_BLOCK != 0 and P != self.PARITY_TO_BLOCK)):
                     printf(f"  * Blocked states[{bk_sp}] invalid with TOTAL K,P={K},{P} [SKIP]")
                     continue
+            else:
+                ## Check the parity in case of blocking
+                if odd_p or odd_n:
+                    P = 0
+                    if odd_p: P = (-1)**self._sp_states_obj[bk_sp_p].l
+                    if odd_n: P = (-1)**self._sp_states_obj[bk_sp_n-sp_dim].l
+                    if (self.PARITY_TO_BLOCK != 0) and (P != self.PARITY_TO_BLOCK):
+                        printf(f"  * Blocked states[{bk_sp}] invalid with TOTAL PARITY={P} [SKIP]")
+                        continue
             
             if bk_sp in blocked_states:
                 printf(rand_step, f"  * Blocked state [{bk_sp}] is already calculated [SKIP]")

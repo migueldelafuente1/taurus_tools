@@ -166,6 +166,8 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
     
     header = ''.join([delimiter]*level)
     for k, val in dictionary.items():
+        if k == 'force_converg': 
+            _ = 0
         if isinstance(val, dict):
             printf(header+str(k)+': {')
             prettyPrintDictionary(val, level + 1, delimiter)
@@ -175,7 +177,7 @@ def prettyPrintDictionary(dictionary, level=0, delimiter=' . '):
                 if isinstance(val[0], float):
                     str_ = ["{:6.4f}".format(x) for x in val]
                 else:
-                    str_ = val
+                    str_ = [str(x) for x in val]
                 str_ = '[{}]'.format(', '.join(str_))
             else:
                 str_ = str(val)
