@@ -233,9 +233,9 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         if not os.path.exists(program_):
             printf(" [WARNING] PAV executable is missing. Skipping")
             return
-            
-        shutil.copy('final_wf.bin', 'left_wf.bin')
-        shutil.copy('final_wf.bin', 'right_wf.bin')
+        _fmt_wf_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
+        shutil.copy(f'final_wf{_fmt_wf_}', f'left_wf{_fmt_wf_}')
+        shutil.copy(f'final_wf{_fmt_wf_}', f'right_wf{_fmt_wf_}')
         
         inp_fn = self.inputObj_PAV.DEFAULT_INPUT_FILENAME
         out_fn = DataTaurusPAV.DEFAULT_OUTPUT_FILENAME
@@ -596,11 +596,12 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             skip (to run another constraint from a previous minimum)
         """
         self._exit_preconvergence = False
+        _fmt_wf_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
         
         if self._preconvergence_steps == 0 and self._1stSeedMinimum != None:
             self.inputObj.seed = 1
             if   isinstance(self.inputObj, InputTaurus):
-                shutil.copy(self._base_wf_filename, 'initial_wf.bin')
+                shutil.copy(self._base_wf_filename, f'initial_wf{_fmt_wf_}')
             elif  isinstance(self.inputObj, InputAxial):
                 shutil.copy(self._base_wf_filename, 'fort.10')
             return True 
@@ -625,7 +626,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             ## to import it (if result is crazy the process will stop in if #1)
             self.inputObj.seed = 1
             if   isinstance(self.inputObj, InputTaurus):
-                shutil.copy('final_wf.bin', 'initial_wf.bin')
+                shutil.copy(f'final_wf{_fmt_wf_}', f'initial_wf{_fmt_wf_}')
             elif  isinstance(self.inputObj, InputAxial):
                 shutil.copy('fort.11', 'fort.10')
             
@@ -657,6 +658,7 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         """
         ## export of the list.dat file
         bins_, outs_ = [], []
+        _fmt_wf_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
         printf(f"\n  [globalTearDown] Export by [{self.CONSTRAINT_DT}]\n")
         ## exportar oblate-reverse order
         printf("self._final_bin_list_data[0]=\n", self._final_bin_list_data[0])
@@ -665,14 +667,14 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             tail = self._final_bin_list_data[0][k]
             constr_val = getattr(self._results[0][-k-1], self.CONSTRAINT_DT)
             constr_val = f"{constr_val:6.3f}"   #.replace('-', '_')
-            bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
+            bins_.append("seed_{}{}\t{}".format(tail, _fmt_wf_, constr_val))
             outs_.append("res_{}.OUT\t{}".format(tail, constr_val))
         ## exportar prolate en orden
         for k in range(len(self._final_bin_list_data[1])):
             tail = self._final_bin_list_data[1][k]
             constr_val = getattr(self._results[1][k], self.CONSTRAINT_DT)
             constr_val = f"{constr_val:6.3f}"   #.replace('-', '_')
-            bins_.append("seed_{}.bin\t{}".format(tail, constr_val))
+            bins_.append("seed_{}{}\t{}".format(tail, _fmt_wf_, constr_val))
             outs_.append("res_{}.OUT\t{}".format(tail, constr_val))
         
         with open('list_dict.dat', 'w+') as f:
@@ -713,13 +715,14 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
         os.mkdir('PNVAP')
         
         list_dat = []
+        _fmt_wf_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
         for i, bin_ in enumerate(bins_):
             fn, def_ = bin_.split()
-            shutil.copy(fn, 'PNVAP/' + def_ + '.bin')
+            shutil.copy(fn, 'PNVAP/' + def_ + _fmt_wf_)
             fno, _ = outs_[i].split()
             printf(f"     cp: def_=[{def_}] fn[{fn}] fno[{fno}]")
             shutil.copy(fno, 'PNVAP/' + def_ + '.OUT')
-            list_dat.append(def_ + '.bin')
+            list_dat.append(def_ + _fmt_wf_)
         with open('list.dat', 'w+') as f:
             f.write("\n".join(list_dat))
         shutil.move('list.dat', 'PNVAP/')

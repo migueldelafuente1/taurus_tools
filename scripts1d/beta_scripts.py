@@ -184,11 +184,11 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
     ExeTaurus1D_DeformB20.ITERATIVE_METHOD = \
-        ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_SWEEPING
+        ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_STD
         
     ExeTaurus1D_DeformB20.SAVE_DAT_FILES = [
-        DataTaurus.DatFileExportEnum.canonicalbasis,
-        DataTaurus.DatFileExportEnum.eigenbasis_h,
+        # DataTaurus.DatFileExportEnum.canonicalbasis,
+        # DataTaurus.DatFileExportEnum.eigenbasis_h,
         # DataTaurus.DatFileExportEnum.occupation_numbers,
         ]
     
@@ -217,6 +217,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: seed_base,
             InputTaurus.ArgsEnum.iterations: 1000,
+            InputTaurus.ArgsEnum.wf_export_text : 1,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
@@ -231,6 +232,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
             InputTaurus.ArgsEnum.seed: 1,
             InputTaurus.ArgsEnum.iterations: 600,
+            InputTaurus.ArgsEnum.wf_export_text: 1,
             InputTaurus.ArgsEnum.grad_type: 1,
             InputTaurus.ArgsEnum.grad_tol : 0.01,
             'axial_calc' : axial_calc,

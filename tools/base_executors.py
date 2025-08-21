@@ -662,10 +662,10 @@ class _Base1DTaurusExecutor(object):
         self.inputObj.seed = 1 
         b20_base = self._deform_base
         printf(f" ** Variable Step Running start point {self.CONSTRAINT}={b20_base:7.3f}")
-        
+        _fmt_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
         for prolate, b_lim in enumerate((self._deform_lim_min, 
                                          self._deform_lim_max)):
-            shutil.copy(self._base_wf_filename, 'initial_wf.bin')
+            shutil.copy(self._base_wf_filename, f'initial_wf{_fmt_}')
             
             b20_i  = b20_base
             energ  = ener_base
@@ -728,7 +728,7 @@ class _Base1DTaurusExecutor(object):
                     printf("  * [OK] step accepted DIV:{} CE{:10.4} C.DIFF:{:10.4}"
                           .format(div, curr_energ, curr_energ - energ))
                     # accept and continue (copy final function)
-                    _e = subprocess.call('cp final_wf.bin initial_wf.bin', shell=True)
+                    _e = subprocess.call(f'cp final_wf{_fmt_} initial_wf{_fmt_}', shell=True)
                     # increase the step for valid or deformation precision overflow 
                     div =  max(0, div - 1) ## smoothly recover the dq
                     e_diff = curr_energ - energ
@@ -816,10 +816,11 @@ class _Base1DTaurusExecutor(object):
         ## MODE-EXPORT_ complementary files: binaries, time track and *.dat files
         hash_ = (self._curr_deform_index, hash(random())) # random text to identify wf
         ## wf intermediate
-        with open('final_wf.bin', 'w+') as f:
+        _fmt_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
+        with open(f'final_wf{_fmt_}', 'w+') as f:
             f.write(str(hash_))
         if self.inputObj.interm_wf == 1:
-            with open('intermediate_wf.bin', 'w+') as f:
+            with open(f'intermediate_wf{_fmt_}', 'w+') as f:
                 f.write(str(hash_))
         
         if self.TRACK_TIME_AND_RAM:
@@ -879,9 +880,10 @@ class _Base1DTaurusExecutor(object):
             localization or if it is in the run process
         """
         if result.broken_execution: return
+        _fmt_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
         
         if base_execution:
-            self._base_wf_filename = 'base_initial_wf.bin'
+            self._base_wf_filename = f'base_initial_wf{_fmt_}'
             shutil.copy('final_wf.bin', self._base_wf_filename)
             tail = f"z{self.z}n{self.n}_dbase"
             
@@ -903,12 +905,12 @@ class _Base1DTaurusExecutor(object):
         
         ## copy the wf to the initial wf always except non 
         if (not self.force_converg) or result.properly_finished:
-            shutil.copy('final_wf.bin', 'initial_wf.bin')
+            shutil.copy(f'final_wf{_fmt_}', f'initial_wf{_fmt_}')
         
         shutil.move(self._output_filename, 
                     f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
-        shutil.copy('final_wf.bin', 
-                    f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
+        shutil.copy(f"final_wf{_fmt_}", 
+                    f"{self.DTYPE.BU_folder}/seed_{tail}{_fmt_}")
         result._exported_filename = tail
         
         if self.SAVE_DAT_FILES:
@@ -1230,9 +1232,9 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
             localization or if it is in the run process
         """
         if result.broken_execution: return
-        
+        _fmt_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
         if base_execution:
-            self._base_wf_filename = 'base_initial_wf.bin'
+            self._base_wf_filename = f'base_initial_wf{_fmt_}'
             shutil.copy('fort.11', self._base_wf_filename)
             tail = f"z{self.z}n{self.n}_dbase"
             
@@ -1259,7 +1261,7 @@ class _Base1DAxialExecutor(_Base1DTaurusExecutor):
         shutil.move(self._output_filename, 
                     f"{self.DTYPE.BU_folder}/res_{tail}.OUT")
         shutil.copy('fort.11', 
-                    f"{self.DTYPE.BU_folder}/seed_{tail}.bin")
+                    f"{self.DTYPE.BU_folder}/seed_{tail}{_fmt_}")
         
         
 from multiprocessing import cpu_count
@@ -1466,7 +1468,8 @@ class SetUpStoredWFAndHamiltonian(object):
                         k_res[k] = fo, res
             
             for k, vals in k_res.items():
-                wf = vals[0].replace('res', 'seed').replace('.OUT', '.bin')
+                _fmt_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
+                wf = vals[0].replace('res', 'seed').replace('.OUT', _fmt_)
                 cls.wfseeds_byZN_K[(z,n)][k] = cls.FLD_IMPORT_SEEDS / Path(fld) / wf
                 cls.results_byZN_K[(z,n)][k] = vals[1]
         
@@ -1535,8 +1538,9 @@ class SetUpStoredWFAndHamiltonian(object):
         res : DataTaurus = cls.results_byZN_K[zn][K]
         cls._printResultStored(res, z, n, K, fld)
         
-        shutil.copy(cls.wfseeds_byZN_K[zn][K], 'initial_wf.bin')
-        shutil.copy(cls.wfseeds_byZN_K[zn][K], 'base_initial_wf.bin')
+        _fmt_ = '.bin' if self.inputObj.wf_export_text == 0 else '.txt'
+        shutil.copy(cls.wfseeds_byZN_K[zn][K], f'initial_wf{_fmt}')
+        shutil.copy(cls.wfseeds_byZN_K[zn][K], f'base_initial_wf{_fmt_}')
             
         printf(" [DONE] SetUpStoredWFAndHamiltonian")
         return interaction

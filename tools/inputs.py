@@ -74,7 +74,7 @@ Type of seed wave function    {seed}
 Number of QP to block         {qp_block}
 No symmetry simplifications   0
 Seed random number generation 0
-Read/write wf file as text    0
+Read/write wf file as text    {wf_export_text}
 Cutoff occupied s.-p. states  0.00E-00
 Include all empty sp states   0
 Spatial one-body density      {pnt_dens}
@@ -138,6 +138,7 @@ Constraint field Delta        0   0.000"""
         seed     = 'seed'
         qp_block = 'qp_block'
         # qparticle_blocking = 'qparticle_blocking'
+        wf_export_text = 'wf_export_text'
         pnt_dens = 'pnt_dens'
         discr_xr = 'discr_xr'
         discr_yt = 'discr_yt'
@@ -290,6 +291,7 @@ additional options-modes    = {more_options}
         self.discr_zp   = (0, 0.0)
         self.iterations = 0
         self.interm_wf  = 1
+        self.wf_export_text = 0 # 0: r/w on .bin   1: r/w on .txt  2. r(.bin)/w(.txt) 3. opposite
         self.grad_type  = 1
         self.eta_grad   = 0.001
         self.mu_grad    = 0.2
@@ -360,6 +362,9 @@ additional options-modes    = {more_options}
                         val_2 = [value, ] if type(value)==int else value 
                         assert all([isinstance(x, int) and x>0 for x in val_2]), \
                             f"All QP block states must be > 0, got:{val_2}"
+                elif arg == self.ArgsEnum.wf_export_text:
+                    assert value in (0, 1), \
+                        "Modes to read/write wavefunction in the same format."
                 elif arg == self.ArgsEnum.seed:
                     assert isinstance(value, int) and value >=0 and value < 10, \
                         f"Value must be in range 0-9 [{value}]"
