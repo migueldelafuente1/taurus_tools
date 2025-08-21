@@ -80,6 +80,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
     ExeTaurus1D_PairCoupling.SEEDS_RANDOMIZATION   = convergences
     ExeTaurus1D_PairCoupling.GENERATE_RANDOM_SEEDS = bool(convergences)
     ExeTaurus1D_PairCoupling.PARITY_TO_BLOCK       = parity_2_block
+    ExeTaurus1D_PairCoupling.DO_BASE_CALCULATION   = seed_base != 1
         
     for z, n in nucleus:
         printf(LINE_2, f" Starting Pairing Energy Surfaces for Z,N = {z},{n}",

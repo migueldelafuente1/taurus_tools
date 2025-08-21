@@ -274,9 +274,12 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
             for var_plot in observables2plot:
                 if indivCs: 
                     figs_and_axes[var_plot] = plt.subplots(nrows, 2, figsize=(7,4)) #(6,5)) # 
-                    gs = gridspec.GridSpec(1, 3, width_ratios=[0.5, 1.5, 1])  # Allocate 40% less space to the left
+                    # gs = gridspec.GridSpec(1, 3, width_ratios=[0.5, 1.5, 1])  # Allocate 40% less space to the left
+                    gs = gridspec.GridSpec(1, 2, width_ratios=[0.5, 1.5])  # Allocate 40% less space to the left
 
-                else:       figs_and_axes[var_plot] = plt.subplots(1,2, figsize=(8,4))
+                else:
+                    figs_and_axes[var_plot] = plt.subplots(1,2, figsize=(8,4))
+                    gs = gridspec.GridSpec(1, 2, width_ratios=[1.5, 0.5]) 
             
             pn_list_data = list(data.keys())
                 
@@ -338,9 +341,11 @@ def plotContourVAPPAV_2dT1T0vsTppnnFromFolders(folders_2_import, MAIN_FLD_TEMP,
                         )
                         ax.clabel(contours, inline=True, fontsize=10)  # Label the contour lines
                         # Add a color bar for reference
+                        # if (indivCs and (i, j) == (1, 1)) or (indivCs==0 and j==1):
                         cbar = fig.colorbar(filled_contours, ax=ax)#, label="Z Value")
                         cbar.locator = ticker.MaxNLocator(nbins=5)
                         cbar.ax.tick_params(labelsize=14)
+                        
                         ax.xaxis.set_major_locator(MaxNLocator(3))  # Set maximum 5 ticks on x-axis
                         ax.yaxis.set_major_locator(MaxNLocator(3))  # Set maximum 4 ticks on y-axis
                         ax.set_xlim(0, max(x))
@@ -431,10 +436,10 @@ if __name__ == '__main__':
     
     # nuclei = [(12,11 + 2*i) for i in range(0, 6)] # 6
     nuclei = [
-        # (12,12), (12,13), # (12,15),
+        (12,12), # (12,13), (12,15),
         # (10,10), (10,11),
         # (10,12), 
-        (10,14), 
+        # (10,14), 
         # (10,16),
         # ( 8, 8), (14,14)
         # (11,11), (13,13),

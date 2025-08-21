@@ -137,6 +137,7 @@ def plotVAP_pairCoupling_FromFolders(folders_2_import, MAIN_FLD_TEMP,
         object_data    = {}
         index_0 = {}
         cannonicalBas = {}
+        #INTER = f'B1_{z+n}_MZ8'
         for constr in constraints_pair:
             data_cnstr_plot[constr] = dict([(v, []) for v in observables2plot])
             deforms    [constr]     = []
@@ -495,33 +496,33 @@ if __name__ == '__main__':
     #===========================================================================
     # ## TESTS FOR THE 2B pair-coupling OPERATORS example24 Mg
     
-    INTER = 'B1_MZ5' # 'D1S' # 'P2_MZ4' #P2
-    GLOBAL_TAIL_INTER = '_B1' # '_D1S' #
-    
-    MAIN_FLD = f'../DATA_RESULTS/TestsPJTOperators/_BU_hfbCase'
-    subfolder_temp = '{MAIN_FLD}/BU_folder_{constrs}_{INTER}_z{z}n{n}/'
-    export_templ = 'export_TES_{}_z{}n{}_{}.txt'
-    
-    constraints_ = [                     ### DO NOT CHANGE THIS ORDER
-        InputTaurus.ConstrEnum.P_T00_J10,
-        # InputTaurus.ConstrEnum.P_T00_J1m1,
-        # InputTaurus.ConstrEnum.P_T00_J1p1,
-        InputTaurus.ConstrEnum.P_T10_J00,
-        InputTaurus.ConstrEnum.P_T1m1_J00,
-        InputTaurus.ConstrEnum.P_T1p1_J00,
-    ]
-    nuclei = [
-        # ( 2, 2),
-        # (10,10),
-        (20,20),
-    ]
-    folders_2_import = [
-        ((z, n), subfolder_temp, export_templ) for z,n in nuclei
-    ]
-    
-    plot_1Bvs2B_deltaOperators(folders_2_import, MAIN_FLD, constraints_)
-    
-    0/0
+    # INTER = 'B1_MZ5' # 'D1S' # 'P2_MZ4' #P2
+    # GLOBAL_TAIL_INTER = '_B1' # '_D1S' #
+    #
+    # MAIN_FLD = f'../DATA_RESULTS/TestsPJTOperators/_BU_hfbCase'
+    # subfolder_temp = '{MAIN_FLD}/BU_folder_{constrs}_{INTER}_z{z}n{n}/'
+    # export_templ = 'export_TES_{}_z{}n{}_{}.txt'
+    #
+    # constraints_ = [                     ### DO NOT CHANGE THIS ORDER
+    #     InputTaurus.ConstrEnum.P_T00_J10,
+    #     # InputTaurus.ConstrEnum.P_T00_J1m1,
+    #     # InputTaurus.ConstrEnum.P_T00_J1p1,
+    #     InputTaurus.ConstrEnum.P_T10_J00,
+    #     InputTaurus.ConstrEnum.P_T1m1_J00,
+    #     InputTaurus.ConstrEnum.P_T1p1_J00,
+    # ]
+    # nuclei = [
+    #     # ( 2, 2),
+    #     # (10,10),
+    #     (20,20),
+    # ]
+    # folders_2_import = [
+    #     ((z, n), subfolder_temp, export_templ) for z,n in nuclei
+    # ]
+    #
+    # plot_1Bvs2B_deltaOperators(folders_2_import, MAIN_FLD, constraints_)
+    #
+    # 0/0
     #===========================================================================    
     
     MAIN_FLD = '../DATA_RESULTS/SD_Odd_pnPairing/{pair_cnstr}'
@@ -534,7 +535,7 @@ if __name__ == '__main__':
         # (16,16), (14,14), (18,18), (20,20)
         # (12,18), 
         # (10,11), (12,13), (8,9), #(16,17), 
-        # (12,10), (12,12), (12,14), (12,16), (12,18), (12,20), (12,22), (12,24),
+        (12, 8), (12,10), (12,12), # (12,14), (12,16), (12,18), (12,20), (12,22), (12,24),
         # (12,26), (12,28)
         # (10,16),
         # (12,12+i) for i in range(7)
@@ -543,7 +544,7 @@ if __name__ == '__main__':
         # (11,11), (13,13),
     ] 
     
-    INTER = 'B1_MZ5' # 'D1S' # 'P2_MZ4' #P2
+    INTER = 'B1_{A}_MZ8' # 'D1S' # 'P2_MZ4' #P2
     GLOBAL_TAIL_INTER = '_B1' # '_D1S' #
     export_templ = 'export_TES_{}_z{}n{}_{}.txt'
     # export_templ = 'export_PSz{}n{}_{}_{}.txt'
@@ -581,8 +582,10 @@ if __name__ == '__main__':
         # InputTaurus.ConstrEnum.P_T1m1_J00,
     ]
     
-    MAIN_FLD = f'../DATA_RESULTS/PN_mixing/hamilParts_S0B1VAP_MZ5'
-    subfolder_temp = '{MAIN_FLD}/BU_folder_{constrs}_{INTER}_z{z}n{n}/'
+    MAIN_FLD = f'../DATA_RESULTS/PN_mixing/Mg_B1_MZ8'
+    subfolder_temp = '{MAIN_FLD}'#/BU_folder_{constrs}_{INTER}_z{z}n{n}/'
+    # MAIN_FLD = f'../DATA_RESULTS/PN_mixing/hamilParts_S0B1VAP_MZ5'
+    # subfolder_temp = '{MAIN_FLD}/BU_folder_{constrs}_{INTER}_z{z}n{n}/'
     # old D1S results
     # MAIN_FLD = f'../DATA_RESULTS/PN_mixing/Mg_MZ5' #SDnuclei_MZ5' # 
     # subfolder_temp = '{MAIN_FLD}/' #

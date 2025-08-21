@@ -52,7 +52,7 @@ if __name__ == '__main__':
         #             interactions_B1[(Z,N)] = (4, 0, None)
         #         printf()
         interactions_B1 = {}
-        inter_ = (4, 0, None)
+        inter_ = 'B1_MZ4' #(4, 0, None)
         # inter_ = 'usdb_JF27' # 'SDPF_MIX_J' 
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([(( 9, 8+ 2*i), inter_) for i in range(0, 7)])
@@ -74,7 +74,7 @@ if __name__ == '__main__':
         _6 = 'pav_norm_eval_from_allBlockKsurf' # Once evaluated case 'exe_example_allblockKsurf'
     
     ## SELECT HERE ****
-    _case = __CASES._6
+    _case = __CASES._2
      
     nucleus = sorted(list(interactions_B1.keys()))
     
