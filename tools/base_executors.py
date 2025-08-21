@@ -884,7 +884,7 @@ class _Base1DTaurusExecutor(object):
         
         if base_execution:
             self._base_wf_filename = f'base_initial_wf{_fmt_}'
-            shutil.copy('final_wf.bin', self._base_wf_filename)
+            shutil.copy(f'final_wf{_fmt_}', self._base_wf_filename)
             tail = f"z{self.z}n{self.n}_dbase"
             
             ## save all the 1st blocked seeds
