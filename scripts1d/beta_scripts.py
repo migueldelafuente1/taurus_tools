@@ -184,7 +184,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         raise ExecutionException(" Projection is not defined for taurus_vap with density-dependent")
     
     ExeTaurus1D_DeformB20.ITERATIVE_METHOD = \
-        ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_STD
+        ExeTaurus1D_DeformB20.IterativeEnum.EVEN_STEP_SWEEPING
         
     ExeTaurus1D_DeformB20.SAVE_DAT_FILES = [
         # DataTaurus.DatFileExportEnum.canonicalbasis,

@@ -109,6 +109,7 @@ class PotentialForms(Enum):
     Wood_Saxon  = 'wood_saxon'              # (r/mu_)^n_power /( 1 + exp((r-mu_2 * A^1/3)/mu_3) )
     Exponential_power = 'exponential_power' # exp(-r/mu_) * (r/mu_)^n_power
     YukawaGauss_power = 'gauss_yukawa_power'# exp(-(r/mu_)-(r/mu_2)^2) * (r/mu_)^n_power
+    Hulthen     = 'hulthen'                 # exp(-(r/mu)) / (1 - exp(-r/mu))
 
 #===============================================================================
 # FORCE PARAMETERS DEFINITIONS
