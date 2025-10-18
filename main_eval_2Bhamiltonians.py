@@ -11,6 +11,7 @@ from pathlib import Path
 
 from tools.hamiltonianMaker import TBME_HamiltonianManager
 from scripts1d.script_helpers import getInteractionFile4D1S
+from tools.inputs import InputTaurus
 
 RESULTS_FLD = ''
 
@@ -47,16 +48,23 @@ def _changeCWDAndRun(*args):
                                        gogny_interaction= args[0])
         global RESULTS_FLD
         # copy results
+        hamil_dest = f"{inter}{hamil_surname}"
         for tl_ in OutputFileTypes.members():
             ini_ = f"{inter}{tl_}"
             if os.path.exists(ini_):
-                dst = Path('../'+RESULTS_FLD) / f'{inter}{hamil_surname}{tl_}'
+                dst = Path('../'+RESULTS_FLD) / f'{hamil_dest}{tl_}'
                 shutil.copy(ini_,  dst)
         os.chdir('..')
     except BaseException as e:
         print("Problem executing the Hamiltonian, returning to main folder")
         os.chdir('..')
     
+    global CREATE_FLD_TAURUSEXE, PARAMS_TAURUS
+    if CREATE_FLD_TAURUSEXE:
+        input = InputTaurus(z, n, hamil_dest, **PARAMS_TAURUS)
+        with open(f'{RESULTS_FLD}/input_{hamil_dest}.txt', 'w+') as f: 
+            f.write(input.getText4file())
+        
     # return TMP_FLD, f'{inter}{hamil_surname}'
     
 # Custom context manager for threading
@@ -71,7 +79,7 @@ class ThreadContextManager:
     def __exit__(self, exc_type, exc_value, traceback):
         self.thread.join()  # Ensure the thread completes
 
-def run_parallel_2BMatrixElements_Gogny(interaction_args):
+def run_parallel_2BMatrixElements_Gogny(interaction_args, create_fld_taurus=True):
     """
     :args interaction_args <dict>
         (z,n): (GOGNY_interaction, MZmax, MZmin, b_length)
@@ -115,11 +123,24 @@ if __name__ == '__main__':
     # do_Coulomb, do_LS, do_BB
     MZmax = 2
     INTERACTIONS_COMPUTE_BY_ZN = {
-        (10,10,'')    : (GognyEnum.D1S, MZmax, 0, None,  {}),
-        (10,10,'noLS'): (GognyEnum.D1S, MZmax, 0, None, {'do_LS': False,}),
-        (10,10,'noBB'): (GognyEnum.D1S, MZmax, 0, None, {'do_BB': False,}),
+        # (10,10,'')    : (GognyEnum.B1, MZmax, 0, None,  {}),
+        # (10,10,'noLS'): (GognyEnum.D1S, MZmax, 0, None, {'do_LS': False,}),
+        # (10,10,'noBB'): (GognyEnum.D1S, MZmax, 0, None, {'do_BB': False,}),
     }
+    for z in range(2, 21, 2):
+        INTERACTIONS_COMPUTE_BY_ZN[(z, z, f"_A{2*z}")] = (GognyEnum.B1, MZmax, 0, None,  {})
+        
     
-    RESULTS_FLD = 'HAMILS_D1S'
+    RESULTS_FLD = 'HAMILS_B1'
+    CREATE_FLD_TAURUSEXE = True
+    PARAMS_TAURUS = {
+        InputTaurus.ArgsEnum.com  : 1,
+        InputTaurus.ArgsEnum.seed : 0, # 3
+        InputTaurus.ArgsEnum.iterations: 700,
+        InputTaurus.ArgsEnum.grad_type : 1,
+        InputTaurus.ArgsEnum.grad_tol  : 0.001,
+        InputTaurus.ArgsEnum.beta_schm : 1, ## 0= q_lm, 1 b_lm, 2 triaxial
+        InputTaurus.ArgsEnum.pair_schm : 1,
+    }
     
     run_parallel_2BMatrixElements_Gogny(INTERACTIONS_COMPUTE_BY_ZN)
