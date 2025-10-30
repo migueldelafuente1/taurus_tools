@@ -1022,8 +1022,11 @@ class _Base1DTaurusExecutor(object):
         """
         Standard step information
         """
-        cnstr = self.CONSTRAINT if isinstance(self.CONSTRAINT, (list, tuple)) else \
-                [self.CONSTRAINT,]
+        if  self.CONSTRAINT == None:
+            cnstr = '' # HO -no constrained calculations
+        else:
+            cnstr = self.CONSTRAINT if isinstance(self.CONSTRAINT, (list, tuple)) else \
+                    [self.CONSTRAINT,]
         cnstr_val_str = []
         for c in cnstr:
             c2 = c
