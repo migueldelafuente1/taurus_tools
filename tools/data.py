@@ -2219,7 +2219,7 @@ class _TestingTaurusOutputGenerator():
             
             ## fix the randomized variables for constraining.
             for ic, cnst in enumerate(self.constraints):
-                if self.constraints == []: break
+                if self.constraints == [] or None in self.constraints: break
                 cns_str = f'{cnst}_isoscalar' if not(cnst[0] in 'PJ') else cnst
                 setattr(dat, cns_str, self.minimum_def[ic])
         else:
@@ -2277,7 +2277,7 @@ class _TestingTaurusOutputGenerator():
                 x = getattr(self._input, cnstr, None)
                 x = 0.0 if (x == None) else x  
             
-            if cnstr.startswith('P_T'):
+            if cnstr and cnstr.startswith('P_T'):
                 self._E_kpt_var[1]  += (x - x_0)**2
             
             rand_ener = np.random.random()* 2 if self.randomizeEhfb else 0
@@ -2383,6 +2383,7 @@ class _TestingTaurusOutputGenerator():
         
         ## Fix the variable-constrained values (no randomized)
         for ic, cnst in enumerate(self.constraints):
+            if cnst == None: break
             cnst2 = cnst if cnst[0] in 'PJ' else f"{cnst}_isoscalar"
             cnst_vals = getattr(self._input, cnst, None)
             if cnst_vals == None: ## Unconstrained, base calculation 
