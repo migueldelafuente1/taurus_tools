@@ -8,7 +8,8 @@ from tools.helpers import importAndCompile_taurus, TBME_SUITE, printf, __log_fil
 
 from tools.inputs import InputTaurus
 from tools.Enums import GognyEnum
-from scripts2d.pair_scripts2d import run_pair_surfaces_2d
+from scripts2d.pair_scripts2d import run_pair_surfaces_2d, \
+    run_b20_decomposeHamiltonian_GognyB1_2d
 from tools.base_executors import _Base1DTaurusExecutor, SetUpStoredWFAndHamiltonian
 
 if not (InputTaurus.PROGRAM in os.listdir()): importAndCompile_taurus()
@@ -72,16 +73,17 @@ if __name__ == '__main__':
     }
     
     # SetUpStoredWFAndHamiltonian.setUpMainFolder('SEEDS_VAPS0_ZNK')
-    
-    run_pair_surfaces_2d(
-        nucleus, interactions, PAIR_CONSTRS,
-        gogny_interaction=GognyEnum.B1, ROmega=(0,0), 
-        convergences=20, seed_base=0, ## put to 0, 1 to start from seeds
-        valid_Ks_to_block=[],
-        fomenko_points=(7, 7), 
-        sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
-        **constr_onrun
-    )
+    if True:
+        run_pair_surfaces_2d(
+            nucleus, interactions, PAIR_CONSTRS,
+            gogny_interaction=GognyEnum.B1, ROmega=(0,0), 
+            convergences=20, seed_base=0, ## put to 0, 1 to start from seeds
+            valid_Ks_to_block=[],
+            fomenko_points=(1, 1), 
+            sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC,
+            **constr_onrun
+        )
+    run_b20_decomposeHamiltonian_GognyB1_2d(interactions, PAIR_CONSTRS)
     printf("I finished!")
     
     if os.getcwd().startswith('/'): 

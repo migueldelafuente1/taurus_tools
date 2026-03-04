@@ -24,7 +24,7 @@ from tools.Enums import InputParts, Output_Parameters, SHO_Parameters, Constants
     ValenceSpaceParameters, AttributeArgs, ForceEnum, ForceFromFileParameters,\
     BrinkBoekerParameters, DensityDependentParameters, OutputFileTypes, Enum,\
     GognyEnum, PotentialSeriesParameters, CentralMEParameters, PotentialForms,\
-    M3YEnum
+    M3YEnum, ArgonneEnum
 from tools.data import DataTaurus
 
 #===============================================================================
@@ -772,6 +772,61 @@ class TBME_HamiltonianManager(object):
         f4.tail = '\n\t'
         return forces
     
+    def _set_ArgonneParameters(self, forces, av_interaction):
+        
+        ## Clear the Forces element file
+        for s_elem in list(forces):
+            forces.remove(s_elem)
+            
+        ## D1S PARAMS: *********************************************************
+        if av_interaction == ArgonneEnum.AV14:
+            printf(f" > doing AV - 14 m.e.: active= True")
+            
+            f3  = et.SubElement(forces, ForceEnum.Argone14NuclearTerms, 
+                                attrib={AttributeArgs.ForceArgs.active : 'True'})
+            # _.tail = '\n\t'
+            f3.tail = '\n\t'
+            
+        elif av_interaction == ArgonneEnum.AV18:
+            if self.do_coulomb:
+                self.do_coulomb = False
+                
+                printf(f" > doing AV - 18 Electromagnetic m.e.: active= True")
+                f1  = et.SubElement(forces, ForceEnum.Argone18Electromagetic,
+                                    attrib={AttributeArgs.ForceArgs.active : 'True'})
+                # _.tail = '\n\t'
+                f1.tail = '\n\t'
+            
+            printf(f" > doing AV - 18 m.e.: active= True")
+            f3  = et.SubElement(forces, ForceEnum.Argone18NuclearTerms, 
+                                attrib={AttributeArgs.ForceArgs.active : 'True'})
+            # _.tail = '\n\t'
+            f3.tail = '\n\t'
+            
+            ## *****************************************************************
+        else:
+            raise Exception("Invalid Gogny interaction", av_interaction)
+        _TT = '\n\t\t'
+        
+        ## *********************************************************************
+        cou_const = 1 / self.b_length  # e^2 were in the interaction constant
+        printf(f" > doing Coul m.e.", self.do_coulomb, f"1/b= {cou_const:8.3f}")
+        f2  = et.SubElement(forces, ForceEnum.Force_From_File,  
+                            attrib={AttributeArgs.ForceArgs.active : str(self.do_coulomb)})
+        f2.text = _TT
+        _ = et.SubElement(f2, ForceFromFileParameters.file, 
+                          attrib={AttributeArgs.name : PATH_COUL_IN_2BMESUITE})
+        _.tail=_TT
+        _ = et.SubElement(f2, ForceFromFileParameters.options,
+                          attrib={AttributeArgs.FileReader.ignorelines : '1',
+                                  AttributeArgs.FileReader.constant: str(cou_const),
+                                  AttributeArgs.FileReader.l_ge_10: 'True'})
+        _.tail='\n\t'
+        f2.tail = '\n\t'
+        ## *********************************************************************
+        
+        return forces
+    
     def _generateCOMFileFromFile(self, com_filename=None):
         """ 
         Import all states up to MZmax and then filter the results from a file 
@@ -902,6 +957,37 @@ class TBME_HamiltonianManager(object):
         
         forces = root.find(InputParts.Force_Parameters)
         forces = self._set_M3YParameters(forces, m3y_interaction)
+        
+        self.xml_input_filename = 'final_input.xml'
+        tree.write(self.xml_input_filename)
+        
+        self.runTBMERunnerSuite()
+    
+    def setAndRun_Argonne_xml(self, av_interaction, title=''):
+        """
+        Import the file from template and set up forces and valence space
+            (NOTE): method called from CWD=taurus_tools/ to import its resources
+                Change in CWD to 2BMatrixElement/ for execution in self.runTBMERunnerSuite()
+        """
+        if self.MZmin > 0:
+            raise Exception("Valence-space calculations not implemented yet!")
+        
+        self._path_xml = 'data_resources/input_D1S.xml'
+        if os.getcwd().endswith(TBME_SUITE):
+            self._path_xml = '../'+self._path_xml
+            
+        printf(os.getcwd())
+        tree = et.parse(self._path_xml)
+        root = tree.getroot()
+        
+        aux_tit = f"Processed {av_interaction}: Coulomb.{self.do_coulomb} MZ={self.MZmax}"
+        title_ = root.find(InputParts.Interaction_Title)
+        title_.text = aux_tit if title == "" else title
+        
+        root =  self.__setXMLforCommonArguments(root, av_interaction)
+        
+        forces = root.find(InputParts.Force_Parameters)
+        forces = self._set_ArgonneParameters(forces, av_interaction)
         
         self.xml_input_filename = 'final_input.xml'
         tree.write(self.xml_input_filename)

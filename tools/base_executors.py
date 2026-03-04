@@ -505,6 +505,10 @@ class _Base1DTaurusExecutor(object):
         
         if self.ITERATIVE_METHOD == self.IterativeEnum.VARIABLE_STEP:
             self._runVariableStep()
+        elif self.ITERATIVE_METHOD == self.IterativeEnum.SINGLE_EVALUATION:
+            res : self.DTYPE = self._runUntilConvergence()
+            self._results[0].append(res)
+            self._final_bin_list_data[0][0] = res._exported_filename
         else:
             printf(" ** oblate:")
             for k, val in self._deformations_map[0]: # oblate
@@ -789,7 +793,7 @@ class _Base1DTaurusExecutor(object):
                     st_sp = [st_.m if st_ else 1        for st_ in st_sp]
                     K = sum(st_sp) 
                     # K = sum([self._sp_states_obj[s].m for s in sp_])
-            dat.setUpOutput(constraints = self.CONSTRAINT, 
+            dat.setUpOutput(constraints = self.CONSTRAINT if self.CONSTRAINT != None else ['b20'], 
                             minimum_def = deepcopy(self._deform_base), K = K, 
                             randomize   = case_rand)
             # with open(output_fn, 'w+') as f:
@@ -1063,6 +1067,7 @@ class _Base1DTaurusExecutor(object):
             cnstr_val_str = '  '.join(cnstr_val_str)
         else:
             cnstr = self.CONSTRAINT
+            if cnstr == None: cnstr = self.inputObj.ConstrEnum.b20
             cnstr = cnstr if cnstr[0] in 'JP' else f"{cnstr}_isoscalar"
             cnstr_val_str = f'{getattr(result,cnstr):+6.3f}'
         

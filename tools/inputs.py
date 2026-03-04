@@ -138,7 +138,7 @@ Constraint field Delta        0   0.000"""
         seed     = 'seed'
         qp_block = 'qp_block'
         # qparticle_blocking = 'qparticle_blocking'
-        wf_export_text = 'wf_export_text'
+        wf_export_text = 'wf_export_text'   # 0: >bin/>bin 1: txt/txt 2: bin\txt
         pnt_dens = 'pnt_dens'
         discr_xr = 'discr_xr'
         discr_yt = 'discr_yt'

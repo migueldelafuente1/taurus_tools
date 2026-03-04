@@ -35,7 +35,7 @@ class Constants:
 
 
 #===============================================================================
-#  DEFINED ENUMERATIONS
+#  DEFINED ENUMERATIONS 
 #===============================================================================
 
 class InputParts(Enum):
@@ -86,17 +86,20 @@ class ForceEnum(Enum):
     Density_Dependent    = 'Density_Dependent'
     Density_Dependent_From_File = 'Density_From_File'
     Density_FiniteRange  = 'DensityFiniteRange'
-    ElectromageticCentral     = 'ElectromageticCentral'
-    ElectromageticNonCentral  = 'ElectromageticNonCentral'
     Quadratic_OrbitalMomentum = 'Quadratic_OrbitalMomentum'
-    OTPEP_Tensor = "OTPEP_Tensor"
     Kinetic_2Body    = 'Kinetic_2Body'
+    Kinetic_COM      = 'Kinetic_COM' # same as Kinetic_2Body, but to use directly in .2b
+    Kinetic_Total    = 'Kinetic_Total'
     Multipole_Delta  = 'Multipole_Delta'
     Multipole_Moment = 'Multipole_Moment'
+    Multipole_Gaussian = 'Multipole_Gaussian'
     SkyrmeBulk = 'SkyrmeBulk'
     TensorS12  = 'TensorS12'
     Force_From_File = 'Force_From_File'
-    CentralGeneralized = 'CentralGeneralized'
+    CentralGeneralized   = 'CentralGeneralized'
+    Argone14NuclearTerms = 'Argone14NuclearTerms'
+    Argone18NuclearTerms = 'Argone18NuclearTerms'
+    Argone18Electromagetic = 'Argone18Electromagetic'
 
 class PotentialForms(Enum):
     Gaussian    = 'gaussian'                # exp(-(r/mu_)^2)
@@ -107,9 +110,10 @@ class PotentialForms(Enum):
     Power       = 'power'                   # (r/mu_)^n_power
     Gaussian_power = 'gaussian_power'       # exp(-(r/mu_)^2) * (r/mu_)^n_power
     Wood_Saxon  = 'wood_saxon'              # (r/mu_)^n_power /( 1 + exp((r-mu_2 * A^1/3)/mu_3) )
-    Exponential_power = 'exponential_power' # exp(-r/mu_) * (r/mu_)^n_power
     YukawaGauss_power = 'gauss_yukawa_power'# exp(-(r/mu_)-(r/mu_2)^2) * (r/mu_)^n_power
     Hulthen     = 'hulthen'                 # exp(-(r/mu)) / (1 - exp(-r/mu))
+    # Exponential_power = 'exponential_power' # exp(-r/mu_) * (r/mu_)^n_power (NOT ANALITICAL)
+    
 
 #===============================================================================
 # FORCE PARAMETERS DEFINITIONS
@@ -155,7 +159,9 @@ class PotentialSeriesParameters(Enum):
 
 class DensityDependentParameters(Enum):
     constant    = 'constant' # t_0
-    x0    = 'x0'
+    x0    = 'x0'             # x0- Bartlett    P^s
+    x0H   = 'x0H'            #     Heisenberg -P^t     
+    x0M   = 'x0M'            #     Majorana   -P^t*P^s
     alpha = 'alpha'
     core  = 'core'
     file  = 'file'
@@ -176,6 +182,8 @@ class SDIParameters(Enum):
 
 class MultipoleParameters(Enum):
     constants = 'constants'
+    mu_length = 'mu_length'
+    n_power   = 'n_power'
 
 class ForceFromFileParameters(Enum):
     file  = 'file'
@@ -196,7 +204,6 @@ ForceVariablesDict = {
     ForceEnum.Coulomb   : Enum,
     ForceEnum.Tensor    : CentralMEParameters,
     ForceEnum.TensorS12 : CentralWithExchangeParameters,
-    ForceEnum.OTPEP_Tensor : Enum, 
     ForceEnum.SpinOrbit : CentralMEParameters,
     ForceEnum.SpinOrbitShortRange : CentralMEParameters,
     ForceEnum.SpinOrbitFiniteRange: CentralWithExchangeParameters,
@@ -207,14 +214,18 @@ ForceVariablesDict = {
     ForceEnum.Quadratic_OrbitalMomentum  : CentralWithExchangeParameters,
     ForceEnum.SkyrmeBulk    : SkyrmeBulkParameters, 
     ForceEnum.Kinetic_2Body : Enum,
+    ForceEnum.Kinetic_COM   : Enum,
+    ForceEnum.Kinetic_Total : Enum,
     ForceEnum.SDI           : SDIParameters,
     ForceEnum.Delta         : BrinkBoekerParameters,
     ForceEnum.Multipole_Delta : MultipoleParameters,
-    ForceEnum.Multipole_Moment: CentralMEParameters, 
-    ForceEnum.ElectromageticCentral     : Enum, 
-    ForceEnum.ElectromageticNonCentral  : Enum,
-    ForceEnum.Force_From_File : ForceFromFileParameters,
+    ForceEnum.Multipole_Moment: CentralMEParameters,
+    ForceEnum.Multipole_Gaussian : MultipoleParameters,  
+    ForceEnum.Force_From_File    : ForceFromFileParameters,
     ForceEnum.CentralGeneralized : CentralGeneralizedMEParameters,
+    ForceEnum.Argone18NuclearTerms : Enum,
+    ForceEnum.Argone14NuclearTerms : Enum,
+    ForceEnum.Argone18Electromagetic: Enum,
 }
 
 ForcesWithRepeatedParametersList = [
@@ -288,7 +299,6 @@ class OutputFileTypes(Enum):
     twoBody = '.2b'
     centerOfMass = '.com'
 
-
 #===============================================================================
 # INTERNAL ENUMS (non from 2B_MATRIXELEMENTS)
 #===============================================================================
@@ -302,3 +312,7 @@ class M3YEnum(Enum):
     P0 = 'P0'
     P2 = 'P2'
     P6 = 'P6'
+
+class ArgonneEnum(Enum):
+    AV14 = 'AV14'
+    AV18 = 'AV18'

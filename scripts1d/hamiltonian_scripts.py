@@ -12,6 +12,7 @@ from tools.executors import ExeTaurus0D_EnergyMinimum, ExeAxial1D_DeformB20, \
 from tools.data import DataTaurus, DataAxial
 from tools.plotter_1d import Plotter1D_Axial, Plotter1D_Taurus
 from tools.helpers import prettyPrintDictionary, printf
+from tools.Enums import GognyEnum, ArgonneEnum
 
 def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75, 
                                    Nsteps=6, MZmin=0):
@@ -58,7 +59,7 @@ def run_computingHOhbarOmegaForD1S(nucleus, MZmax=4, bHO_min=1.5, bHO_max=2.75,
             hamil_exe = TBME_HamiltonianManager(b_len, MZmax, MZmin=MZmin)
             hamil_fn_new = f'D1S_t0_z{z}n{n}_MZ{MZmax}_b{1000*b_len:4.0f}'
             hamil_exe.hamil_filename = hamil_fn_new
-            hamil_exe.setAndRun_Gogny_xml(TBME_HamiltonianManager.GognyEnum.D1S)
+            hamil_exe.setAndRun_Gogny_xml(GognyEnum.D1S)
         
             ## input args_for must change seeed=1 after the right minimum
             if step_ > 0:
@@ -199,6 +200,115 @@ def run_computingHOhbarOmegaForD1S_Axial(nucleus, program='HFBaxial',
         
     printf("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
+
+
+def run_computingHOhbarOmegaForArgonne(nucleus, inter_av=None, 
+                                       MZmax=4, bHO_min=1.5, bHO_max=2.75, 
+                                       Nsteps=6, MZmin=0, fomenko_points=(0, 0)):
+    """ 
+    Script for Taurus, get a curve b length to see where is the minimum of E hfb
+    """
+    b_lengths = list(np.linspace(bHO_min, bHO_max, Nsteps, endpoint=True))
+    b_lengths.reverse()
+    
+    if inter_av == None: 
+        inter_av = ArgonneEnum.AV14
+    
+    InputTaurus.set_inputDDparamsFile(
+        **{InputTaurus.InpDDEnum.eval_dd: False})
+    
+    input_args_start = {
+        InputTaurus.ArgsEnum.com : 1,
+        InputTaurus.ArgsEnum.seed: 0,
+        InputTaurus.ArgsEnum.iterations: 1000,
+        InputTaurus.ArgsEnum.grad_type: 1,
+        InputTaurus.ArgsEnum.grad_tol : 0.001,
+        InputTaurus.ArgsEnum.red_hamil: 0,
+        InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
+        InputTaurus.ArgsEnum.pair_schm: 1,
+        InputTaurus.ArgsEnum.z_Mphi : fomenko_points[0],
+        InputTaurus.ArgsEnum.n_Mphi : fomenko_points[1],
+        InputTaurus.ConstrEnum.b10 : None, InputTaurus.ConstrEnum.b11 : None,
+        InputTaurus.ConstrEnum.b21 : None,
+        InputTaurus.ConstrEnum.b31 : None, InputTaurus.ConstrEnum.b33 : None,
+        InputTaurus.ConstrEnum.b41 : None, InputTaurus.ConstrEnum.b43 : None,
+    }
+    
+    input_args_onrun = { **input_args_start,
+        InputTaurus.ArgsEnum.red_hamil: 1,
+        InputTaurus.ArgsEnum.seed: 1,
+        InputTaurus.ArgsEnum.iterations: 0,
+    } # just get the minimum result
+    ExeTaurus0D_EnergyMinimum.PRINT_CALCULATION_PARAMETERS = False
+    ExeTaurus0D_EnergyMinimum.PARITY_TO_BLOCK = 1
+    ExeTaurus0D_EnergyMinimum.VALID_KS_FOR_AXIAL_BLOCKING = [2, ]
+    optimal_lengths = {}
+    
+    for z, n in nucleus:
+        b_Ehfb_min = (0, 999999)
+        summary_results = f'export_HO_TES_z{z}n{n}.txt'
+        if summary_results in os.listdir():
+            head_ = ", ".join([ExeTaurus0D_EnergyMinimum.DTYPE.__name__,
+                               'ho_b_length'])
+            with open(summary_results, 'w+') as f:
+                f.write(head_+'\n')
+                
+        for step_, b_len in enumerate(b_lengths):
+            
+            ## set up the Hamiltonian in the set up 
+            hamil_exe = TBME_HamiltonianManager(b_len, MZmax, MZmin=MZmin)
+            hamil_fn_new = f'AV14_z{z}n{n}_N{MZmax}_b{1000*b_len:4.0f}'
+            hamil_exe.do_coulomb = inter_av == ArgonneEnum.AV18
+            hamil_exe.hamil_filename = hamil_fn_new
+            hamil_exe.setAndRun_Argonne_xml(ArgonneEnum.AV14)
+        
+            ## input args_for must change seeed=1 after the right minimum
+            if step_ > 0:
+                input_args_start[InputTaurus.ArgsEnum.seed] = 1
+                        
+            ## after the export (do not zip the files) import the results and 
+            ## copy here to an auxiliary file
+            
+            line = ''        
+            try:
+                exe_ = ExeTaurus0D_EnergyMinimum(z, n, hamil_fn_new)
+                exe_.setInputCalculationArguments(**input_args_start)
+                exe_.defineDeformationRange(0,  0, 0)
+                exe_.include_header_in_results_file = False
+                exe_.setUp()
+                exe_.setUpExecution(**input_args_onrun)
+                exe_.force_converg = True 
+                # exe_.run()
+                # exe_.globalTearDown(zip_bufolder=False)
+                
+                line = exe_._1stSeedMinimum.getAttributesDictLike
+            except ExecutionException as e:
+                printf(e)
+            
+            
+            if line not in  ('', '\n'):
+                # register the Optimal length
+                if exe_._1stSeedMinimum.E_HFB < b_Ehfb_min[1]:
+                    b_Ehfb_min = (b_len, exe_._1stSeedMinimum.E_HFB)
+                
+                with open(summary_results, 'a+') as f:
+                    header_  = f"{len(b_lengths)-step_}: {b_len:5.3f}"
+                    header_ += ExeTaurus0D_EnergyMinimum.HEADER_SEPARATOR
+                    f.write(header_+line+'\n')
+        
+        optimal_lengths[(z, n)] = b_Ehfb_min
+        # ## plot in a file,
+        # Plotter1D_Taurus.FOLDER_PATH = ''
+        # plot = Plotter1D_Taurus(summary_results, attr2plot='E_HFB') # no testeado
+        # plot.setTitle(f"HO optimization NoCore z{z}n{n}\n E={b_Ehfb_min[1]:6.3f} MeV b={b_Ehfb_min[0]:4.3f}fm")
+        # plot.defaultPlot(attr2plot='E_HFB', show_plot=False)
+        # plot.EXPORT_PDF_AND_MERGE = True
+        # plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
+        # plot.EXPORT_PDF_AND_MERGE = False
+    
+    printf("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
+    prettyPrintDictionary(optimal_lengths)
+
 
 if __name__ == '__main__':
     pass

@@ -2274,7 +2274,7 @@ class _TestingTaurusOutputGenerator():
                 x_0 = np.random.random()
                 x   = 0.0 # not fixed for a base calculation
             else: 
-                x = getattr(self._input, cnstr, None)
+                x = getattr(self._input, cnstr, None) if cnstr!=None else 0
                 x = 0.0 if (x == None) else x  
             
             if cnstr and cnstr.startswith('P_T'):

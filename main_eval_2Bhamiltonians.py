@@ -121,13 +121,13 @@ if __name__ == '__main__':
     
     ## kwargs, for optional arguments of getInteractionsFile4D1S:
     # do_Coulomb, do_LS, do_BB
-    MZmax = 2
+    MZmax = 1
     INTERACTIONS_COMPUTE_BY_ZN = {
         # (10,10,'')    : (GognyEnum.B1, MZmax, 0, None,  {}),
         # (10,10,'noLS'): (GognyEnum.D1S, MZmax, 0, None, {'do_LS': False,}),
         # (10,10,'noBB'): (GognyEnum.D1S, MZmax, 0, None, {'do_BB': False,}),
     }
-    for z in range(2, 21, 2):
+    for z in range(4, 21, 2):
         INTERACTIONS_COMPUTE_BY_ZN[(z, z, f"_A{2*z}")] = (GognyEnum.B1, MZmax, 0, None,  {})
         
     

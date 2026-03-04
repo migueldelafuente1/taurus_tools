@@ -93,6 +93,7 @@ def plotNumberOfShellsConvergences(Z, N, interactions):
         GognyEnum.B1:  ('MZ10', None, ('^', '2')),
         GognyEnum.D1S: ('MZ8', None,  ('o', '.')),
         M3YEnum.P2:    ('MZ8', None, ('s', 'x')),
+        GognyEnum.D1S+'ls': ('MZ8', None,  ('s', 'x')),
     }
     fig, ax = plt.subplots(1, 1,)
     for inter, data_mz in data.items():
@@ -105,7 +106,7 @@ def plotNumberOfShellsConvergences(Z, N, interactions):
         data_mz_sorted = [(int(mz[2:]), mz) for mz in data_mz.keys()]
         data_mz_sorted = [ii[1] for ii in sorted(data_mz_sorted)]
         for mz in data_mz_sorted:
-            dt = data_mz[mz]
+            dt : DataTaurus = data_mz[mz]
             #if inter in (GognyEnum.D1S, M3YEnum.P2) and mz=='MZ7': continue
             x.append( int(mz[2:]) )
             y.append( dt.E_HFB - Ehfb_min[inter])
@@ -126,13 +127,13 @@ def plotNumberOfShellsConvergences(Z, N, interactions):
                 linestyle='--', marker=_MARKERS[0], color=_COLOR[ic], markerfacecolor='none', markersize=15)
         if yy:
             ax.plot(xx, yy, label=f"{inter_str} (pn)", linestyle='-', marker='.', color=_COLOR[ic], markersize=15 )
-    ax.set_xlabel( r'$N\ shells$', fontsize=15)
-    ax.set_ylabel( r'$E_{HFB}$',   fontsize=15)
-    ax.xaxis.set_tick_params(labelsize=17)
-    ax.yaxis.set_tick_params(labelsize=17)
-    ax.legend(fontsize=14)
+    ax.set_xlabel( r'$N\ shells$', fontsize=17)
+    ax.set_ylabel( r'$E_{HFB}$',   fontsize=17)
+    ax.xaxis.set_tick_params(labelsize=19)
+    ax.yaxis.set_tick_params(labelsize=19)
+    ax.legend(fontsize=15)
     fig.tight_layout()
-    fig.savefig(f"{FLD}/z{Z}n{N}_shellConvergence.pdf")
+    # fig.savefig(f"{FLD}/z{Z}n{N}_shellConvergence.pdf")
     
     # plt.show()
     ## Plotting convergence evolution
@@ -161,7 +162,7 @@ def plotNumberOfShellsConvergences(Z, N, interactions):
             # if not mz in evol_pn: mz = 'MZ6'
             dee = evol_pn[inter][mz]
             labb.append( int(mz[2:]) )
-            
+        
             step_ = 0 if inter == 'B1' else x[-1]
             if not data_pn[inter][mz].properly_finished: I_STEP = 1
             _red_xy = [(i+step_,yi) for i, yi in enumerate(dee.e_hfb)]
@@ -169,11 +170,11 @@ def plotNumberOfShellsConvergences(Z, N, interactions):
             for iyi in _red_xy:
                 xx.append( iyi[0] )
                 yy.append( iyi[1] - data[inter][mz].E_HFB + ii*3)
-            
+        
         ic = inter_names.index(inter)
         inter_str = inter if (inter != M3YEnum.P2) else f'M3Y-{inter}'
         mz_int = labb[-1]
-        # for i, mz in enumerate(lab):
+        
         kwargs = dict(color=_COLOR[ic], marker=_MARKERS[0])
         ax.plot(x, y, label=f"{inter_str} N={mz_int}", 
                 linestyle='--', markerfacecolor='none', 
@@ -191,15 +192,78 @@ def plotNumberOfShellsConvergences(Z, N, interactions):
                 ax.plot(xx[-1], yy[-1], markersize=12, markeredgewidth =5,
                         **kwargs)
         
-        ax.legend(fontsize=14)
+        ## /*************  for the norm  *****************/
+        # args = _inter[inter]
+        # mz, i_max, _MARKERS = _inter[inter]
+        # de = data_mz[mz]
+        # # for mz, de in data_mz.items():
+        # lab.append( int(mz[2:]) )
+        # # x.append( )
+        # _red_xy = [(i,yi) for i, yi in enumerate(de.grad)]
+        # _red_xy = filter(lambda iyi: iyi[0]%I_STEP == 0, _red_xy)
+        # for iyi in _red_xy:
+        #     x.append( iyi[0] )
+        #     # if inter == M3YEnum.P2: iyi = (iyi[0], iyi[1]*0.1)
+        #     y.append( iyi[1] )
+        #
+        # if inter in evol_pn:
+        #     #for mz, de in evol_pn[inter].items():
+        #     # if not mz in evol_pn: mz = 'MZ6'
+        #     dee = evol_pn[inter][mz]
+        #     labb.append( int(mz[2:]) )
+        #
+        #     step_ = 0 if inter == 'B1' else x[-1]
+        #     if not data_pn[inter][mz].properly_finished: I_STEP = 1
+        #     _red_xy = [(i+step_,yi) for i, yi in enumerate(dee.grad)]
+        #     _red_xy = filter(lambda iyi: iyi[0]%I_STEP == 0, _red_xy)
+        #     for iyi in _red_xy:
+        #         xx.append( iyi[0] )
+        #         yy.append( iyi[1] )
+        #
+        # ic = inter_names.index(inter)
+        # inter_str = inter if (inter != M3YEnum.P2) else f'M3Y-{inter}'
+        # mz_int = labb[-1]
+        #
+        #
+        # # for i, mz in enumerate(lab):
+        # kwargs = dict(color=_COLOR[ic], marker=_MARKERS[0])
+        # ax.semilogy(x, y, label=f"{inter_str} N={mz_int}", 
+        #         linestyle='--', markerfacecolor='none', 
+        #         **kwargs)
+        # ax.semilogy(x[-1], y[-1], markersize=10, markeredgewidth=3,
+        #         **kwargs)
+        # # ax.axhline(y=y[-1], color=_COLOR[ic], linestyle=':')
+        # # ax.axhline(y=0.01, color='k', linestyle=':')
+        # if yy:
+        #     #for i, mz in enumerate(labb):
+        #     kwargs = dict(color=_COLOR[ic], marker=_MARKERS[1])
+        #     if i_max: yy = [yy[0][:min(i_max+1, len(yy[0]))], ]
+        #     ax.semilogy(xx, yy, label=f"{inter_str} N={mz_int} (pn)", linestyle='-', 
+        #             **kwargs)
+        #     if data_pn[inter][mz].properly_finished:
+        #         ax.semilogy(xx[-1], yy[-1], markersize=12, markeredgewidth =5,
+        #                     **kwargs)
+        
+
+
+        ## /*************  for the norm  *****************/
+        
+        ax.legend(fontsize=15,
+                  loc='upper left',
+                  bbox_to_anchor=(0.5, 0.95)
+                  ) 
         # ax.set_xlim( (-1, 150) )
-        ax.set_ylim( (-3, 15) )
-        ax.set_xlabel( r'$Iterations$', fontsize=15)
-        ax.set_ylabel( r'$E_{HFB}$',     fontsize=15)
-        ax.xaxis.set_tick_params(labelsize=17)
-        ax.yaxis.set_tick_params(labelsize=17)
+        ax.set_ylim( (-3, 20) )
+        # ax.set_ylim( (0.002, 480) )
+        ax.set_xlim( (1, 480) )
+        ax.set_xlabel( r'$Iterations$', fontsize=17)
+        ax.set_ylabel( r'$E_{HFB}$',     fontsize=17)
+        # ax.set_ylabel( r'$\|H^{20}\|$',   fontsize=15)
+        ax.xaxis.set_tick_params(labelsize=19)
+        ax.yaxis.set_tick_params(labelsize=19)
         
         fig.tight_layout()
+        # fig.savefig(f'{FLD}/z{Z}n{N}_gradient_evolution.pdf')
         fig.savefig(f'{FLD}/z{Z}n{N}_evolution.pdf')
     plt.show()
 
@@ -338,14 +402,14 @@ if __name__ == '__main__':
     MZmax_global = 10
     INTERACTIONS = [
         (GognyEnum.B1 , 'B1base_MZ10' , 'B1_MZ{}' ),
-        (GognyEnum.D1S, 'D1Sbase_MZ8', 'D1S_MZ{}'),
-        # (GognyEnum.D1S, 'D1Sbase_MZ7', 'D1Sdd_MZ{}'),
-        (M3YEnum.P2   , 'M3Y_P2base_MZ8', 'M3Y_P2_MZ{}'),
+        (GognyEnum.D1S, 'D1Sbase_MZ7', 'D1S_MZ{}'),
+        (GognyEnum.D1S+'ls', 'D1Slsbase_MZ8', 'D1Sls_MZ{}'),
+        # (M3YEnum.P2   , 'M3Y_P2base_MZ8', 'M3Y_P2_MZ{}'),
         # (M3YEnum.P6   , 'M3Y_P6base_MZ7', 'M3Y_P6_MZ{}'),
     ]
     params = {
         InputTaurus.ArgsEnum.com  : 1,
-        InputTaurus.ArgsEnum.seed : 3, # 0 
+        InputTaurus.ArgsEnum.seed : 0, # 3
         InputTaurus.ArgsEnum.iterations: 700,
         InputTaurus.ArgsEnum.grad_type : 1,
         InputTaurus.ArgsEnum.grad_tol  : 0.001,
@@ -357,7 +421,7 @@ if __name__ == '__main__':
         InputTaurus.InpDDEnum.omega_dim: 14,
     }
     
-    L_MAX = 5
+    L_MAX = 20
     #===========================================================================
     ## Execution stuff
     if not os.getcwd().startswith('C'):
@@ -368,12 +432,12 @@ if __name__ == '__main__':
         
         input = InputTaurus(Z, N, 'hamil', **params)
         
-        for MZmax in range(3, 4):#MZmax_global +1):
+        for MZmax in range(MZmax_global, MZmax_global +1):
             print(" [ ] Doing MZmax=",MZmax)
             for args in INTERACTIONS:
                 if params[InputTaurus.ArgsEnum.seed] in (0, 4) and MZmax > 6: 
                     print("   ** Continue, will diverge!!")
-                    continue
+                #     continue
                 
                 interaction, file_base, hamil_file = args
                 print(f"      Executing interaction [{interaction}]")
