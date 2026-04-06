@@ -52,7 +52,7 @@ class TBMEXML_Setter(object):
             "Only potential forms are accepted."
         if args[CentralMEParameters.potential] in (PotentialForms.Power,
                                                    PotentialForms.Gaussian_power,
-                                                   PotentialForms.Exponential_power,
+                                                   # PotentialForms.Exponential_power, # Removed!
                                                    PotentialForms.YukawaGauss_power):
             assert CentralMEParameters.n_power in args, \
                 "This potential requires the use of a n_power"
@@ -506,7 +506,8 @@ class TBME_HamiltonianManager(object):
         t3_  = dict( value='1390.6',    units='MeV*fm^-4')
         alp_ = dict( value='0.333333')
         x0_  = dict( value='1')
-        if gogny_interaction == GognyEnum.D1S:
+        do_tensor = False
+        if gogny_interaction.startswith(GognyEnum.D1S):
             W_ls = 130.0
             
             muGL = dict( part_1='0.7',      part_2='1.2',       units='fm')
@@ -514,6 +515,18 @@ class TBME_HamiltonianManager(object):
             Bart = dict( part_1='1300',     part_2='-163.483',  units='MeV')
             Heis = dict( part_1='-1813.53', part_2='162.812',   units='MeV')
             Majo = dict( part_1='1397.6',   part_2='-223.934',  units='MeV')
+            
+            ## Tensor considerations
+            muGLT = dict( value='1.2',   units='fm')
+            WignT = dict( value='-135',  units='MeV')
+            HeisT = dict( value='-115',  units='MeV')
+            if gogny_interaction.startswith(GognyEnum.D1ST2a[:-1]):
+                W_ls = 134.0
+                do_tensor = True
+                
+                if gogny_interaction == GognyEnum.D1ST2b:
+                    WignT = dict( value='-182',  units='MeV')
+                    HeisT = dict( value='-102',  units='MeV')
             
         elif gogny_interaction == GognyEnum.D1:
             W_ls = 115.0
@@ -534,6 +547,7 @@ class TBME_HamiltonianManager(object):
             Heis = dict( part_1='0.0',      part_2='0.0',       units='MeV')
             Majo = dict( part_1='-206.05',  part_2='-68.39',     units='MeV')
             self.do_DD = False
+                        
         else:
             raise Exception("Invalid Gogny interaction", gogny_interaction)
         _TT = '\n\t\t'
@@ -602,6 +616,22 @@ class TBME_HamiltonianManager(object):
             _ = et.SubElement(f4, DensityDependentParameters.core, attrib = core_ )
         _.tail = '\n\t'
         f4.tail = '\n\t'
+        ## *********************************************************************
+        printf(f" > doing Tensor m.e.: active={do_tensor}")
+        f5  = et.SubElement(forces, ForceEnum.TensorS12, 
+                            attrib={AttributeArgs.ForceArgs.active : str(do_tensor)})
+        f5.text = _TT
+        _ = et.SubElement(f5, CentralMEParameters.mu_length, attrib= muGLT)
+        _.tail = _TT
+        _ = et.SubElement(f5, CentralMEParameters.potential, 
+                          attrib= dict( name = PotentialForms.Gaussian) )
+        _.tail = _TT
+        _ = et.SubElement(f5, BrinkBoekerParameters.Wigner,  attrib= WignT)
+        _.tail = _TT
+        _ = et.SubElement(f5, BrinkBoekerParameters.Heisenberg, attrib= HeisT)
+        _.tail = '\n\t'
+        f3.tail = '\n\t'
+        
         return forces
     
     def _set_M3YParameters(self, forces, m3y_interaction):

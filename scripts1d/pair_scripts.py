@@ -108,6 +108,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.grad_tol : 0.001,
             InputTaurus.ArgsEnum.beta_schm: 1, ## 0= q_lm, 1 b_lm, 2 triaxial
             InputTaurus.ArgsEnum.pair_schm: 1,
+            InputTaurus.ArgsEnum.wf_export_text: 0,
             **constr_onrun
         }
         
@@ -120,6 +121,7 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             InputTaurus.ArgsEnum.iterations: 6000,
             InputTaurus.ArgsEnum.grad_type: 1 if _isEvenEven else 2,
             InputTaurus.ArgsEnum.grad_tol : 0.005,
+            InputTaurus.ArgsEnum.pair_schm: 1,
             **constr_onrun
         }
         
@@ -174,4 +176,3 @@ def run_pair_surface_D1S(nucleus, interactions, pair_constrs,
             printf("End run_pair_surface: ", pair_constr, datetime.now().time(), "\n")
         
         printf("End all run_pair_surfaces: ", datetime.now().time(), "\n\n")
-

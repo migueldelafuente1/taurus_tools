@@ -307,6 +307,8 @@ class GognyEnum(Enum):
     D1S = 'D1S'
     D1  = 'D1'
     B1  = 'B1'
+    D1ST2a = 'D1ST2a'
+    D1ST2b = 'D1ST2b'
 
 class M3YEnum(Enum):
     P0 = 'P0'

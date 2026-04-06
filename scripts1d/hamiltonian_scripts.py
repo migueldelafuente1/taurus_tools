@@ -242,6 +242,7 @@ def run_computingHOhbarOmegaForArgonne(nucleus, inter_av=None,
     ExeTaurus0D_EnergyMinimum.PRINT_CALCULATION_PARAMETERS = False
     ExeTaurus0D_EnergyMinimum.PARITY_TO_BLOCK = 1
     ExeTaurus0D_EnergyMinimum.VALID_KS_FOR_AXIAL_BLOCKING = [2, ]
+    ExeTaurus0D_EnergyMinimum.SEEDS_RANDOMIZATION = 1
     optimal_lengths = {}
     
     for z, n in nucleus:
@@ -261,7 +262,7 @@ def run_computingHOhbarOmegaForArgonne(nucleus, inter_av=None,
             hamil_exe.do_coulomb = inter_av == ArgonneEnum.AV18
             hamil_exe.hamil_filename = hamil_fn_new
             hamil_exe.setAndRun_Argonne_xml(ArgonneEnum.AV14)
-        
+            
             ## input args_for must change seeed=1 after the right minimum
             if step_ > 0:
                 input_args_start[InputTaurus.ArgsEnum.seed] = 1
@@ -298,13 +299,13 @@ def run_computingHOhbarOmegaForArgonne(nucleus, inter_av=None,
         
         optimal_lengths[(z, n)] = b_Ehfb_min
         # ## plot in a file,
-        # Plotter1D_Taurus.FOLDER_PATH = ''
-        # plot = Plotter1D_Taurus(summary_results, attr2plot='E_HFB') # no testeado
-        # plot.setTitle(f"HO optimization NoCore z{z}n{n}\n E={b_Ehfb_min[1]:6.3f} MeV b={b_Ehfb_min[0]:4.3f}fm")
-        # plot.defaultPlot(attr2plot='E_HFB', show_plot=False)
-        # plot.EXPORT_PDF_AND_MERGE = True
-        # plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
-        # plot.EXPORT_PDF_AND_MERGE = False
+        Plotter1D_Taurus.FOLDER_PATH = ''
+        plot = Plotter1D_Taurus(summary_results, attr2plot='E_HFB') # no testeado
+        plot.setTitle(f"HO optimization NoCore z{z}n{n}\n E={b_Ehfb_min[1]:6.3f} MeV b={b_Ehfb_min[0]:4.3f}fm")
+        plot.defaultPlot(attr2plot='E_HFB', show_plot=False)
+        plot.EXPORT_PDF_AND_MERGE = True
+        plot.setExportFigureFilename(f"hoOptim_z{z}n{n}.pdf")
+        plot.EXPORT_PDF_AND_MERGE = False
     
     printf("\n\n[DONE] Minimization completed, the optimal HO lenghts are:")
     prettyPrintDictionary(optimal_lengths)
