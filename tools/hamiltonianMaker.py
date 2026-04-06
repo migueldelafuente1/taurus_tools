@@ -527,6 +527,7 @@ class TBME_HamiltonianManager(object):
                 if gogny_interaction == GognyEnum.D1ST2b:
                     WignT = dict( value='-182',  units='MeV')
                     HeisT = dict( value='-102',  units='MeV')
+                print(f" Setting the Tensor term: [{gogny_interaction}] >>")
             
         elif gogny_interaction == GognyEnum.D1:
             W_ls = 115.0

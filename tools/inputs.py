@@ -246,7 +246,7 @@ additional options-modes    = {more_options}
                 cls.InpDDEnum.eval_dd : 1,    cls.InpDDEnum.eval_rea: 1,
                 cls.InpDDEnum.x0_param: 1.0,  cls.InpDDEnum.alpha_param : 0.333333,  
                 cls.InpDDEnum.t3_param: 1350, }
-        elif interaction.startswith(GognyEnum.D1S):
+        elif interaction in (GognyEnum.D1S, GognyEnum.D1ST2a, GognyEnum.D1ST2b):
             return {
                 cls.InpDDEnum.eval_dd : 1,    cls.InpDDEnum.eval_rea: 1,
                 cls.InpDDEnum.x0_param: 1.0,  cls.InpDDEnum.alpha_param : 0.333333,  
