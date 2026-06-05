@@ -619,20 +619,21 @@ class TBME_HamiltonianManager(object):
         _.tail = '\n\t'
         f4.tail = '\n\t'
         ## *********************************************************************
-        printf(f" > doing Tensor m.e.: active={do_tensor}")
-        f5  = et.SubElement(forces, ForceEnum.TensorS12, 
-                            attrib={AttributeArgs.ForceArgs.active : str(do_tensor)})
-        f5.text = _TT
-        _ = et.SubElement(f5, CentralMEParameters.mu_length, attrib= muGLT)
-        _.tail = _TT
-        _ = et.SubElement(f5, CentralMEParameters.potential, 
-                          attrib= dict( name = PotentialForms.Gaussian) )
-        _.tail = _TT
-        _ = et.SubElement(f5, BrinkBoekerParameters.Wigner,  attrib= WignT)
-        _.tail = _TT
-        _ = et.SubElement(f5, BrinkBoekerParameters.Heisenberg, attrib= HeisT)
-        _.tail = '\n\t'
-        f3.tail = '\n\t'
+        if do_tensor:
+            printf(f" > doing Tensor m.e.: active={do_tensor}")
+            f5  = et.SubElement(forces, ForceEnum.TensorS12, 
+                                attrib={AttributeArgs.ForceArgs.active : str(do_tensor)})
+            f5.text = _TT
+            _ = et.SubElement(f5, CentralMEParameters.mu_length, attrib= muGLT)
+            _.tail = _TT
+            _ = et.SubElement(f5, CentralMEParameters.potential, 
+                              attrib= dict( name = PotentialForms.Gaussian) )
+            _.tail = _TT
+            _ = et.SubElement(f5, BrinkBoekerParameters.Wigner,  attrib= WignT)
+            _.tail = _TT
+            _ = et.SubElement(f5, BrinkBoekerParameters.Heisenberg, attrib= HeisT)
+            _.tail = '\n\t'
+            f3.tail = '\n\t'
         
         return forces
     
