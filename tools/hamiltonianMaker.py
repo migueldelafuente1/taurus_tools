@@ -507,6 +507,7 @@ class TBME_HamiltonianManager(object):
         alp_ = dict( value='0.333333')
         x0_  = dict( value='1')
         do_tensor = False
+        muGLT = dict( value='1.2',   units='fm')
         if gogny_interaction.startswith(GognyEnum.D1S):
             W_ls = 130.0
             
