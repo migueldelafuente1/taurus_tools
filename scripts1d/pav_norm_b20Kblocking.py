@@ -97,7 +97,7 @@ class EvaluatePAVNormOver1dByKforAllQuasiparticles():
                 args, _ = l.split(OUTPUT_HEADER_SEPARATOR)
                 args = args.split(':')
                 args[0] = int(args[0])
-                args[1] = args[1].strip().replace('+','').replace('-','_')
+                args[1] = args[1].strip().replace('+','')#.replace('-','_') # old format
                 
                 for K in _k_list:
                     self.deform_index_by_K[K][args[1]] = args[0]

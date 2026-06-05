@@ -23,7 +23,8 @@ def __selectAndSetUp_OEOO_Blocking(z, n,
                                    find_Kfor_all_sps, convergences, 
                                    parity_2_block, preconverge_blocking_sts,
                                    seed_base,
-                                   test_independent_sp4K=False):
+                                   test_independent_sp4K=False,
+                                   project_diagonal_pav =False):
     """
     Odd-Odd and Odd-Even use the same execution parameters, merge the class 
     class set up here.
@@ -37,7 +38,7 @@ def __selectAndSetUp_OEOO_Blocking(z, n,
     
     _Executable_B20_KMixClass.IGNORE_SEED_BLOCKING  = True
     _Executable_B20_KMixClass.BLOCK_ALSO_NEGATIVE_K = False
-    _Executable_B20_KMixClass.RUN_PROJECTION        = False
+    _Executable_B20_KMixClass.RUN_PROJECTION        = project_diagonal_pav
     _Executable_B20_KMixClass.REQUIRE_AXIAL_KP_CONDITION = seed_base in (2,3,9)
     
     if not isinstance(find_Kfor_all_sps, bool):
@@ -184,7 +185,8 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
                                   convergences=0, fomenko_points=(1, 1), 
                                   parity_2_block= 1, 
                                   preconverge_blocking_sts=False,
-                                  find_Kfor_all_sps=True):
+                                  find_Kfor_all_sps=True,
+                                  project_diagonal_pav=False):
     """
         This script evaluate the projection after the blocking from a previous
         false- odd-even b20 TES.
@@ -206,6 +208,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
         :parity_2_block: parity of the states to block
         :preconverge_blocking_sts <int> = 0  :fully converge, > 0 -> number of steps
         :find_Kfor_all_sps =True, evaluate all valid sps (recomended but slower)
+        :project_diagonal_pav = False, Do a diagonal projection over the VAP results.
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
         and gogny_interaction != GognyEnum.B1):
@@ -219,7 +222,8 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             preconverge_blocking_sts, 
             seed_base,
         )
-        __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args)
+        kwargs = dict(project_diagonal_pav= project_diagonal_pav, )
+        __ExeB20BlockingClass = __selectAndSetUp_OEOO_Blocking(z, n, *args, **kwargs)
         
         interaction = getInteractionFile4D1S(interactions, z, n, 
                                              gogny_interaction=gogny_interaction)
@@ -270,7 +274,7 @@ def run_b20_FalseOE_Block1KAndPAV(nucleus, interactions, gogny_interaction, K,
             InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             'axial_calc' : axial_calc,
             #'core_calc'  : True,
-            'valid_Ks'   : K,
+            'valid_Ks'   : [K, ],
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,
@@ -363,6 +367,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             vap_args = {IArgsEnum.z_Mphi : fomenko_points[0],
                         IArgsEnum.n_Mphi : fomenko_points[1],}
         vap_constraints = {
+            InputTaurus.ConstrEnum.b21 : (0.00, 0.00),
             InputTaurus.ConstrEnum.b22 : (0.00, 0.00),
             InputTaurus.ConstrEnum.b40 : (0.00, 0.00),
             InputTaurus.ConstrEnum.b41 : (0.00, 0.00),
@@ -395,7 +400,7 @@ def run_b20_FalseOdd_Kmixing(nucleus, interactions, gogny_interaction,
             **vap_constraints,
             'axial_calc' : axial_calc,
             #'core_calc'  : True,
-            #'valid_Ks'   : valid_Ks,
+            'valid_Ks'   : valid_Ks,
         }
         input_args_projection = {
             InputTaurusPAV.ArgsEnum.red_hamil : 1,

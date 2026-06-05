@@ -14,6 +14,8 @@ from scripts1d.pav_norm_b20Kblocking import run_b20_calculatePAVnormForKindepend
     run_b20_calculatePAVnormForStandardRunKBlocking
 from tools.inputs import InputTaurus
 from tools.helpers import importAndCompile_taurus, printf
+from tools.base_executors import _Base1DTaurusExecutor
+from scripts1d.beta_scripts import run_b20_Gogny_surface
 
 if not (InputTaurus.PROGRAM in os.listdir()): 
     importAndCompile_taurus(use_dens_taurus=False, force_compilation=False)
@@ -23,9 +25,30 @@ if __name__ == '__main__':
     
     if os.getcwd().startswith('C:'):   ## TESTING
         interactions_B1 = {(2, 1): (3, 0, None), (2, 3): (2, 0, None),}
-        interactions_B1 = {(15, 14): 'B1_MZ4', }
-        interactions_B1 = {(12, 13): (3, 0, None), }
+        interactions_B1 = {(15, 14): 'B1_MZ3', }
+        interactions_B1 = {(15, 14): (3, 0, None), }
+        # interactions_B1 = {(12, 13): (3, 0, None), }
         # interactions_B1 = {( 1, 12): 'SDPF_MIX_J', }
+        
+        # constr_onrun = {
+        #     InputTaurus.ConstrEnum.b10 : (0.0, 0.0),
+        #     InputTaurus.ConstrEnum.b11 : (0.0, 0.0),
+        #     InputTaurus.ConstrEnum.b21 : (0.0, 0.0),
+        #     InputTaurus.ConstrEnum.b31 : (0.0, 0.0),
+        #     InputTaurus.ConstrEnum.b41 : (0.0, 0.0),
+        #     InputTaurus.ConstrEnum.P_T1m1_J00: 0.0,
+        #     InputTaurus.ConstrEnum.P_T1p1_J00: 0.0,
+        #     #InputTaurus.ConstrEnum.Jx: 0.0
+        # }   
+        #
+
+        # run_b20_Gogny_surface(list(interactions_B1.keys()), interactions_B1, 
+        #                       gogny_interaction=GognyEnum.B1,
+        #                       seed_base=0, ROmega=(0, 0),
+        #                       q_min=-1.0, q_max=1.0, N_max=21, convergences=2,
+        #                       fomenko_points=(3, 3),
+        #                       sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.SPHERICAL_CALC,
+        #                       **constr_onrun)
     else:
         
         # ---------------------------------------------------------------------
@@ -53,7 +76,7 @@ if __name__ == '__main__':
         #             interactions_B1[(Z,N)] = (4, 0, None)
         #         printf()
         interactions_B1 = {}
-        inter_ = 'B1_MZ4' #(4, 0, None)
+        inter_ = (4, 0, None) #'B1_MZ4' #
         # inter_ = 'usdb_JF27' # 'SDPF_MIX_J' 
         #interactions_B1 = dict([(( 7, 8+ 2*i), inter_) for i in range(0, 7)])
         #interactions_B1 = dict([(( 9, 8+ 2*i), inter_) for i in range(0, 7)])
@@ -75,7 +98,7 @@ if __name__ == '__main__':
         _6 = 'pav_norm_eval_from_allBlockKsurf' # Once evaluated case 'exe_example_allblockKsurf'
     
     ## SELECT HERE ****
-    _case = __CASES._2
+    _case = __CASES._1
      
     nucleus = sorted(list(interactions_B1.keys()))
     
@@ -92,11 +115,12 @@ if __name__ == '__main__':
         args = (nucleus, interactions_B1, GognyEnum.B1, K2block)
         kwargs = dict(
             seed_base=3, ROmega=(0,0),
-            q_min=-0.8, q_max=0.8, N_max=13, convergences=0,   ## 0.6, 25
+            q_min=-0.6, q_max=0.7, N_max=33, convergences=2,   ## 0.6, 25
             parity_2_block=1,
             fomenko_points=(7, 7),
             preconverge_blocking_sts=False,
-            find_Kfor_all_sps = True
+            find_Kfor_all_sps = 3,
+            project_diagonal_pav = True,
         )
         run_b20_FalseOE_Block1KAndPAV(*args, **kwargs, )
         #=======================================================================
@@ -179,7 +203,7 @@ if __name__ == '__main__':
         run_b20_testOO_Kmixing4AllCombinations(*args, **kwargs)
         #=======================================================================
     elif _case == __CASES._6:
-        nucleus = {(15,14): 'B1_MZ4',} # (12,13):'B1_MZ4', }#
+        nucleus = {(15,14): 'B1_MZ3',} # (12,13):'B1_MZ4', }#
         valid_Ks=[1,3,5,7,9]
         run_b20_calculatePAVnormForStandardRunKBlocking(nucleus, valid_Ks)
         # run_b20_calculatePAVnormForKindependently(nucleus, valid_Ks)

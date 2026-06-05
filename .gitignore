@@ -19,3 +19,6 @@ __pycache__/
 *.INP
 scripts1d/*.pdf
 plotting_scripts/*.pdf
+scripts0d/*.2b 
+scripts0d/*.com
+scripts0d/*.sho
