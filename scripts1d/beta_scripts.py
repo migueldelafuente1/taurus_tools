@@ -7,13 +7,13 @@ import os
 
 from tools.executors import ExeTaurus1D_DeformQ20, ExecutionException,\
     ExeTaurus1D_DeformB20
-from tools.inputs import InputTaurus
+from tools.inputs import InputTaurus, InputTaurusPAV
 from tools.data import DataTaurus
 from datetime import datetime
 from scripts1d.script_helpers import getInteractionFile4D1S
 from tools.hamiltonianMaker import  TBME_HamiltonianManager
 from tools.Enums import GognyEnum
-from tools.helpers import printf
+from tools.helpers import printf, importAndCompile_taurus
 
 def run_q20_surface(nucleus, interactions,
                     seed_base=0, ROmega=(10, 10),
@@ -152,11 +152,24 @@ def run_b20_surface(nucleus, interactions,
     printf("End run_q20_surface: ", datetime.now().time())
 
 
+__DEFAULT_PAV_INPUT = {
+    InputTaurusPAV.ArgsEnum.red_hamil : 1,
+    InputTaurusPAV.ArgsEnum.com: 1,
+    InputTaurusPAV.ArgsEnum.alpha : 15,
+    InputTaurusPAV.ArgsEnum.beta  : 20,
+    InputTaurusPAV.ArgsEnum.gamma : 15,
+    InputTaurusPAV.ArgsEnum.empty_states : 0,
+    InputTaurusPAV.ArgsEnum.disable_simplifications_P : 0,
+    InputTaurusPAV.ArgsEnum.cutoff_overlap : 1.0e-10,
+    # PN-PAV and J bound arguments set by the program, P-PAV = no
+}
+
 def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
                           seed_base=0, ROmega=(13, 13),
                           q_min=-2.0, q_max=2.0, N_max=41, convergences=0,
                           fomenko_points=(1, 1),
                           sym_calc_setup=None,
+                          project_diagonal_pav = False,
                           **constr_onrun):
     """
     Reqire:
@@ -177,6 +190,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
         :sym_calc_setup=None: Symmetry for the calculation to use, i.e. certain
                             symmetry restrictions for the constraints for non axial calculuations:
                             _Base1DTaurusExecutor.SymmetryOptionsEnum.NO_CORE_CALC
+        :project_diagonal_pav=False: introduce PAV projection
         :constr_onrun other constraints to set up the calculation.
     """
     if ((fomenko_points[0]>1 or fomenko_points[1]>1) 
@@ -238,6 +252,9 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             'axial_calc' : axial_calc,
             **constr_onrun
         }
+        ExeTaurus1D_DeformB20.RUN_PROJECTION = project_diagonal_pav
+        if not os.path.exists(InputTaurusPAV.PROGRAM) and project_diagonal_pav:
+            importAndCompile_taurus(pav=True)
         
         ExeTaurus1D_DeformB20.EXPORT_LIST_RESULTS = f"export_TESb20_z{z}n{n}_{interaction}.txt"
         
@@ -247,6 +264,7 @@ def run_b20_Gogny_surface(nucleus, interactions, gogny_interaction,
             exe_.defineDeformationRange(q_min, q_max, N_max)
             exe_.setUp()
             exe_.setUpExecution(**input_args_onrun)
+            exe_.setUpProjection(**__DEFAULT_PAV_INPUT)
             exe_.force_converg = False
             exe_.run()
             exe_.globalTearDown()

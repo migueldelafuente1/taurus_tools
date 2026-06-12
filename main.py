@@ -93,7 +93,7 @@ if __name__ == '__main__':
         gogny_interaction = GognyEnum.
     """
     interactions_D1S = {
-        (12,  12): (2, 0, None), #(2, 0, 1.81), # (12, 10): (3, 0, 1.83), 
+        (14,  14): (4, 0, None), #(2, 0, 1.81), # (12, 10): (3, 0, 1.83), 
         # (12, 12): (3, 0, 1.83), (12, 14): (3, 0, 1.79), 
         # (12, 16): (3, 0, 1.80), (12, 18): (3, 0, 1.86),
         # (12, 20): (3, 0, 2.01), (12, 20): (3, 0, 2.01),
@@ -109,14 +109,18 @@ if __name__ == '__main__':
         InputTaurus.ConstrEnum.b21 : (0.0, 0.0),
         InputTaurus.ConstrEnum.b31 : (0.0, 0.0),
         InputTaurus.ConstrEnum.b41 : (0.0, 0.0),
+        InputTaurus.ConstrEnum.P_T1m1_J00: 0.0,
+        InputTaurus.ConstrEnum.P_T1p1_J00: 0.0,
         #InputTaurus.ConstrEnum.Jx: 0.0
     }
         
     nucleus = sorted(list(interactions_D1S.keys()))
     run_b20_Gogny_surface(nucleus, interactions_D1S, GognyEnum.B1,
-                          seed_base=2, ROmega=(0,0), 
-                          q_min=0,  q_max=0.5, N_max=5, convergences=1,
-                          sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.AXIAL_CALC)
+                          seed_base=3, ROmega=(0,0), 
+                          q_min=-.8,  q_max=0.8, N_max=31, convergences=3,
+                          sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.SPHERICAL_CALC,
+                          project_diagonal_pav=True, 
+                          **constr_onrun)
     raise Exception("STOP HERE.")
     
     

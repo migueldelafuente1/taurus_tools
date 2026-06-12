@@ -745,7 +745,10 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
             >>> [ 'K1_d3.OUT', 'K1_d-1.OUT', 'K1_d-2.OUT']
             <<< ['K1_d-2.OUT', 'K1_d-1.OUT', 'K1_d3.OUT']
         """
-        initial_ = [int(x.replace('.OUT', '').split('_d')[-1]) for x in list_]
+        if self.numberParity == (0, 0):
+            initial_ = [int(x.replace('.OUT', '').replace('d','')) for x in list_]
+        else:
+            initial_ = [int(x.replace('.OUT', '').split('_d')[-1]) for x in list_]
         return [list_[initial_.index(i)] for i in sorted(initial_)]
         
         
