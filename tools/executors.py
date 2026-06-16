@@ -279,11 +279,11 @@ class ExeTaurus1D_DeformQ20(_Base1DTaurusExecutor):
                 printf("  [PAV error 2], cannot do anything. procced")
                 res = DataTaurusPAV(self.z, self.n, empty_data=True)
         
-        self._curr_PAV_result  = res
+        self._curr_PAV_result  = deepcopy(res)
         ## move the projection results to another folder
         ## TODO. Exportable for printing as for K projection
         if self._curr_PAV_result.properly_finished:
-            self.saveProjectedWFProcedure(res)
+            self.saveProjectedWFProcedure(deepcopy(res))
             self.projectionExecutionTearDown()
         else:
             printf(" [ERROR-PAV] PAV could not be achieved. Skipping")
