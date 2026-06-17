@@ -39,7 +39,7 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
     FLD_results = 'PNAMP'
     
     __DEFAULT_PAV_INPUT = {
-        InputTaurusPAV.ArgsEnum.red_hamil : 1,
+        InputTaurusPAV.ArgsEnum.red_hamil : 1 if  os.path.exists(INTER+'.red') else 0,
         InputTaurusPAV.ArgsEnum.com: 1,
         InputTaurusPAV.ArgsEnum.alpha : 12,
         InputTaurusPAV.ArgsEnum.beta  : 15,
@@ -94,17 +94,21 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
         bin_case = len(list_wf) > 0
         if not bin_case:
             list_wf  = list(filter(lambda x: x.endswith('.txt'), list_wf))
-            if len(list_wf) > 0:
-                default_pav_input[InputTaurusPAV.ArgsEnum.read_as_txt] = 1
-            else:
+            if len(list_wf) < 0:
                 printf(" WARNING : No files found, Exiting.")
                 return
         
         raise Exception("Sorting not specified, use a list_dat file or Implement me!")
     
+    default_pav_input[InputTaurusPAV.ArgsEnum.read_as_txt] = 1
+    
     if os.path.exists(FLD_path + '/' + FLD_results):
         shutil.rmtree(FLD_path + '/' + FLD_results)
     os.mkdir(FLD_path + '/' + FLD_results)
+    
+    printf('')
+    printf(str(inputObj_PAV))
+    printf('')
     
     _fmt = '.bin' if bin_case else '.txt' 
     for i, wf in enumerate(list_wf):
