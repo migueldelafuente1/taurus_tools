@@ -945,7 +945,7 @@ Part of the calc. performed   0
 Read mat. elem. of operators  0
 Write/read rotated mat. elem. 0
 Cutoff for rotated overlaps   {cutoff_overlap}
-Read wavefunctions as text    0
+Read wavefunctions as text    {read_as_txt}
 Cutoff occupied s.-p. states  0.000E-00
 Include all empty sp states   {empty_states}
 
@@ -983,6 +983,7 @@ Disable simplifications P     {disable_simplifications_P}"""
         z_Mphi   = 'z_Mphi'
         n_Mphi   = 'n_Mphi'
         cutoff_overlap = 'cutoff_overlap'
+        read_as_txt  = 'read_as_txt'
         empty_states = 'empty_states'
         disable_simplifications_NZA = 'disable_simplifications_NZA'
         disable_simplifications_JMK = 'disable_simplifications_JMK'
@@ -1015,6 +1016,7 @@ Disable simplifications P     {disable_simplifications_P}"""
         ##    NZA: pure hf states, no pairing/hf for L/R wf
         ##    JMK: axial symmetry but do not use it ever
         ##     P : not mixed parity of L/R wf.
+        self.read_as_txt  = 0
         self.empty_states = 1
         self.cutoff_overlap = 0.0
         self.disable_simplifications_NZA = 1
@@ -1047,6 +1049,7 @@ Disable simplifications P     {disable_simplifications_P}"""
                          self.ArgsEnum.red_hamil,
                          self.ArgsEnum.parity,
                          self.ArgsEnum.empty_states,
+                         self.ArgsEnum.read_as_txt,
                          self.ArgsEnum.disable_simplifications_NZA,
                          self.ArgsEnum.disable_simplifications_JMK,
                          self.ArgsEnum.disable_simplifications_P,):

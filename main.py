@@ -121,6 +121,7 @@ if __name__ == '__main__':
                           sym_calc_setup=_Base1DTaurusExecutor.SymmetryOptionsEnum.SPHERICAL_CALC,
                           project_diagonal_pav=True, 
                           **constr_onrun)
+    
     raise Exception("STOP HERE.")
     
     
