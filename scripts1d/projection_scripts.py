@@ -11,6 +11,7 @@ from tools.inputs import InputTaurusPAV
 from copy import deepcopy
 from tools.data import DataTaurusPAV
 from tools.base_executors import _Base1DTaurusExecutor
+from tools.helpers import printf
 
 
 def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
@@ -32,7 +33,7 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
     """
     
     if not os.path.exists(FLD_path):
-        print("WARNING: FLD_path does not exist or contain PNVAP, exit:", FLD_path)
+        printf("WARNING: FLD_path does not exist or contain PNVAP, exit:", FLD_path)
         return
     
     FLD_results = 'PNAMP'
@@ -96,7 +97,7 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
             if len(list_wf) > 0:
                 default_pav_input[InputTaurusPAV.ArgsEnum.read_as_txt] = 1
             else:
-                print(" WARNING : No files found, Exiting.")
+                printf(" WARNING : No files found, Exiting.")
                 return
         
         raise Exception("Sorting not specified, use a list_dat file or Implement me!")
@@ -118,7 +119,7 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
         
         
         d_index = deform_index_list[i]
-        print(f" * [{i+1: >2}/{len(list_wf)}] : {wf} -> {d_index: >6}  {deform_wf_files[d_index]}")
+        printf(f" * [{i+1: >2}/{len(list_wf)}] : {wf} -> {d_index: >6}  {deform_wf_files[d_index]}")
         if os.getcwd().startswith('C:'): ## Testing purpose 
             _Base1DTaurusExecutor._auxWindows_executeProgram_PAV(None, out_fn)
         else:
@@ -129,5 +130,5 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
     with open(f'{FLD_path}/{FLD_results}/list_pav.dat', 'w+') as f:
         f.writelines('\n'.join([x+'.OUT' for x in deform_index_list]))
     
-    print(f" Finished.")
+    printf(f" Finished.")
 
