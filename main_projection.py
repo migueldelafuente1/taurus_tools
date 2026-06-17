@@ -8,7 +8,7 @@ from scripts1d.projection_scripts import run_diagonal_pavResults_even_even_nucle
 if __name__ == '__main__':
     
     
-    Z, N, INTER = 12, 12, 'B1_MZ2'
+    Z, N, INTER = 14, 14, 'B1_MZ4'
     FLD_path    = f'BU_folder_{INTER}_z{Z}n{N}'
     
     run_diagonal_pavResults_even_even_nuclei(
