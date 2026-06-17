@@ -62,9 +62,6 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
     default_pav_input[InputTaurusPAV.ArgsEnum.z_Mphi] = fomenko_points[0]
     default_pav_input[InputTaurusPAV.ArgsEnum.n_Mphi] = fomenko_points[1]
     
-    inputObj_PAV = InputTaurusPAV(Z, N, INTER)
-    inputObj_PAV.setParameters(**default_pav_input)
-    
     deform_index_list = []
     deform_wf_files   = {}
     
@@ -106,6 +103,8 @@ def run_diagonal_pavResults_even_even_nuclei(FLD_path, Z, N, INTER,
         shutil.rmtree(FLD_path + '/' + FLD_results)
     os.mkdir(FLD_path + '/' + FLD_results)
     
+    inputObj_PAV = InputTaurusPAV(Z, N, INTER)
+    inputObj_PAV.setParameters(**default_pav_input)
     printf('')
     printf(str(inputObj_PAV))
     printf('')
